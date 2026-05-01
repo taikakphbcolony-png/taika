@@ -123,7 +123,7 @@ nav{flex:1;padding:14px 0;overflow-y:auto}
   </nav>
   <div class="sf" style="display:flex;flex-direction:column;gap:6px">
   <span>Taika MA · Gokul Plots</span>
-  <button onclick="testConn()" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.7);border-radius:6px;padding:5px 10px;font-size:11px;cursor:pointer;font-family:DM Sans,sans-serif">⚡ Test Sheets Connection</button>
+  <button onclick="testConnection()" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.7);border-radius:6px;padding:5px 10px;font-size:11px;cursor:pointer;font-family:DM Sans,sans-serif">⚡ Test Sheets Connection</button>
   <button onclick="loadFromSheets()" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.7);border-radius:6px;padding:5px 10px;font-size:11px;cursor:pointer;font-family:DM Sans,sans-serif">🔄 Sync from Sheets</button>
 </div>
 </aside>
@@ -188,8 +188,25 @@ let enqs=JSON.parse(localStorage.getItem("tq")||"[]");
 const monthly=SEED.monthly;
 let curPage="dashboard",curFS=null,srch="",attMo="2026-05";
 const API="https://script.google.com/macros/s/AKfycbz_AKfjL7K-7hjKnQToHjWxNgqaDW-QbHC_PGC6qBEd0KLDM5WOFi6pLVRwv55sn29xwg/exec";
-async function api(action,data){try{const r=await fetch(API,{method:"POST",body:JSON.stringify({action,data})});return await r.json();}catch(e){console.warn("Sheets sync failed:",e);return null;}}
-async function apiGet(action,params){try{const u=new URL(API);u.searchParams.set("action",action);if(params)Object.entries(params).forEach(([k,v])=>u.searchParams.set(k,v));const r=await fetch(u);return await r.json();}catch(e){console.warn("Sheets read failed:",e);return null;}}
+async function api(action,data){
+  try{
+    const r=await fetch(API,{
+      method:"POST",
+      headers:{"Content-Type":"text/plain"},
+      body:JSON.stringify({action,data})
+    });
+    return await r.json();
+  }catch(e){console.warn("Sheets POST failed:",e);return null;}
+}
+async function apiGet(action,params){
+  try{
+    const u=new URL(API);
+    u.searchParams.set("action",action);
+    if(params)Object.entries(params).forEach(([k,v])=>u.searchParams.set(k,v));
+    const r=await fetch(u,{mode:"cors"});
+    return await r.json();
+  }catch(e){console.warn("Sheets GET failed:",e);return null;}
+}
 function sv(){localStorage.setItem("ts",JSON.stringify(students));localStorage.setItem("tf",JSON.stringify(fees));localStorage.setItem("ta",JSON.stringify(att));localStorage.setItem("te",JSON.stringify(exps));localStorage.setItem("tq",JSON.stringify(enqs));}
 function showToast(msg,ok=true){let t=document.getElementById("toast");if(!t){t=document.createElement("div");t.id="toast";t.style="position:fixed;bottom:24px;left:50%;transform:translateX(-50%);padding:10px 22px;border-radius:8px;font-size:13px;font-weight:500;z-index:9999;transition:opacity .4s;font-family:DM Sans,sans-serif";document.body.appendChild(t);}t.textContent=msg;t.style.background=ok?"#16a34a":"#C0392B";t.style.color="#fff";t.style.opacity="1";setTimeout(()=>{t.style.opacity="0";},2800);}
 function fmt(n){return "Rs "+Number(n).toLocaleString("en-IN")}
@@ -216,10 +233,11 @@ function render(){const fns={dashboard:rDash,students:rStud,fees:rFees,attendanc
 function onSrch(v){srch=v;if(curPage==="students")render();}
 
 function rDash(){
+  if(!students||students.length===0){return "<div style='padding:40px;text-align:center'><div style='font-size:48px;margin-bottom:12px'>🥋</div><div style='font-size:16px;font-weight:600;color:#1c1c1e;margin-bottom:8px'>Welcome to Taika Martial Arts Academy</div><div style='font-size:13px;color:#6b7280;margin-bottom:20px'>Your data is loading from Google Sheets...</div><button class='btn btn-red' onclick='loadFromSheets()'>🔄 Load Data from Sheets</button></div>";}
   const paid=students.filter(s=>!isUp(s)).length;
   const unp=students.filter(s=>isUp(s)).length;
   const tDue=students.filter(s=>isUp(s)).reduce((a,s)=>a+(s.fee||0),0);
-  const maxA=Math.max(...monthly.map(m=>Math.max(m.collected,m.expenses)));
+  const maxA=monthly.length?Math.max(...monthly.map(m=>Math.max(m.collected,m.expenses))):1;
   let mRows=monthly.map(m=>{
     const wc=Math.round(m.collected/maxA*100);const we=Math.round(m.expenses/maxA*100);
     return "<div class='crow' style='margin-bottom:10px'><span class='mo'>"+m.month+"</span><div style='flex:1'><div class='crow' style='margin-bottom:2px'><span style='width:58px;font-size:11px;color:var(--gray)'>Collected</span><div class='bb2'><div class='bf' style='width:"+wc+"%;background:var(--red)'><span class='bl'>"+fmt(m.collected)+"</span></div></div></div><div class='crow'><span style='width:58px;font-size:11px;color:var(--gray)'>Expenses</span><div class='bb2'><div class='bf' style='width:"+we+"%;background:#94a3b8'><span class='bl'>"+fmt(m.expenses)+"</span></div></div></div></div><span class='am' style='color:"+(m.remains>0?"#16a34a":"var(--red)")+"'>"+fmt(m.remains)+"</span></div>";
@@ -351,7 +369,7 @@ function toggleNP(){
 function toggleSB(){document.getElementById("sidebar").classList.toggle("open");document.getElementById("ov").classList.toggle("show");}
 function closeSB(){document.getElementById("sidebar").classList.remove("open");document.getElementById("ov").classList.remove("show");}
 
-async function testConn(){
+async function testConnection(){
   showToast("Testing connection...",true);
   const r=await apiGet("ping");
   if(r&&r.ok)showToast("Connected to Google Sheets! "+r.time.slice(0,10));
@@ -379,7 +397,45 @@ async function seedToSheets(){
   }
   showToast("Seeded "+ok+" students to Google Sheets!");
 }
-updBadges();render();
+
+// ── AUTO INIT ─────────────────────────────────────────────────
+async function init() {
+  // First render with local data (instant)
+  updBadges();
+  render();
+  
+  // Then try to connect and load from Sheets
+  try {
+    const u = new URL(API);
+    u.searchParams.set("action","ping");
+    const r = await fetch(u, {mode:"cors"});
+    const j = await r.json();
+    if (j && j.ok) {
+      showToast("Connected! Loading data from Sheets...", true);
+      await loadFromSheets();
+    }
+  } catch(e) {
+    // Sheets unavailable — use local data silently
+    console.log("Sheets not available, using local data");
+  }
+}
+
+// Fix rDash to handle empty students gracefully
+const _origRender = render;
+
+// Override render to catch errors
+function safeRender() {
+  try { _origRender(); } catch(e) {
+    document.getElementById("content").innerHTML = 
+      "<div style='padding:40px;text-align:center;color:var(--gray)'>" +
+      "<div style='font-size:48px;margin-bottom:16px'>🥋</div>" +
+      "<div style='font-size:18px;font-weight:600;margin-bottom:8px'>Loading data...</div>" +
+      "<div style='font-size:13px'>Click <b>Sync from Sheets</b> in the sidebar to load your data.</div></div>";
+    console.error("Render error:", e);
+  }
+}
+
+init();
 </script>
 </body>
 </html>
