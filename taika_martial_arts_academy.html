@@ -249,18 +249,33 @@ function rDash(){
 
 function rStud(){
   const fil=students.filter(s=>!srch||s.name.toLowerCase().includes(srch.toLowerCase())||s.phone.includes(srch));
-  const rows=fil.map(s=>"<tr><td><b>"+s.name+"</b><br><span style='color:var(--gray);font-size:11px'>"+s.phone+"</span></td><td>"+beltB(s.belt)+"</td><td>"+s.plan+"</td><td>"+fmt(s.fee)+"</td><td>"+(s.validTill||"-")+"</td><td>"+statB(s)+"</td><td><button class='btn btn-red' style='padding:4px 9px;font-size:12px' onclick='openFee(""+s.id+"")'>Pay</button> "+wa(s.phone,"Hi, this is Taika Martial Arts Academy. Hope "+s.name+" is enjoying the sessions!","WA")+"</td></tr>").join("");
+  let rows="";
+  fil.forEach(function(s){
+    const payBtn="<button class='btn btn-red' style='padding:4px 9px;font-size:12px' onclick='openFee("+JSON.stringify(s.id)+")'>Pay</button>";
+    rows+="<tr><td><b>"+s.name+"</b><br><span style='color:var(--gray);font-size:11px'>"+s.phone+"</span></td><td>"+beltB(s.belt)+"</td><td>"+s.plan+"</td><td>"+fmt(s.fee)+"</td><td>"+(s.validTill||"-")+"</td><td>"+statB(s)+"</td><td>"+payBtn+" "+wa(s.phone,"Hi, this is Taika Martial Arts Academy. Hope "+s.name+" is enjoying the sessions!","WA")+"</td></tr>";
+  });
   return "<div class='card'><div class='ch'><h3>All Students ("+fil.length+")</h3><div style='display:flex;gap:6px'><span class='bdg bg'>"+students.filter(s=>!isUp(s)).length+" Paid</span><span class='bdg br'>"+students.filter(s=>isUp(s)).length+" Overdue</span></div></div><div style='overflow-x:auto'><table class='tbl'><thead><tr><th>Student</th><th>Belt</th><th>Plan</th><th>Fee</th><th>Valid Till</th><th>Status</th><th>Actions</th></tr></thead><tbody>"+rows+"</tbody></table></div></div>";
 }
-
 function rFees(){
   const ov=students.filter(s=>isUp(s));
-  const ovR=ov.map(s=>{const d=Math.abs(dud(s));const msg="Hi, fees for "+s.name+" at Taika Martial Arts Academy are overdue by "+d+" days. Kindly pay at the earliest. Thank you!";return "<tr><td><b>"+s.name+"</b></td><td>"+fmt(s.fee)+"</td><td>"+(s.validTill||"N/A")+"</td><td><span class='bdg br'>Overdue "+d+"d</span></td><td><button class='btn btn-red' style='padding:4px 9px;font-size:12px' onclick='openFee(""+s.id+"")'>Record Pay</button> "+wa(s.phone,msg,"Remind")+"</td></tr>";}).join("")||"<tr><td colspan=5 style='text-align:center;color:#16a34a;padding:18px'>All fees up to date!</td></tr>";
+  let ovR="";
+  ov.forEach(function(s){
+    const d=Math.abs(dud(s));
+    const msg="Hi, fees for "+s.name+" at Taika Martial Arts Academy are overdue by "+d+" days. Kindly pay at the earliest. Thank you!";
+    const payBtn="<button class='btn btn-red' style='padding:4px 9px;font-size:12px' onclick='openFee("+JSON.stringify(s.id)+")'>Record Pay</button>";
+    ovR+="<tr><td><b>"+s.name+"</b></td><td>"+fmt(s.fee)+"</td><td>"+(s.validTill||"N/A")+"</td><td><span class='bdg br'>Overdue "+d+"d</span></td><td>"+payBtn+" "+wa(s.phone,msg,"Remind")+"</td></tr>";
+  });
+  if(!ovR) ovR="<tr><td colspan=5 style='text-align:center;color:#16a34a;padding:18px'>All fees up to date!</td></tr>";
   const hist=[...fees].reverse().slice(0,20);
-  const hR=hist.map(p=>{const s=students.find(x=>x.id===p.sid)||{name:"Unknown",phone:""};const msg="Hi, payment of "+fmt(p.amt)+" for "+s.name+" received on "+p.date+". Valid till "+p.valid+". Thank you - Taika Martial Arts Academy!";return "<tr><td>"+s.name+"</td><td>"+fmt(p.amt)+"</td><td>"+p.date+"</td><td>"+p.valid+"</td><td>"+p.plan+"</td><td>"+wa(s.phone,msg,"Receipt")+"</td></tr>";}).join("")||"<tr><td colspan=6 style='text-align:center;color:var(--gray);padding:18px'>No payments recorded yet</td></tr>";
+  let hR="";
+  hist.forEach(function(p){
+    const s=students.find(x=>x.id===p.sid)||{name:"Unknown",phone:""};
+    const msg="Hi, payment of Rs"+(p.amt||p.amount)+" for "+s.name+" received on "+p.date+". Valid till "+(p.valid||p.validTill)+". Thank you - Taika Martial Arts Academy!";
+    hR+="<tr><td>"+s.name+"</td><td>"+fmt(p.amt||p.amount)+"</td><td>"+p.date+"</td><td>"+(p.valid||p.validTill)+"</td><td>"+p.plan+"</td><td>"+wa(s.phone,msg,"Receipt")+"</td></tr>";
+  });
+  if(!hR) hR="<tr><td colspan=6 style='text-align:center;color:var(--gray);padding:18px'>No payments recorded yet</td></tr>";
   return "<div class='card' style='margin-bottom:18px'><div class='ch'><h3>Overdue Payments ("+ov.length+")</h3></div><div style='overflow-x:auto'><table class='tbl'><thead><tr><th>Student</th><th>Fee</th><th>Was Valid Till</th><th>Status</th><th>Actions</th></tr></thead><tbody>"+ovR+"</tbody></table></div></div><div class='card'><div class='ch'><h3>Payment History</h3></div><div style='overflow-x:auto'><table class='tbl'><thead><tr><th>Student</th><th>Amount</th><th>Paid On</th><th>Valid Till</th><th>Plan</th><th>Receipt</th></tr></thead><tbody>"+hR+"</tbody></table></div></div>";
 }
-
 function rAtt(){
   const ym=attMo;const [yr,mo]=ym.split("-").map(Number);const dim=new Date(yr,mo,0).getDate();
   const rec=att[ym]||{};
@@ -331,6 +346,7 @@ function saveS(){
   if(confirm("Student added! Send WhatsApp welcome message?"))window.open("https://wa.me/91"+phone+"?text="+encodeURIComponent(msg),"_blank");
 }
 function openFee(sid){
+  if(sid && sid.tagName) sid = sid.dataset.id;
   const s=sid?students.find(x=>x.id===sid):null;curFS=s;
   document.getElementById("fpn").value=s?s.name:"";
   document.getElementById("fpa").value=s?s.fee:"";
