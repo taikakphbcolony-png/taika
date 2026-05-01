@@ -173,6 +173,10 @@ var att = JSON.parse(localStorage.getItem("ta") || "{}");
 var exps = JSON.parse(localStorage.getItem("te") || "null") || SEED.expenses;
 var enqs = JSON.parse(localStorage.getItem("tq") || "[]");
 var monthly = SEED.monthly;
+// Add Apr 2026 from latest Excel data
+if (!monthly.find(function(m){return m.month==="Apr 2026";})) {
+  monthly.push({month:"Apr 2026", collected:298700, expenses:0, remains:298700});
+}
 var curPage = "dashboard", curFS = null, srch = "", attMo = "2026-05";
 
 function sv() {
@@ -347,7 +351,7 @@ function rDash() {
   var totalCol=monthly.reduce(function(a,m){return a+m.collected;},0);
   var totalExp=monthly.reduce(function(a,m){return a+m.expenses;},0);
   var wallet=totalCol-totalExp;
-  return "<div class='sg5'><div class='sc'><div class='lb'>Total Students</div><div class='vl'>"+students.length+"</div><div class='sb2'>Active members</div></div><div class='sc gn'><div class='lb'>Fee Paid</div><div class='vl'>"+paid+"</div><div class='sb2'>"+Math.round(paid/students.length*100)+"% of batch</div></div><div class='sc rd'><div class='lb'>Overdue</div><div class='vl'>"+unp+"</div><div class='sb2'>"+fmt(tDue)+" pending</div></div><div class='sc gd'><div class='lb'>Total Collected</div><div class='vl'>"+fmt(totalCol)+"</div><div class='sb2'>Nov 2025-Mar 2026</div></div><div class='sc' style='border-left:4px solid #16a34a'><div class='lb'>Wallet Balance</div><div class='vl' style='color:#16a34a'>"+fmt(wallet)+"</div><div class='sb2'>After all expenses</div></div></div><div style='display:grid;grid-template-columns:1fr 1fr;gap:18px'><div class='card'><div class='ch'><h3>Monthly P&L</h3></div><div style='padding:14px 18px'><div class='cw'>"+mRows+"</div></div></div><div class='card'><div class='ch'><h3>Recently Joined</h3></div><table class='tbl'><thead><tr><th>Name</th><th>Belt</th><th>Joined</th><th>Status</th></tr></thead><tbody>"+rRows+"</tbody></table></div></div>";
+  return "<div class='sg5'><div class='sc'><div class='lb'>Total Students</div><div class='vl'>"+students.length+"</div><div class='sb2'>Active members</div></div><div class='sc gn'><div class='lb'>Fee Paid</div><div class='vl'>"+paid+"</div><div class='sb2'>"+Math.round(paid/students.length*100)+"% of batch</div></div><div class='sc rd'><div class='lb'>Overdue</div><div class='vl'>"+unp+"</div><div class='sb2'>"+fmt(tDue)+" pending</div></div><div class='sc gd'><div class='lb'>Total Collected</div><div class='vl'>"+fmt(totalCol)+"</div><div class='sb2'>Nov 2025-Apr 2026</div></div><div class='sc' style='border-left:4px solid #16a34a'><div class='lb'>Wallet Balance</div><div class='vl' style='color:#16a34a'>"+fmt(wallet)+"</div><div class='sb2'>After all expenses</div></div></div><div style='display:grid;grid-template-columns:1fr 1fr;gap:18px'><div class='card'><div class='ch'><h3>Monthly P&L</h3></div><div style='padding:14px 18px'><div class='cw'>"+mRows+"</div></div></div><div class='card'><div class='ch'><h3>Recently Joined</h3></div><table class='tbl'><thead><tr><th>Name</th><th>Belt</th><th>Joined</th><th>Status</th></tr></thead><tbody>"+rRows+"</tbody></table></div></div>";
 }
 
 function rStud() {
