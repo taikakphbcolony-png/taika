@@ -32,7 +32,7 @@ nav{flex:1;padding:14px 0;overflow-y:auto}
 .bo{background:#fff;color:var(--black);border:1px solid var(--border)}.bo:hover{background:var(--bg)}
 .bg2{background:transparent;color:var(--gray)}.bg2:hover{background:var(--bg)}
 #ct{padding:22px 24px;flex:1}
-.sg{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:22px}
+.sg{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:22px}.sg5{display:grid;grid-template-columns:repeat(5,1fr);gap:16px;margin-bottom:22px}
 .sc{background:#fff;border-radius:var(--r);padding:18px 20px;box-shadow:var(--sh)}
 .sc .lb{font-size:11px;color:var(--gray);text-transform:uppercase;letter-spacing:.5px;font-weight:500}
 .sc .vl{font-family:var(--fh);font-size:28px;font-weight:700;margin:5px 0 3px}
@@ -88,7 +88,7 @@ nav{flex:1;padding:14px 0;overflow-y:auto}
 #hb{display:none;background:none;border:none;font-size:22px;cursor:pointer;padding:0 4px}
 #ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:90}
 #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);padding:10px 22px;border-radius:8px;font-size:13px;font-weight:500;z-index:9999;transition:opacity .4s;font-family:"DM Sans",sans-serif;opacity:0;pointer-events:none}
-@media(max-width:768px){#sb{transform:translateX(-100%)}#sb.open{transform:translateX(0)}#mn{margin-left:0}#hb{display:block}#ov.show{display:block}.sg{grid-template-columns:1fr 1fr}#ct{padding:14px}.sw input{width:150px}}
+@media(max-width:768px){#sb{transform:translateX(-100%)}#sb.open{transform:translateX(0)}#mn{margin-left:0}#hb{display:block}#ov.show{display:block}.sg{grid-template-columns:1fr 1fr}.sg5{grid-template-columns:1fr 1fr}#ct{padding:14px}.sw input{width:150px}}
 </style>
 </head>
 <body>
@@ -344,7 +344,10 @@ function rDash() {
   }).join("");
   var rec = students.filter(function(s){return s.joinedDate;}).sort(function(a,b){return b.joinedDate.localeCompare(a.joinedDate);}).slice(0,6);
   var rRows = rec.map(function(s){return "<tr><td><b>"+s.name+"</b></td><td>"+beltB(s.belt)+"</td><td>"+(s.joinedDate||"-")+"</td><td>"+statB(s)+"</td></tr>";}).join("");
-  return "<div class='sg'><div class='sc'><div class='lb'>Total Students</div><div class='vl'>"+students.length+"</div><div class='sb2'>Active members</div></div><div class='sc gn'><div class='lb'>Fee Paid</div><div class='vl'>"+paid+"</div><div class='sb2'>"+Math.round(paid/students.length*100)+"% of batch</div></div><div class='sc rd'><div class='lb'>Overdue</div><div class='vl'>"+unp+"</div><div class='sb2'>"+fmt(tDue)+" pending</div></div><div class='sc gd'><div class='lb'>Total Collected</div><div class='vl'>"+fmt(monthly.reduce(function(a,m){return a+m.collected;},0))+"</div><div class='sb2'>Nov 2025-Mar 2026</div></div></div><div style='display:grid;grid-template-columns:1fr 1fr;gap:18px'><div class='card'><div class='ch'><h3>Monthly P&L</h3></div><div style='padding:14px 18px'><div class='cw'>"+mRows+"</div></div></div><div class='card'><div class='ch'><h3>Recently Joined</h3></div><table class='tbl'><thead><tr><th>Name</th><th>Belt</th><th>Joined</th><th>Status</th></tr></thead><tbody>"+rRows+"</tbody></table></div></div>";
+  var totalCol=monthly.reduce(function(a,m){return a+m.collected;},0);
+  var totalExp=monthly.reduce(function(a,m){return a+m.expenses;},0);
+  var wallet=totalCol-totalExp;
+  return "<div class='sg5'><div class='sc'><div class='lb'>Total Students</div><div class='vl'>"+students.length+"</div><div class='sb2'>Active members</div></div><div class='sc gn'><div class='lb'>Fee Paid</div><div class='vl'>"+paid+"</div><div class='sb2'>"+Math.round(paid/students.length*100)+"% of batch</div></div><div class='sc rd'><div class='lb'>Overdue</div><div class='vl'>"+unp+"</div><div class='sb2'>"+fmt(tDue)+" pending</div></div><div class='sc gd'><div class='lb'>Total Collected</div><div class='vl'>"+fmt(totalCol)+"</div><div class='sb2'>Nov 2025-Mar 2026</div></div><div class='sc' style='border-left:4px solid #16a34a'><div class='lb'>Wallet Balance</div><div class='vl' style='color:#16a34a'>"+fmt(wallet)+"</div><div class='sb2'>After all expenses</div></div></div><div style='display:grid;grid-template-columns:1fr 1fr;gap:18px'><div class='card'><div class='ch'><h3>Monthly P&L</h3></div><div style='padding:14px 18px'><div class='cw'>"+mRows+"</div></div></div><div class='card'><div class='ch'><h3>Recently Joined</h3></div><table class='tbl'><thead><tr><th>Name</th><th>Belt</th><th>Joined</th><th>Status</th></tr></thead><tbody>"+rRows+"</tbody></table></div></div>";
 }
 
 function rStud() {
