@@ -340,18 +340,49 @@ function rDash() {
   var paid = students.filter(function(s){return !isUp(s);}).length;
   var unp = students.filter(function(s){return isUp(s);}).length;
   var tDue = students.filter(function(s){return isUp(s);}).reduce(function(a,s){return a+(Number(s.fee)||0);},0);
-  var maxA = monthly.length ? Math.max.apply(null, monthly.map(function(m){return Math.max(m.collected, m.expenses);})) : 1;
-  var mRows = monthly.map(function(m) {
+
+  // Build live monthly data from actual fee payments + expenses
+  var liveMonthly = {};
+  // Seed with historical monthly data
+  monthly.forEach(function(m) {
+    liveMonthly[m.month] = {month:m.month, collected:m.collected, expenses:m.expenses};
+  });
+  // Add live fee payments
+  fees.forEach(function(p) {
+    var dt = p.date || "";
+    if (!dt) return;
+    var d = new Date(dt);
+    var mo = d.toLocaleString("en-IN",{month:"short"})+" "+d.getFullYear();
+    if (!liveMonthly[mo]) liveMonthly[mo] = {month:mo, collected:0, expenses:0};
+    liveMonthly[mo].collected += Number(p.amt || p.amount || 0);
+  });
+  // Add live expenses
+  exps.forEach(function(e) {
+    var dt = e.date || "";
+    if (!dt) return;
+    var d = new Date(dt);
+    var mo = d.toLocaleString("en-IN",{month:"short"})+" "+d.getFullYear();
+    if (!liveMonthly[mo]) liveMonthly[mo] = {month:mo, collected:0, expenses:0};
+    liveMonthly[mo].expenses += Number(e.expense || 0);
+  });
+  // Sort by date and compute remains
+  var liveArr = Object.values(liveMonthly).sort(function(a,b){
+    return new Date("1 "+a.month) - new Date("1 "+b.month);
+  });
+  liveArr.forEach(function(m){ m.remains = m.collected - m.expenses; });
+
+  var totalCol = liveArr.reduce(function(a,m){return a+m.collected;},0);
+  var totalExp = liveArr.reduce(function(a,m){return a+m.expenses;},0);
+  var wallet = totalCol - totalExp;
+  var maxA = liveArr.length ? Math.max.apply(null, liveArr.map(function(m){return Math.max(m.collected||1, m.expenses||1);})) : 1;
+  var mRows = liveArr.map(function(m) {
     var wc = Math.round(m.collected/maxA*100);
     var we = Math.round(m.expenses/maxA*100);
     return "<div class='cr' style='margin-bottom:10px'><span class='mo'>" + m.month + "</span><div style='flex:1'><div class='cr' style='margin-bottom:2px'><span style='width:58px;font-size:11px;color:var(--gray)'>Collected</span><div class='bb2'><div class='bf' style='width:" + wc + "%;background:var(--red)'><span class='bl'>" + fmt(m.collected) + "</span></div></div></div><div class='cr'><span style='width:58px;font-size:11px;color:var(--gray)'>Expenses</span><div class='bb2'><div class='bf' style='width:" + we + "%;background:#94a3b8'><span class='bl'>" + fmt(m.expenses) + "</span></div></div></div></div><span class='am' style='color:" + (m.remains>0?"#16a34a":"var(--red)") + "'>" + fmt(m.remains) + "</span></div>";
   }).join("");
   var rec = students.filter(function(s){return s.joinedDate;}).sort(function(a,b){return b.joinedDate.localeCompare(a.joinedDate);}).slice(0,6);
   var rRows = rec.map(function(s){return "<tr><td><b>"+s.name+"</b></td><td>"+beltB(s.belt)+"</td><td>"+(s.joinedDate||"-")+"</td><td>"+statB(s)+"</td></tr>";}).join("");
-  var totalCol=monthly.reduce(function(a,m){return a+m.collected;},0);
-  var totalExp=monthly.reduce(function(a,m){return a+m.expenses;},0);
-  var wallet=totalCol-totalExp;
-  return "<div class='sg5'><div class='sc'><div class='lb'>Total Students</div><div class='vl'>"+students.length+"</div><div class='sb2'>Active members</div></div><div class='sc gn'><div class='lb'>Fee Paid</div><div class='vl'>"+paid+"</div><div class='sb2'>"+Math.round(paid/students.length*100)+"% of batch</div></div><div class='sc rd'><div class='lb'>Overdue</div><div class='vl'>"+unp+"</div><div class='sb2'>"+fmt(tDue)+" pending</div></div><div class='sc gd'><div class='lb'>Total Collected</div><div class='vl'>"+fmt(totalCol)+"</div><div class='sb2'>Nov 2025-Apr 2026</div></div><div class='sc' style='border-left:4px solid #16a34a'><div class='lb'>Wallet Balance</div><div class='vl' style='color:#16a34a'>"+fmt(wallet)+"</div><div class='sb2'>After all expenses</div></div></div><div style='display:grid;grid-template-columns:1fr 1fr;gap:18px'><div class='card'><div class='ch'><h3>Monthly P&L</h3></div><div style='padding:14px 18px'><div class='cw'>"+mRows+"</div></div></div><div class='card'><div class='ch'><h3>Recently Joined</h3></div><table class='tbl'><thead><tr><th>Name</th><th>Belt</th><th>Joined</th><th>Status</th></tr></thead><tbody>"+rRows+"</tbody></table></div></div>";
+  return "<div class='sg5'><div class='sc'><div class='lb'>Total Students</div><div class='vl'>"+students.length+"</div><div class='sb2'>Active members</div></div><div class='sc gn'><div class='lb'>Fee Paid</div><div class='vl'>"+paid+"</div><div class='sb2'>"+Math.round(paid/students.length*100)+"% of batch</div></div><div class='sc rd'><div class='lb'>Overdue</div><div class='vl'>"+unp+"</div><div class='sb2'>"+fmt(tDue)+" pending</div></div><div class='sc gd'><div class='lb'>Total Collected</div><div class='vl'>"+fmt(totalCol)+"</div><div class='sb2'>'+( liveArr.length ? liveArr[0].month+' - '+liveArr[liveArr.length-1].month : '' )+'</div></div><div class='sc' style='border-left:4px solid #16a34a'><div class='lb'>Wallet Balance</div><div class='vl' style='color:#16a34a'>"+fmt(wallet)+"</div><div class='sb2'>After all expenses</div></div></div><div style='display:grid;grid-template-columns:1fr 1fr;gap:18px'><div class='card'><div class='ch'><h3>Monthly P&L</h3></div><div style='padding:14px 18px'><div class='cw'>"+mRows+"</div></div></div><div class='card'><div class='ch'><h3>Recently Joined</h3></div><table class='tbl'><thead><tr><th>Name</th><th>Belt</th><th>Joined</th><th>Status</th></tr></thead><tbody>"+rRows+"</tbody></table></div></div>";
 }
 
 function rStud() {
