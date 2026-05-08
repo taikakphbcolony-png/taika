@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>Taika Martial Arts Academy</title>
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;600;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
@@ -247,17 +248,17 @@ async function apiGet(action, params) {
 }
 
 async function doTestConn() {
-  setBtnLoading("btn-test", true, "⚡ Testing...");
+  setBtnLoading("btn-test", true, "\u26A1 Testing...");
   var r = await apiGet("ping");
-  setBtnLoading("btn-test", false, "⚡ Test Connection");
+  setBtnLoading("btn-test", false, "\u26A1 Test Connection");
   if (r && r.ok) {
-    document.getElementById("conn-status").innerHTML = "● Connected ✓";
+    document.getElementById("conn-status").innerHTML = "\u25CF Connected \u2713";
     document.getElementById("conn-status").style.color = "#4ade80";
-    showToast("✓ Connected to Google Sheets!", "ok");
+    showToast("\u2713 Connected to Google Sheets!", "ok");
   } else {
-    document.getElementById("conn-status").innerHTML = "● Not connected";
+    document.getElementById("conn-status").innerHTML = "\u25CF Not connected";
     document.getElementById("conn-status").style.color = "#f87171";
-    showToast("✗ Connection failed. Check Apps Script.", "error");
+    showToast("\u2717 Connection failed. Check Apps Script.", "error");
   }
 }
 
@@ -311,12 +312,12 @@ async function doSyncSheets() {
     render();
 
     if (errors.length === 0) {
-      showToast("✓ Synced " + students.length + " students successfully!", "ok");
+      showToast("\u2713 Synced " + students.length + " students successfully!", "ok");
     } else {
-      showToast("⚠️ Partial sync. Failed: " + errors.join(", "), "warn");
+      showToast("⚠\uFE0F Partial sync. Failed: " + errors.join(", "), "warn");
     }
   } catch(e) {
-    showToast("✗ Sync error: " + e.message, "error");
+    showToast("\u2717 Sync error: " + e.message, "error");
   } finally {
     syncInProgress = false;
     setBtnLoading("btn-sync", false, "🔄 Sync from Sheets");
@@ -330,11 +331,11 @@ async function seedToSheets() {
     var r = await apiCall("addStudent", students[i]);
     if (r && r.ok) ok++;
   }
-  showToast("✓ Seeded " + ok + " of " + students.length + " students!", "ok");
+  showToast("\u2713 Seeded " + ok + " of " + students.length + " students!", "ok");
 }
 
 // ── HELPERS ───────────────────────────────────────────────────
-function fmt(n) { return "Rs " + Number(n||0).toLocaleString("en-IN"); }
+function fmt(n) { return "Rs\u00A0" + Number(n||0).toLocaleString("en-IN"); }
 function tod() { return new Date().toISOString().slice(0,10); }
 function isUp(s) {
   if (!s.validTill) return true;
@@ -391,7 +392,7 @@ function showPage(p) {
   document.querySelectorAll(".ni").forEach(function(el, i) { el.classList.toggle("active", pages[i] === p); });
   var titles = {dashboard:"Dashboard",students:"Students",fees:"Fee Management",attendance:"Attendance",expenses:"Expenses & P&L",enquiries:"Enquiries"};
   document.getElementById("pt").textContent = titles[p] || "";
-  var acts = {dashboard:"+ Add Student",students:"+ Add Student",fees:"+ Record Payment",attendance:"✓ Mark Today",expenses:"+ Add Expense",enquiries:"+ Add Enquiry"};
+  var acts = {dashboard:"+ Add Student",students:"+ Add Student",fees:"+ Record Payment",attendance:"\u2713 Mark Today",expenses:"+ Add Expense",enquiries:"+ Add Enquiry"};
   document.getElementById("ta").innerHTML = acts[p] || "";
   var fns = {dashboard:openAS,students:openAS,fees:function(){openFee(null);},attendance:function(){markAll(attMo);},expenses:openAE,enquiries:openAQ};
   document.getElementById("ta").onclick = fns[p] || openAS;
@@ -472,7 +473,7 @@ function rDash() {
   });
   var liveArr=upToNow.slice(-6);
   var maxA=liveArr.length?Math.max.apply(null,liveArr.map(function(m){return Math.max(m.collected||1,m.expenses||1);})):1;
-  var dateRange=allArr.length?allArr[0].month+" – "+allArr[allArr.length-1].month:"";
+  var dateRange=allArr.length?allArr[0].month+" \u2013 "+allArr[allArr.length-1].month:"";
 
   // Show only last 3 months on dashboard for clarity
   var recentArr = liveArr.slice(-3);
@@ -559,7 +560,7 @@ function rFees() {
   }
   if (!hR) hR = "<tr><td colspan='6' style='text-align:center;color:var(--gray);padding:20px'>No payments recorded yet</td></tr>";
 
-  return "<div class='card' style='margin-bottom:18px'><div class='ch'><h3>⚠️ Overdue Payments ("+ov.length+")</h3>"
+  return "<div class='card' style='margin-bottom:18px'><div class='ch'><h3>⚠\uFE0F Overdue Payments ("+ov.length+")</h3>"
     +"<button class='btn bto' style='font-size:12px' onclick='sendAllReminders()'>📱 Send All Reminders</button></div>"
     +"<div style='overflow-x:auto'><table class='tbl'><thead><tr><th>Student</th><th>Fee</th><th>Was Valid Till</th><th>Status</th><th>Actions</th></tr></thead><tbody>"+ovR+"</tbody></table></div></div>"
     +"<div class='card'><div class='ch'><h3>📋 Payment History</h3></div>"
@@ -605,7 +606,7 @@ function rAtt() {
   var sel=mos.map(function(m){return "<option value='"+m+"'"+(m===ym?" selected":"")+">"+m+"</option>";}).join("");
   return "<div style='display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap'>"
     +"<select onchange='attMo=this.value;render()' style='padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px'>"+sel+"</select>"
-    +"<button class='btn btr' onclick='markAll(attMo)'>✓ Mark All Present</button>"
+    +"<button class='btn btr' onclick='markAll(attMo)'>\u2713 Mark All Present</button>"
     +"<button class='btn bto' onclick='markHoliday(attMo)'>🏖 Mark Holiday</button>"
     +"<span style='font-size:12px;color:var(--gray)'>"+students.length+" students &middot; "+dim+" days</span></div>"
     +"<div class='card'><div class='ch'><h3>Attendance &mdash; "+ym+"</h3><span class='bdg bb'>Tap to toggle P/A</span></div><div class='aw'>"+hdr+rows+"</div></div>";
@@ -632,7 +633,7 @@ function markAll(ym){
     recs.push({studentId:s.id,studentName:s.name,date:ds,month:ym,status:"P"});
   });
   sv(); render();
-  apiCall("markAttendance",{records:recs}).then(function(r){ if(r&&r.ok) showToast("✓ Attendance marked for "+recs.length+" students!","ok"); });
+  apiCall("markAttendance",{records:recs}).then(function(r){ if(r&&r.ok) showToast("\u2713 Attendance marked for "+recs.length+" students!","ok"); });
 }
 
 function markHoliday(ym){
@@ -703,15 +704,15 @@ function toggleNP(){
   nots.forEach(function(n){
     var t="",m="",b="";
     if(n.t==="a2"){
-      t="⚠️ Absent Alert — "+n.s.name;
+      t="⚠\uFE0F Absent Alert \u2014 "+n.s.name;
       m=n.s.name+" has been absent "+n.ab+" days this month.";
       b=waLink(n.s.phone,"Dear "+String(n.s.parentName||n.s.name)+",\n\nThis is to inform you that *"+n.s.name+"* has been absent for *"+n.ab+" days* this month at Taika Martial Arts Academy.\n\nRegular attendance is important for progress. Please ensure "+n.s.name+" attends the sessions.\n\nRegards,\nTaika Martial Arts Academy","Send Alert");
     } else if(n.t==="a5"){
-      t="🚨 High Absence — "+n.s.name;
+      t="🚨 High Absence \u2014 "+n.s.name;
       m=n.s.name+" absent "+n.ab+" days! Immediate attention needed.";
       b=waLink(n.s.phone,"Dear "+String(n.s.parentName||n.s.name)+",\n\nWe are concerned as *"+n.s.name+"* has missed *"+n.ab+" sessions* this month at Taika Martial Arts Academy.\n\nPlease contact us at your earliest convenience so we can understand and assist.\n\nRegards,\nTaika Martial Arts Academy","Send Urgent Alert");
     } else if(n.t==="due"){
-      t="💰 Fee Due — "+n.s.name;
+      t="💰 Fee Due \u2014 "+n.s.name;
       m="Membership expires in "+n.d+" day(s). Valid till "+String(n.s.validTill||"").slice(0,10);
       b=waLink(n.s.phone,"Dear "+String(n.s.parentName||n.s.name)+",\n\nThis is a friendly reminder that *"+n.s.name+"*'s membership at Taika Martial Arts Academy is due for renewal in *"+n.d+" day(s)*.\n\nFee: "+fmt(n.s.fee)+" | Plan: "+n.s.plan+"\n\nKindly renew to ensure uninterrupted training.\n\nWarm regards,\nTaika Martial Arts Academy","Send Reminder");
     }
@@ -736,7 +737,7 @@ function saveS(){
     parentName:parent,joinedDate:document.getElementById("fj").value,
     paidOn:"",validTill:"",status:"Unpaid",due:fee};
   students.push(s); sv(); closeM("ms"); updBadges(); render();
-  apiCall("addStudent",s).then(function(r){ if(r&&r.ok) showToast("✓ "+name+" added to Google Sheets!","ok"); });
+  apiCall("addStudent",s).then(function(r){ if(r&&r.ok) showToast("\u2713 "+name+" added to Google Sheets!","ok"); });
   var pname=parent||name;
   var msg="Dear "+pname+",\n\n*Welcome to Taika Martial Arts Academy - Gokul Plots!* 🥋\n\nWe are delighted to welcome *"+name+"* to our martial arts family!\n\n*Membership Details:*\n👤 Student: "+name+"\n🥋 Belt: "+s.belt+"\n📅 Joined: "+s.joinedDate+"\n💰 Plan: "+s.plan+"\n\nWe look forward to "+name+"'s journey in martial arts with us.\n\nFor any queries, feel free to reach out.\n\nWarm regards,\nTaika Martial Arts Academy\n📍 Gokul Plots";
   if(confirm("Student added! Send WhatsApp welcome message to "+phone+"?")) window.open("https://wa.me/91"+phone.replace(/\D/g,"")+"?text="+encodeURIComponent(msg),"_blank");
@@ -775,7 +776,7 @@ function saveF(){
   }
   sv(); closeM("mf"); updBadges(); render();
   if(curFS){
-    apiCall("addFeePayment",{studentId:curFS.id,studentName:curFS.name,amount:amt,date:dt,plan:pl,validTill:vt}).then(function(r){if(r&&r.ok) showToast("✓ Payment saved to Google Sheets!","ok");});
+    apiCall("addFeePayment",{studentId:curFS.id,studentName:curFS.name,amount:amt,date:dt,plan:pl,validTill:vt}).then(function(r){if(r&&r.ok) showToast("\u2713 Payment saved to Google Sheets!","ok");});
     var pname=String(curFS.parentName||curFS.name);
     var msg="Dear "+pname+",\n\n*Payment Receipt*\n*Taika Martial Arts Academy - Gokul Plots*\n\n✅ Payment received successfully!\n\n*Details:*\n👤 Student: "+curFS.name+"\n💰 Amount: *"+fmt(amt)+"*\n📅 Date: "+dt+"\n📋 Plan: "+pl+"\n⏰ Valid Till: *"+vt+"*\n\nThank you for your timely payment!\n\nWarm regards,\nTaika Martial Arts Academy\n📍 Gokul Plots";
     if(confirm("Payment saved! Send WhatsApp receipt to "+curFS.phone+"?")) window.open("https://wa.me/91"+String(curFS.phone).replace(/\D/g,"")+"?text="+encodeURIComponent(msg),"_blank");
@@ -788,7 +789,7 @@ function openAE(){
   var by=prompt("Paid by (e.g. Dinesh / Nanditha):");
   var e={date:tod(),detail:det,expense:amt,credit:0,paidBy:by||""};
   exps.unshift(e); sv(); render();
-  apiCall("addExpense",e).then(function(r){if(r&&r.ok) showToast("✓ Expense saved to Sheets!","ok");});
+  apiCall("addExpense",e).then(function(r){if(r&&r.ok) showToast("\u2713 Expense saved to Sheets!","ok");});
 }
 
 function openAQ(){
@@ -797,7 +798,7 @@ function openAQ(){
   var src=prompt("Source (Referral / Pamphlet / Social Media / Walk-in):");
   var q={name:name,phone:phone,date:tod(),source:src||"Walk-in",status:"New"};
   enqs.push(q); sv(); render();
-  apiCall("addEnquiry",q).then(function(r){if(r&&r.ok) showToast("✓ Enquiry added to Sheets!","ok");});
+  apiCall("addEnquiry",q).then(function(r){if(r&&r.ok) showToast("\u2713 Enquiry added to Sheets!","ok");});
 }
 
 function toggleSB(){ document.getElementById("sb").classList.toggle("open"); document.getElementById("ov").classList.toggle("show"); }
@@ -810,9 +811,9 @@ function closeSB(){ document.getElementById("sb").classList.remove("open"); docu
   try {
     var r = await apiGet("ping");
     if(r && r.ok){
-      document.getElementById("conn-status").innerHTML = "● Connected ✓";
+      document.getElementById("conn-status").innerHTML = "\u25CF Connected \u2713";
       document.getElementById("conn-status").style.color = "#4ade80";
-      showToast("✓ Connected to Google Sheets!","ok");
+      showToast("\u2713 Connected to Google Sheets!","ok");
       // Auto-sync only if local data is from seed (no user data yet)
       if(!localStorage.getItem("ts")) await doSyncSheets();
     }
