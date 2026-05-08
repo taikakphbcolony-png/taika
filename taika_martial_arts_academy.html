@@ -208,7 +208,6 @@ function rDash(){
   fees.forEach(function(p){
     var dtRaw=p.date||"";
     var dt=String(dtRaw).slice(0,10);
-    // Handle full date strings like "Thu May 07 2026..."
     if(dt.length<7||isNaN(new Date(dt+"T00:00:00").getTime())){
       try{dt=new Date(dtRaw).toISOString().slice(0,10);}catch(e2){return;}
     }
@@ -217,8 +216,9 @@ function rDash(){
       var d=new Date(dt+"T00:00:00");
       if(isNaN(d.getTime()))return;
       var mo=d.toLocaleString("en-IN",{month:"short"})+" "+d.getFullYear();
-      var seedM=SEED.monthly.find(function(m){return m.month===mo;});
-      if(seedM&&seedM.collected>0)return;
+      // Always add fees[] entries - they are NEW payments recorded via website
+      // SEED monthly has historical Excel data, fees[] has new website payments
+      // No double counting since these are separate data sources
       if(!lm[mo])lm[mo]={month:mo,collected:0,expenses:0};
       lm[mo].collected+=Number(p.amt||p.amount||0);
     }catch(e){}
