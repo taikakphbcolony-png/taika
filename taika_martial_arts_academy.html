@@ -286,8 +286,18 @@ async function doSyncSheets() {
     else errors.push("fees");
 
     var ee = await apiGet("getExpenses");
-    if (ee && Array.isArray(ee)) exps = ee;
-    else errors.push("expenses");
+    if (ee && Array.isArray(ee) && ee.length > 0) {
+      // Keep historical seed expenses (before sheet tracking started) + merge sheet expenses
+      var seedExps = SEED.expenses.filter(function(e){
+        // Keep only historical expenses not in sheets (pre May 2026)
+        var dt = String(e.date||"").slice(0,7);
+        return dt < "2026-05";
+      });
+      // Deduplicate by id
+      var sheetIds = ee.map(function(e){return e.id;});
+      var merged = seedExps.filter(function(e){return !sheetIds.includes(e.id);});
+      exps = merged.concat(ee);
+    } else errors.push("expenses");
 
     var qq = await apiGet("getEnquiries");
     if (qq && Array.isArray(qq)) enqs = qq;
@@ -429,8 +439,12 @@ function rDash() {
       lm[mo].expenses += Number(e.expense||0);
     } catch(e){}
   });
-  var order={"Nov 2025":0,"Dec 2025":1,"Jan 2026":2,"Feb 2026":3,"Mar 2026":4,"Apr 2026":5,"May 2026":6,"Jun 2026":7,"Jul 2026":8,"Aug 2026":9,"Sep 2026":10,"Oct 2026":11};
-  var allArr=Object.values(lm).sort(function(a,b){return (order[a.month]||99)-(order[b.month]||99);});
+  // Dynamic sort by actual date
+  var allArr=Object.values(lm).sort(function(a,b){
+    var months=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+    function toNum(s){var p=s.split(" ");return parseInt(p[1])*12+months.indexOf(p[0]);}
+    return toNum(a.month)-toNum(b.month);
+  });
   allArr.forEach(function(m){m.remains=m.collected-m.expenses;});
 
   // Totals across ALL months for cards
@@ -438,12 +452,17 @@ function rDash() {
   var totalExp=allArr.reduce(function(a,m){return a+m.expenses;},0);
   var wallet=totalCol-totalExp;
 
-  // Chart shows last 6 months up to current month only
-  var nowStr = new Date().toLocaleString("en-IN",{month:"short"})+" "+new Date().getFullYear();
-  var upToNow = allArr.filter(function(m){
-    return (order[m.month]||99) <= (order[nowStr]||99);
+  // Chart shows last 6 months up to and including current month
+  var months_=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  function mthNum(s){var p=s.split(" ");return parseInt(p[1])*12+months_.indexOf(p[0]);}
+  var now_=new Date();
+  var nowNum=now_.getFullYear()*12+now_.getMonth(); // 0-based month
+  var upToNow=allArr.filter(function(m){
+    var p=m.month.split(" ");
+    var mNum=parseInt(p[1])*12+months_.indexOf(p[0]);
+    return mNum <= nowNum;
   });
-  var liveArr = upToNow.slice(-6);
+  var liveArr=upToNow.slice(-6);
   var maxA=liveArr.length?Math.max.apply(null,liveArr.map(function(m){return Math.max(m.collected||1,m.expenses||1);})):1;
   var dateRange=allArr.length?allArr[0].month+" – "+allArr[allArr.length-1].month:"";
 
