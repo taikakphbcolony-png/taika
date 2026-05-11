@@ -91,7 +91,100 @@ nav{flex:1;padding:14px 0;overflow-y:auto}
 #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);padding:11px 24px;border-radius:8px;font-size:13px;font-weight:500;z-index:9999;transition:opacity .4s;font-family:"DM Sans",sans-serif;opacity:0;pointer-events:none;max-width:90vw;text-align:center;box-shadow:0 4px 12px rgba(0,0,0,.15)}
 .spin{display:inline-block;width:12px;height:12px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;margin-right:6px}
 @keyframes spin{to{transform:rotate(360deg)}}
-@media(max-width:768px){#sb{transform:translateX(-100%)}#sb.open{transform:translateX(0)}#mn{margin-left:0}#hb{display:block}#ov.show{display:block}.sg5{grid-template-columns:1fr 1fr}#ct{padding:14px}.sw input{width:150px}}
+
+/* ── BOTTOM NAV ──────────────────────────────────────────── */
+#mob-search{display:none}
+#bnav{display:none;position:fixed;bottom:0;left:0;right:0;background:var(--dark);z-index:150;border-top:1px solid rgba(255,255,255,.1);padding-bottom:env(safe-area-inset-bottom)}
+.bni{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px 4px;cursor:pointer;color:rgba(255,255,255,.5);transition:all .2s;min-width:0}
+.bni:active{background:rgba(255,255,255,.05)}
+.bni.active{color:var(--red)}
+.bico{font-size:20px;line-height:1}
+.bnl{font-size:9px;font-weight:500;margin-top:3px;font-family:var(--fb);white-space:nowrap}
+
+/* ── MOBILE (≤768px) ─────────────────────────────────────── */
+@media(max-width:768px){
+  #bnav{display:flex}
+  #mob-search{display:block!important}
+  #ct{padding-bottom:70px}
+  #sb{transform:translateX(-100%)}
+  #sb.open{transform:translateX(0)}
+  #mn{margin-left:0}
+  #hb{display:block}
+  #ov.show{display:block}
+  #ct{padding:12px}
+
+  /* Topbar */
+  #tb{padding:0 12px;height:52px}
+  #tb .pt{font-size:16px}
+  .sw{display:none}
+  #ta{padding:7px 12px;font-size:12px}
+
+  /* Stat cards - 2 col on mobile */
+  .sg5{grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+  .sc{padding:14px 12px}
+  .sc .vl{font-size:22px}
+  .sc .lb{font-size:10px}
+
+  /* Dashboard 2-col grid → single col */
+  #ct > div[style*="grid-template-columns:1fr 1fr"]{
+    display:flex!important;flex-direction:column!important;gap:14px!important
+  }
+
+  /* Tables - horizontal scroll */
+  .tbl{font-size:12px}
+  .tbl th{font-size:10px;padding:7px 8px}
+  .tbl td{padding:8px 8px;font-size:12px}
+
+  /* Attendance grid */
+  .aw{padding:8px}
+  .anm{width:110px;font-size:11px}
+  .adb{width:22px;height:22px;font-size:10px;border-radius:4px}
+
+  /* Chart bars */
+  .cr .mo{width:50px;font-size:11px}
+  .cr .bamt{width:75px;font-size:10px}
+  .cr .rem{width:65px;font-size:11px}
+
+  /* Modals */
+  .mod{padding:16px;border-radius:12px}
+  .mod h3{font-size:16px;margin-bottom:14px}
+  .fg{grid-template-columns:1fr}
+  .ff{grid-column:1}
+  .ma{flex-direction:column}
+  .ma .btn{width:100%;justify-content:center}
+
+  /* Notification panel */
+  #np{width:100%;border-radius:16px 16px 0 0;top:auto;bottom:0;max-height:85vh}
+
+  /* Buttons */
+  .btn{font-size:12px;padding:7px 12px}
+  .wa{font-size:11px;padding:4px 8px}
+
+  /* Cards header */
+  .ch{padding:10px 12px}
+  .ch h3{font-size:14px}
+
+  /* Fee page - hide some columns on mobile */
+  .tbl .hide-mob{display:none}
+
+  /* Attendance toolbar */
+  .att-toolbar{flex-wrap:wrap;gap:6px}
+  .att-toolbar select{width:100%}
+
+  /* P&L chart row */
+  .cr{gap:4px}
+}
+
+/* ── SMALL MOBILE (≤380px) ───────────────────────────────── */
+#dash-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+@media(max-width:768px){#dash-grid{grid-template-columns:1fr!important;gap:14px!important}}
+@media(max-width:380px){
+  .sg5{grid-template-columns:1fr 1fr;gap:8px}
+  .sc .vl{font-size:16px}
+  .sc{padding:10px 10px}
+  .adb{width:20px;height:20px;font-size:9px}
+  .anm{width:90px;font-size:10px}
+}
 </style>
 </head>
 <body>
@@ -165,6 +258,35 @@ nav{flex:1;padding:14px 0;overflow-y:auto}
     <div class="ma"><button class="btn bto" onclick="closeM('mf')">Cancel</button><button class="btn btr" onclick="saveF()">Confirm &amp; Send Receipt</button></div>
   </div>
 </div>
+
+<!-- MOBILE BOTTOM NAV -->
+<nav id="bnav">
+  <div class="bni" onclick="showPage('dashboard')" id="bn-dashboard">
+    <span class="bico">&#128202;</span>
+    <span class="bnl">Home</span>
+  </div>
+  <div class="bni" onclick="showPage('students')" id="bn-students">
+    <span class="bico">&#129355;</span>
+    <span class="bnl">Students</span>
+  </div>
+  <div class="bni" onclick="showPage('fees')" id="bn-fees">
+    <span class="bico">&#128176;</span>
+    <span class="bnl">Fees</span>
+  </div>
+  <div class="bni" onclick="showPage('attendance')" id="bn-attendance">
+    <span class="bico">&#128203;</span>
+    <span class="bnl">Attend</span>
+  </div>
+  <div class="bni" onclick="showPage('expenses')" id="bn-expenses">
+    <span class="bico">&#129534;</span>
+    <span class="bnl">Expenses</span>
+  </div>
+  <div class="bni" onclick="showPage('enquiries')" id="bn-enquiries">
+    <span class="bico">&#128222;</span>
+    <span class="bnl">Enquiry</span>
+  </div>
+</nav>
+
 <div id="toast"></div>
 <script>
 var API="https://script.google.com/macros/s/AKfycbz_AKfjL7K-7hjKnQToHjWxNgqaDW-QbHC_PGC6qBEd0KLDM5WOFi6pLVRwv55sn29xwg/exec";
@@ -195,7 +317,10 @@ function statB(s){if(isUp(s))return "<span class='bdg br2'>Overdue</span>";var d
 function waLink(ph,msg,lbl){if(!ph||ph==="undefined")return "";var u="https://wa.me/91"+String(ph).replace(/\D/g,"")+"?text="+encodeURIComponent(msg);return "<a href='"+u+"' target='_blank' class='wa'>&#128241; "+lbl+"</a>";}
 function getNots(){var n=[],ym=tod().slice(0,7);students.forEach(function(s){var ab=absCnt(s.id,ym);if(ab>=2&&ab<5)n.push({t:"a2",s:s,ab:ab});else if(ab>=5)n.push({t:"a5",s:s,ab:ab});var d=dud(s);if(d>=0&&d<=5)n.push({t:"due",s:s,d:d});});return n;}
 function updBadges(){document.getElementById("ub").textContent=students.filter(function(s){return isUp(s);}).length;document.getElementById("nc").textContent=getNots().length;}
-function showPage(p){curPage=p;var pages=["dashboard","students","fees","attendance","expenses","enquiries",""];document.querySelectorAll(".ni").forEach(function(el,i){el.classList.toggle("active",pages[i]===p);});var titles={dashboard:"Dashboard",students:"Students",fees:"Fee Management",attendance:"Attendance",expenses:"Expenses & P&L",enquiries:"Enquiries"};document.getElementById("pt").textContent=titles[p]||"";var acts={dashboard:"+ Add Student",students:"+ Add Student",fees:"+ Record Payment",attendance:"Mark Today",expenses:"+ Add Expense",enquiries:"+ Add Enquiry"};document.getElementById("ta").innerHTML=acts[p]||"";var fns={dashboard:openAS,students:openAS,fees:function(){openFee(null);},attendance:function(){markAll(attMo);},expenses:openAE,enquiries:openAQ};document.getElementById("ta").onclick=fns[p]||openAS;updBadges();render();closeSB();}
+function showPage(p){curPage=p;var pages=["dashboard","students","fees","attendance","expenses","enquiries",""];
+  // Update bottom nav
+  document.querySelectorAll(".bni").forEach(function(el){el.classList.remove("active");});
+  var bn=document.getElementById("bn-"+p);if(bn)bn.classList.add("active");document.querySelectorAll(".ni").forEach(function(el,i){el.classList.toggle("active",pages[i]===p);});var titles={dashboard:"Dashboard",students:"Students",fees:"Fee Management",attendance:"Attendance",expenses:"Expenses & P&L",enquiries:"Enquiries"};document.getElementById("pt").textContent=titles[p]||"";var acts={dashboard:"+ Add Student",students:"+ Add Student",fees:"+ Record Payment",attendance:"Mark Today",expenses:"+ Add Expense",enquiries:"+ Add Enquiry"};document.getElementById("ta").innerHTML=acts[p]||"";var fns={dashboard:openAS,students:openAS,fees:function(){openFee(null);},attendance:function(){markAll(attMo);},expenses:openAE,enquiries:openAQ};document.getElementById("ta").onclick=fns[p]||openAS;updBadges();render();closeSB();}
 function render(){var fns={dashboard:rDash,students:rStud,fees:rFees,attendance:rAtt,expenses:rExp,enquiries:rEnq};try{if(fns[curPage])document.getElementById("ct").innerHTML=fns[curPage]();}catch(e){document.getElementById("ct").innerHTML="<div style='padding:40px;text-align:center;color:var(--gray)'>Error rendering. <button class='btn btr' onclick='doSyncSheets()'>Reload Data</button></div>";console.error("Render error:",e);}}
 function onSrch(v){srch=v;if(curPage==="students")render();}
 function rDash(){
@@ -253,14 +378,15 @@ function rDash(){
   var mRows=liveArr.map(function(m){var wc=Math.round((m.collected||0)/maxA*100);var we=Math.round((m.expenses||0)/maxA*100);return "<div class='cr' style='margin-bottom:12px'><span class='mo'>"+m.month+"</span><div style='flex:1'><div class='cr' style='margin-bottom:3px'><span style='width:60px;font-size:11px;color:var(--gray)'>Collected</span><div class='bb2' style='flex:1'><div class='bf' style='width:"+wc+"%;background:var(--red)'></div></div><span class='bamt' style='color:var(--red)'>"+fmt(m.collected)+"</span></div><div class='cr'><span style='width:60px;font-size:11px;color:var(--gray)'>Expenses</span><div class='bb2' style='flex:1'><div class='bf' style='width:"+we+"%;background:#94a3b8'></div></div><span class='bamt' style='color:#6b7280'>"+fmt(m.expenses)+"</span></div></div><span class='rem' style='color:"+(m.remains>=0?"#16a34a":"var(--red)")+"'>"+fmt(m.remains)+"</span></div>";}).join("");
   var rec=students.filter(function(s){return s.joinedDate;}).sort(function(a,b){return String(b.joinedDate).localeCompare(String(a.joinedDate));}).slice(0,6);
   var rRows=rec.map(function(s){return "<tr><td><b>"+s.name+"</b></td><td>"+beltB(s.belt)+"</td><td>"+String(s.joinedDate||"").slice(0,10)+"</td><td>"+statB(s)+"</td></tr>";}).join("");
-  return "<div class='sg5'><div class='sc'><div class='lb'>Total Students</div><div class='vl'>"+students.length+"</div><div class='sb2'>Active members</div></div><div class='sc gn'><div class='lb'>Fee Paid</div><div class='vl'>"+paid+"</div><div class='sb2'>"+Math.round(paid/students.length*100)+"% of batch</div></div><div class='sc rd'><div class='lb'>Overdue</div><div class='vl'>"+unp+"</div><div class='sb2'>"+fmt(tDue)+" pending</div></div><div class='sc gd'><div class='lb'>Total Collected</div><div class='vl'>"+fmt(totalCol)+"</div><div class='sb2'>"+dateRange+"</div></div><div class='sc' style='border-left:4px solid #16a34a'><div class='lb'>Wallet Balance</div><div class='vl' style='color:#16a34a'>"+fmt(wallet)+"</div><div class='sb2'>After all expenses</div></div></div><div style='display:grid;grid-template-columns:1fr 1fr;gap:18px'><div class='card'><div class='ch'><h3>Monthly P&L</h3></div><div style='padding:16px 18px'><div class='cw'>"+mRows+"</div></div></div><div class='card'><div class='ch'><h3>Recently Joined</h3></div><table class='tbl'><thead><tr><th>Name</th><th>Belt</th><th>Joined</th><th>Status</th></tr></thead><tbody>"+rRows+"</tbody></table></div></div>";
+  return "<div class='sg5'><div class='sc'><div class='lb'>Total Students</div><div class='vl'>"+students.length+"</div><div class='sb2'>Active members</div></div><div class='sc gn'><div class='lb'>Fee Paid</div><div class='vl'>"+paid+"</div><div class='sb2'>"+Math.round(paid/students.length*100)+"% of batch</div></div><div class='sc rd'><div class='lb'>Overdue</div><div class='vl'>"+unp+"</div><div class='sb2'>"+fmt(tDue)+" pending</div></div><div class='sc gd'><div class='lb'>Total Collected</div><div class='vl'>"+fmt(totalCol)+"</div><div class='sb2'>"+dateRange+"</div></div><div class='sc' style='border-left:4px solid #16a34a'><div class='lb'>Wallet Balance</div><div class='vl' style='color:#16a34a'>"+fmt(wallet)+"</div><div class='sb2'>After all expenses</div></div></div><div style='display:grid;grid-template-columns:1fr 1fr;gap:18px' id='dash-grid'><div class='card'><div class='ch'><h3>Monthly P&L</h3></div><div style='padding:16px 18px'><div class='cw'>"+mRows+"</div></div></div><div class='card'><div class='ch'><h3>Recently Joined</h3></div><table class='tbl'><thead><tr><th>Name</th><th>Belt</th><th>Joined</th><th>Status</th></tr></thead><tbody>"+rRows+"</tbody></table></div></div>";
 }
 function rStud(){
   var sl=srch.toLowerCase();
+  var mobileSearch='<div style="margin-bottom:12px"><input type="text" placeholder="Search name, phone, belt..." oninput="onSrch(this.value)" value="'+srch+'" style="width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:8px;font-size:14px;font-family:var(--fb);outline:none;box-sizing:border-box"></div>';
   var fil=students.filter(function(s){if(!srch)return true;return s.name.toLowerCase().includes(sl)||String(s.phone||"").includes(srch)||String(s.parentName||"").toLowerCase().includes(sl)||String(s.belt||"").toLowerCase().includes(sl);});
   var rows="";
   for(var i=0;i<fil.length;i++){var s=fil[i];rows+="<tr><td><b>"+s.name+"</b><br><span style='color:var(--gray);font-size:11px'>"+s.phone+"</span></td><td>"+beltB(s.belt)+"</td><td>"+s.plan+"</td><td>"+fmt(s.fee)+"</td><td>"+String(s.validTill||"-").slice(0,10)+"</td><td>"+statB(s)+"</td><td><button class='btn btr' style='padding:4px 9px;font-size:12px' onclick='openFee(this.dataset.id)' data-id='"+s.id+"'>Pay</button> "+waLink(s.phone,"Hi "+String(s.parentName||s.name)+","+" hope "+s.name+" is enjoying the training sessions at Taika Martial Arts Academy!"+" Feel free to reach out for any queries. Regards, Taika Martial Arts Academy, Gokul Plots.","WhatsApp")+"</td></tr>";}
-  return "<div class='card'><div class='ch'><h3>All Students ("+fil.length+")</h3><div style='display:flex;gap:6px'><span class='bdg bg'>"+students.filter(function(s){return !isUp(s);}).length+" Paid</span><span class='bdg br2'>"+students.filter(function(s){return isUp(s);}).length+" Overdue</span></div></div><div style='overflow-x:auto'><table class='tbl'><thead><tr><th>Student</th><th>Belt</th><th>Plan</th><th>Fee</th><th>Valid Till</th><th>Status</th><th>Actions</th></tr></thead><tbody>"+rows+"</tbody></table></div></div>";
+  return "<div id='mob-search' style='display:none'>"+mobileSearch+"</div><div class='card'><div class='ch'><h3>All Students ("+fil.length+")</h3><div style='display:flex;gap:6px'><span class='bdg bg'>"+students.filter(function(s){return !isUp(s);}).length+" Paid</span><span class='bdg br2'>"+students.filter(function(s){return isUp(s);}).length+" Overdue</span></div></div><div style='overflow-x:auto'><table class='tbl'><thead><tr><th>Student</th><th>Belt</th><th>Plan</th><th>Fee</th><th>Valid Till</th><th>Status</th><th>Actions</th></tr></thead><tbody>"+rows+"</tbody></table></div></div>";
 }
 function rFees(){
   var ov=students.filter(function(s){return isUp(s);});
