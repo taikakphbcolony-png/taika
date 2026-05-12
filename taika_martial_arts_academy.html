@@ -186,6 +186,13 @@ nav{flex:1;padding:14px 0;overflow-y:auto}
   .anm{width:90px;font-size:10px}
 }
 </style>
+
+<style id="print-hide">
+@media print {
+  #sb, #tb, #bnav, #att-toolbar { display: none !important; }
+  #ct { padding: 0 !important; }
+}
+</style>
 </head>
 <body>
 <aside id="sb">
@@ -491,21 +498,133 @@ function rFees(){
   return "<div class='card' style='margin-bottom:18px'><div class='ch'><h3>Overdue Payments ("+ov.length+")</h3><button class='btn bto' style='font-size:12px' onclick='sendAllReminders()'>Send All Reminders</button></div><div style='overflow-x:auto'><table class='tbl'><thead><tr><th>Student</th><th>Fee</th><th>Was Valid Till</th><th>Status</th><th>Actions</th></tr></thead><tbody>"+ovR+"</tbody></table></div></div><div class='card'><div class='ch'><h3>Payment History</h3></div><div style='overflow-x:auto'><table class='tbl'><thead><tr><th>Student</th><th>Amount</th><th>Paid On</th><th>Valid Till</th><th>Plan</th><th>Receipt</th></tr></thead><tbody>"+hR+"</tbody></table></div></div>";
 }
 function sendAllReminders(){var ov=students.filter(function(s){return !s.inactive && isUp(s);});if(!ov.length){showToast("No overdue students!","ok");return;}showToast("Opening WhatsApp for "+ov.length+" reminders...","warn");var i=0;function next(){if(i>=ov.length)return;var s=ov[i++];var msg="Dear "+String(s.parentName||s.name)+","+" fees for "+s.name+" at Taika Martial Arts Academy are overdue. Amount: "+fmt(s.fee)+". Kindly pay at the earliest."+" Regards, Taika Martial Arts Academy, Gokul Plots.";window.open("https://wa.me/91"+String(s.phone).replace(/\D/g,"")+"?text="+encodeURIComponent(msg),"_blank");setTimeout(next,1500);}next();}
+function getHolidays(ym){
+  // Returns a Set of day numbers that are Sat/Sun or marked holidays
+  var parts=ym.split("-"), yr=parseInt(parts[0]), mo=parseInt(parts[1]);
+  var dim=new Date(yr,mo,0).getDate();
+  var hols=new Set();
+  for(var d=1;d<=dim;d++){
+    var day=new Date(yr,mo-1,d).getDay(); // 0=Sun,6=Sat
+    if(day===0||day===6) hols.add(d);
+  }
+  // Add manual holidays from att[ym].__holidays array
+  var manHols=(att[ym]&&att[ym].__holidays)||[];
+  manHols.forEach(function(d){hols.add(d);});
+  return hols;
+}
+
 function rAtt(){
   var ym=attMo,parts=ym.split("-"),yr=parseInt(parts[0]),mo=parseInt(parts[1]);
-  var dim=new Date(yr,mo,0).getDate(),rec=att[ym]||{},todStr=tod();
-  var hdr="<div class='ar' style='margin-bottom:4px'><div class='anm' style='font-size:10px;color:var(--gray);font-weight:600'>Student</div>";
-  for(var d=1;d<=dim;d++)hdr+="<div style='width:26px;text-align:center;font-size:10px;color:var(--gray);font-weight:600;flex-shrink:0'>"+d+"</div>";
-  hdr+="</div>";
-  var rows="";
-  var attS=students.filter(function(x){return !x.inactive;}); for(var i=0;i<attS.length;i++){var s=attS[i],sr=rec[s.id]||{},cells="";for(var d=1;d<=dim;d++){var ds=ym+"-"+(d<10?"0":"")+d,v=sr[d]||"";if(ds>todStr)cells+="<button class='adb af' disabled>&middot;</button>";else{var cl=v==="P"?"ap":v==="A"?"aa":"ao";cells+="<button class='adb "+cl+"' onclick='tAtt(this.dataset.sid,"+d+",this.dataset.ym)' data-sid='"+s.id+"' data-ym='"+ym+"'>"+(v||"&middot;")+"</button>";}}var ab=Object.values(sr).filter(function(x){return x==="A";}).length;rows+="<div class='ar'><div class='anm'>"+s.name+(ab>0?"<span class='bdg br2' style='margin-left:3px;padding:1px 4px;font-size:9px'>"+ab+"A</span>":"")+"</div>"+cells+"</div>";}
-  var mos=[];for(var k=0;k<6;k++){var dt=new Date();dt.setMonth(dt.getMonth()-k);mos.push(dt.toISOString().slice(0,7));}
+  var dim=new Date(yr,mo,0).getDate();
+  var rec=att[ym]||{};
+  var todStr=tod();
+  var hols=getHolidays(ym);
+  var attS=students.filter(function(x){return !x.inactive;});
+
+  // ── Month selector toolbar ──────────────────────────────────────────────
+  var mos=[];
+  for(var k=0;k<6;k++){var dt=new Date();dt.setMonth(dt.getMonth()-k);mos.push(dt.toISOString().slice(0,7));}
   var sel=mos.map(function(m){return "<option value='"+m+"'"+(m===ym?" selected":"")+">"+m+"</option>";}).join("");
-  return "<div style='display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap'><select onchange='attMo=this.value;render()' style='padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px'>"+sel+"</select><button class='btn btr' onclick='markAll(attMo)'>Mark All Present</button><button class='btn bto' onclick='markHoliday(attMo)'>Mark Holiday</button><span style='font-size:12px;color:var(--gray)'>"+students.length+" students &middot; "+dim+" days</span></div><div class='card'><div class='ch'><h3>Attendance &mdash; "+ym+"</h3><span class='bdg bb'>Tap to toggle P / A</span></div><div class='aw'>"+hdr+rows+"</div></div>";
+
+  // ── Day headers ──────────────────────────────────────────────────────────
+  var dayNames=["Su","Mo","Tu","We","Th","Fr","Sa"];
+  var hdr="<div style='display:flex;align-items:center;gap:2px;margin-bottom:4px;padding:0 4px'>"
+    +"<div style='width:140px;flex-shrink:0'></div>";
+  for(var d=1;d<=dim;d++){
+    var dayNum=new Date(yr,mo-1,d).getDay();
+    var isHol=hols.has(d);
+    var bg=isHol?"#fee2e2":"#f9fafb";
+    var col=isHol?"#dc2626":"#6b7280";
+    hdr+="<div style='width:28px;text-align:center;flex-shrink:0;font-size:9px;font-weight:700;color:"+col+";background:"+bg+";border-radius:3px;padding:2px 0'>"
+      +"<div>"+dayNames[dayNum]+"</div>"
+      +"<div>"+d+"</div>"
+      +"</div>";
+  }
+  hdr+="<div style='width:36px;text-align:center;font-size:9px;font-weight:700;color:#6b7280'>Abs</div></div>";
+
+  // ── Student rows ──────────────────────────────────────────────────────────
+  var rows="";
+  for(var i=0;i<attS.length;i++){
+    var s=attS[i];
+    var sr=rec[s.id]||{};
+    var cells="";
+    var absCnt=0;
+    for(var d=1;d<=dim;d++){
+      var ds=ym+"-"+(d<10?"0":"")+d;
+      var v=sr[d]||"";
+      var isHol=hols.has(d);
+      var isFuture=ds>todStr;
+      if(isHol){
+        cells+="<div style='width:28px;height:28px;flex-shrink:0;background:#fee2e2;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:9px;color:#dc2626;font-weight:700'>H</div>";
+      } else if(isFuture){
+        cells+="<div style='width:28px;height:28px;flex-shrink:0;background:#f9fafb;border-radius:4px'></div>";
+      } else {
+        var bg=v==="P"?"#dcfce7":v==="A"?"#fee2e2":"#f3f4f6";
+        var col=v==="P"?"#16a34a":v==="A"?"#dc2626":"#9ca3af";
+        if(v==="A") absCnt++;
+        cells+="<div onclick='tAtt(this.dataset.sid,"+d+",this.dataset.ym)' data-sid='"+s.id+"' data-ym='"+ym+"' "
+          +"style='width:28px;height:28px;flex-shrink:0;background:"+bg+";border-radius:4px;display:flex;align-items:center;"
+          +"justify-content:center;font-size:11px;font-weight:700;color:"+col+";cursor:pointer;transition:all .15s;-webkit-tap-highlight-color:transparent'>"
+          +(v||"")+"</div>";
+      }
+    }
+    var absBg=absCnt>5?"#fee2e2":absCnt>2?"#fef9c3":"#f3f4f6";
+    var absCol=absCnt>5?"#dc2626":absCnt>2?"#b45309":"#6b7280";
+    rows+="<div style='display:flex;align-items:center;gap:2px;margin-bottom:2px;padding:0 4px'>"
+      +"<div style='width:140px;flex-shrink:0;font-size:12px;font-weight:500;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;padding-right:6px'>"+s.name+"</div>"
+      +cells
+      +"<div style='width:36px;text-align:center;flex-shrink:0;font-size:12px;font-weight:700;color:"+absCol+";background:"+absBg+";border-radius:4px;padding:2px 0'>"+absCnt+"</div>"
+      +"</div>";
+  }
+
+  // ── Summary row ───────────────────────────────────────────────────────────
+  var summaryRow="<div style='display:flex;align-items:center;gap:2px;margin-top:4px;padding:4px 4px 0;border-top:2px solid var(--border)'>"
+    +"<div style='width:140px;flex-shrink:0;font-size:11px;font-weight:700;color:var(--gray);padding-right:6px'>Present Count</div>";
+  for(var d=1;d<=dim;d++){
+    if(hols.has(d)){
+      summaryRow+="<div style='width:28px;height:20px;flex-shrink:0'></div>";
+    } else {
+      var cnt=0;
+      attS.forEach(function(s){if((rec[s.id]||{})[d]==="P")cnt++;});
+      var pct=attS.length?Math.round(cnt/attS.length*100):0;
+      var bg=pct>=80?"#dcfce7":pct>=60?"#fef9c3":"#fee2e2";
+      summaryRow+="<div style='width:28px;height:20px;flex-shrink:0;text-align:center;font-size:9px;font-weight:600;background:"+bg+";border-radius:3px;display:flex;align-items:center;justify-content:center'>"+cnt+"</div>";
+    }
+  }
+  summaryRow+="<div style='width:36px'></div></div>";
+
+  return "<div style='display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap'>"
+    +"<select onchange='attMo=this.value;render()' style='padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px'>"+sel+"</select>"
+    +"<button class='btn btr' onclick='markAllPresent(attMo)'>Mark All Present</button>"
+    +"<button class='btn bto' onclick='markHoliday(attMo)'>Mark Holiday</button>"
+    +"<button class='btn bto' onclick='printAtt()' style='border-color:#7c3aed;color:#7c3aed'>Print Sheet</button>"
+    +"<span style='font-size:12px;color:var(--gray)'>"+attS.length+" students &middot; "+dim+" days</span>"
+    +"<span style='font-size:11px;color:#dc2626;background:#fee2e2;padding:3px 8px;border-radius:4px'>H = Holiday (Sat/Sun)</span>"
+    +"</div>"
+    +"<div class='card' id='att-card'>"
+      +"<div class='ch'><h3>Attendance &mdash; "+ym+"</h3><span class='bdg bb'>Tap to toggle P/A</span></div>"
+      +"<div style='overflow-x:auto;padding:8px 4px'>"
+        +hdr+rows+summaryRow
+      +"</div>"
+    +"</div>";
 }
-function tAtt(sid,day,ym){if(!att[ym])att[ym]={};if(!att[ym][sid])att[ym][sid]={};var c=att[ym][sid][day]||"";att[ym][sid][day]=c==="P"?"A":c==="A"?"":"P";sv();render();updBadges();var ds=ym+"-"+(day<10?"0":"")+day;var st=students.find(function(x){return x.id===sid;});if(st&&att[ym][sid][day])apiCall("markAttendance",{records:[{studentId:sid,studentName:st.name,date:ds,month:ym,status:att[ym][sid][day]}]});}
-function markAll(ym){if(!att[ym])att[ym]={};var d=parseInt(tod().slice(8)),recs=[];students.forEach(function(s){if(!att[ym][s.id])att[ym][s.id]={};att[ym][s.id][d]="P";var ds=ym+"-"+(d<10?"0":"")+d;recs.push({studentId:s.id,studentName:s.name,date:ds,month:ym,status:"P"});});sv();render();apiCall("markAttendance",{records:recs}).then(function(r){if(r&&r.ok)showToast("Attendance marked for "+recs.length+" students!","ok");});}
-function markHoliday(ym){var reason=prompt("Holiday reason (optional):","Holiday");if(reason===null)return;apiCall("markHoliday",{date:tod(),reason:reason||"Holiday"});showToast("Holiday marked for today!","ok");}
+
+function tAtt(sid,day,ym){var hols=getHolidays(ym);if(hols.has(parseInt(day)))return;if(!att[ym])att[ym]={};if(!att[ym][sid])att[ym][sid]={};var c=att[ym][sid][day]||"";att[ym][sid][day]=c==="P"?"A":c==="A"?"":"P";sv();render();updBadges();var ds=ym+"-"+(day<10?"0":"")+day;var st=students.find(function(x){return x.id===sid;});if(st&&att[ym][sid][day])apiCall("markAttendance",{records:[{studentId:sid,studentName:st.name,date:ds,month:ym,status:att[ym][sid][day]}]});}
+function markAllPresent(ym){ return markAll(ym); }
+function markAll(ym){if(!att[ym])att[ym]={};var d=parseInt(tod().slice(8)),recs=[];
+  var hols=getHolidays(ym);
+  if(hols.has(d)){showToast('Today is a holiday - cannot mark attendance','warn');return;}students.forEach(function(s){if(!att[ym][s.id])att[ym][s.id]={};att[ym][s.id][d]="P";var ds=ym+"-"+(d<10?"0":"")+d;recs.push({studentId:s.id,studentName:s.name,date:ds,month:ym,status:"P"});});sv();render();apiCall("markAttendance",{records:recs}).then(function(r){if(r&&r.ok)showToast("Attendance marked for "+recs.length+" students!","ok");});}
+function markHoliday(ym){
+  var reason=prompt("Holiday reason (optional):","Holiday");
+  if(reason===null)return;
+  if(!att[ym])att[ym]={};
+  if(!att[ym].__holidays)att[ym].__holidays=[];
+  var d=parseInt(tod().slice(8));
+  if(att[ym].__holidays.indexOf(d)===-1) att[ym].__holidays.push(d);
+  sv(); render();
+  showToast("Holiday marked for today!","ok");
+  apiCall("markHoliday",{date:tod(),reason:reason||"Holiday"});
+}
 function rExp(){
   var cats={"Rent":0,"Salary":0,"Electricity":0,"Marketing":0,"Housekeeping":0,"Others":0};
   exps.forEach(function(e){if(!e.expense)return;var d=(e.detail||"").toLowerCase();if(d.includes("rent"))cats["Rent"]+=Number(e.expense);else if(d.includes("salary")||d.includes("master"))cats["Salary"]+=Number(e.expense);else if(d.includes("electr"))cats["Electricity"]+=Number(e.expense);else if(d.includes("pamplet")||d.includes("flex")||d.includes("print")||d.includes("marketing"))cats["Marketing"]+=Number(e.expense);else if(d.includes("house")||d.includes("clean"))cats["Housekeeping"]+=Number(e.expense);else cats["Others"]+=Number(e.expense);});
@@ -582,6 +701,90 @@ function toggleInactive(sid, makeInactive){
   showToast(name + (makeInactive ? " moved to On Break" : " is Active again"), makeInactive ? "warn" : "ok");
   apiCall("updateStudent", {id:sid, inactive:makeInactive});
 }
+
+function printAtt(){
+  var ym = attMo;
+  var parts=ym.split("-"), yr=parseInt(parts[0]), mo=parseInt(parts[1]);
+  var dim=new Date(yr,mo,0).getDate();
+  var rec=att[ym]||{};
+  var hols=getHolidays(ym);
+  var attS=students.filter(function(x){return !x.inactive;});
+  var dayNames=["Su","Mo","Tu","We","Th","Fr","Sa"];
+
+  var rows="";
+  attS.forEach(function(s){
+    var sr=rec[s.id]||{};
+    var cells="";
+    var abs=0;
+    for(var d=1;d<=dim;d++){
+      var v=sr[d]||"";
+      var isH=hols.has(d);
+      var bg=isH?"#fde8e8":v==="P"?"#d1fae5":v==="A"?"#fee2e2":"#fff";
+      var txt=isH?"H":v||"";
+      var col=isH?"#b91c1c":v==="P"?"#065f46":v==="A"?"#991b1b":"#9ca3af";
+      if(v==="A")abs++;
+      cells+="<td style='background:"+bg+";color:"+col+";text-align:center;font-weight:700;font-size:9px;width:20px;min-width:20px;max-width:20px;padding:2px 0'>"+txt+"</td>";
+    }
+    var absBg=abs>5?"#fee2e2":abs>2?"#fef3c7":"#f9fafb";
+    rows+="<tr><td style='font-size:10px;padding:3px 6px;white-space:nowrap;max-width:130px;overflow:hidden;text-overflow:ellipsis;border-right:2px solid #e5e7eb'>"+s.name+"</td>"
+      +cells
+      +"<td style='text-align:center;font-weight:700;font-size:10px;background:"+absBg+";padding:2px 4px'>"+abs+"</td></tr>";
+  });
+
+  // Day header
+  var dayHdr="<tr><th style='padding:4px 6px;font-size:9px;text-align:left;border-right:2px solid #e5e7eb;min-width:130px'>Student</th>";
+  for(var d=1;d<=dim;d++){
+    var dn=new Date(yr,mo-1,d).getDay();
+    var isH=hols.has(d);
+    var bg=isH?"#fde8e8":"#f9fafb";
+    dayHdr+="<th style='width:20px;min-width:20px;max-width:20px;text-align:center;background:"+bg+";font-size:8px;padding:2px 0;line-height:1.2'>"
+      +"<span style='display:block;color:"+(isH?"#b91c1c":"#6b7280")+"'>"+dayNames[dn]+"</span>"
+      +"<span style='display:block;font-weight:700;color:"+(isH?"#b91c1c":"#374151")+"'>"+d+"</span>"
+      +"</th>";
+  }
+  dayHdr+="<th style='width:28px;text-align:center;font-size:9px;padding:2px 4px'>Abs</th></tr>";
+
+  // Present count row
+  var cntRow="<tr style='background:#f9fafb'><td style='font-size:9px;font-weight:700;color:#6b7280;padding:3px 6px;border-right:2px solid #e5e7eb'>Present</td>";
+  for(var d=1;d<=dim;d++){
+    if(hols.has(d)){ cntRow+="<td></td>"; continue; }
+    var cnt=0;
+    attS.forEach(function(s){if((rec[s.id]||{})[d]==="P")cnt++;});
+    cntRow+="<td style='text-align:center;font-size:9px;font-weight:600;padding:2px 0'>"+cnt+"</td>";
+  }
+  cntRow+="<td></td></tr>";
+
+  var html="<!DOCTYPE html><html><head><meta charset='UTF-8'>"
+    +"<title>Attendance - "+ym+"</title>"
+    +"<style>"
+    +"@page{size:A4 landscape;margin:8mm}"
+    +"*{box-sizing:border-box}"
+    +"body{font-family:Arial,sans-serif;font-size:10px;margin:0;padding:0}"
+    +".header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;padding-bottom:6px;border-bottom:2px solid #C0392B}"
+    +".title{font-size:16px;font-weight:700;color:#C0392B}"
+    +".subtitle{font-size:11px;color:#6b7280}"
+    +"table{width:100%;border-collapse:collapse;table-layout:fixed}"
+    +"td,th{border:1px solid #e5e7eb;padding:0}"
+    +"th{background:#f3f4f6;font-weight:700}"
+    +"tr:nth-child(even){background:#fafafa}"
+    +"@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}"
+    +"</style></head><body>"
+    +"<div class='header'>"
+      +"<div><div class='title'>Taika Martial Arts Academy &mdash; Gokul Plots</div>"
+      +"<div class='subtitle'>Attendance Sheet &middot; "+ym+" &middot; "+attS.length+" students &middot; Printed: "+new Date().toLocaleDateString("en-IN")+"</div></div>"
+      +"<div style='font-size:10px;color:#6b7280'><span style='background:#d1fae5;padding:2px 6px;border-radius:3px;margin-right:6px'>P = Present</span>"
+      +"<span style='background:#fee2e2;padding:2px 6px;border-radius:3px;margin-right:6px'>A = Absent</span>"
+      +"<span style='background:#fde8e8;padding:2px 6px;border-radius:3px'>H = Holiday</span></div>"
+    +"</div>"
+    +"<table><thead>"+dayHdr+"</thead><tbody>"+rows+cntRow+"</tbody></table>"
+    +"</body></html>";
+
+  var w=window.open("","_blank","width=1200,height=800");
+  w.document.write(html);
+  w.document.close();
+  w.onload=function(){w.print();};
+}
+
 function openAE(){var det=prompt("Expense description:");if(!det)return;var amt=parseFloat(prompt("Amount (Rs):"));if(!amt||isNaN(amt))return;var by=prompt("Paid by (e.g. Dinesh / Nanditha):");var e={date:tod(),detail:det,expense:amt,credit:0,paidBy:by||""};exps.unshift(e);sv();render();apiCall("addExpense",e).then(function(r){if(r&&r.ok)showToast("Expense saved to Sheets!","ok");});}
 function openAQ(){var name=prompt("Enquiry - Full Name:");if(!name)return;var phone=prompt("Mobile Number:");if(!phone)return;var src=prompt("Source (Referral / Pamphlet / Social Media / Walk-in):");var q={name:name,phone:phone,date:tod(),source:src||"Walk-in",status:"New"};enqs.push(q);sv();render();apiCall("addEnquiry",q).then(function(r){if(r&&r.ok)showToast("Enquiry added to Sheets!","ok");});}
 function toggleSB(){document.getElementById("sb").classList.toggle("open");document.getElementById("ov").classList.toggle("show");}
