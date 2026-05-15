@@ -528,8 +528,8 @@ function rAtt(){
 
   // ── Day headers ──────────────────────────────────────────────────────────
   var dayNames=["Su","Mo","Tu","We","Th","Fr","Sa"];
-  var hdr="<div style='display:flex;align-items:center;gap:2px;margin-bottom:4px;padding:0 4px'>"
-    +"<div style='width:140px;flex-shrink:0'></div>";
+  var hdr="<div style='display:flex;align-items:center;gap:2px;margin-bottom:4px;padding:0 4px;position:sticky;top:0;z-index:3;background:#fff'>"
+    +"<div style='width:140px;flex-shrink:0;position:sticky;left:0;background:#fff;z-index:2'></div>";
   for(var d=1;d<=dim;d++){
     var dayNum=new Date(yr,mo-1,d).getDay();
     var isHol=hols.has(d);
@@ -570,8 +570,8 @@ function rAtt(){
     }
     var absBg=absCnt>5?"#fee2e2":absCnt>2?"#fef9c3":"#f3f4f6";
     var absCol=absCnt>5?"#dc2626":absCnt>2?"#b45309":"#6b7280";
-    rows+="<div style='display:flex;align-items:center;gap:2px;margin-bottom:2px;padding:0 4px'>"
-      +"<div style='width:140px;flex-shrink:0;font-size:12px;font-weight:500;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;padding-right:6px'>"+s.name+"</div>"
+    rows+="<div style='display:flex;align-items:center;gap:2px;margin-bottom:2px;padding:0 4px;background:"+(i%2===0?"#fff":"#fafafa")+"'>"
+      +"<div style='width:140px;flex-shrink:0;font-size:12px;font-weight:500;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;padding-right:6px;position:sticky;left:0;background:inherit;z-index:1;box-shadow:2px 0 4px rgba(0,0,0,.06)'>"+s.name+"</div>"
       +cells
       +"<div style='width:36px;text-align:center;flex-shrink:0;font-size:12px;font-weight:700;color:"+absCol+";background:"+absBg+";border-radius:4px;padding:2px 0'>"+absCnt+"</div>"
       +"</div>";
@@ -579,7 +579,7 @@ function rAtt(){
 
   // ── Summary row ───────────────────────────────────────────────────────────
   var summaryRow="<div style='display:flex;align-items:center;gap:2px;margin-top:4px;padding:4px 4px 0;border-top:2px solid var(--border)'>"
-    +"<div style='width:140px;flex-shrink:0;font-size:11px;font-weight:700;color:var(--gray);padding-right:6px'>Present Count</div>";
+    +"<div style='width:140px;flex-shrink:0;font-size:11px;font-weight:700;color:var(--gray);padding-right:6px;position:sticky;left:0;background:#f9fafb;z-index:1;box-shadow:2px 0 4px rgba(0,0,0,.06)'>Present Count</div>";
   for(var d=1;d<=dim;d++){
     if(hols.has(d)){
       summaryRow+="<div style='width:28px;height:20px;flex-shrink:0'></div>";
@@ -603,7 +603,7 @@ function rAtt(){
     +"</div>"
     +"<div class='card' id='att-card'>"
       +"<div class='ch'><h3>Attendance &mdash; "+ym+"</h3><span class='bdg bb'>Tap to toggle P/A</span></div>"
-      +"<div style='overflow-x:auto;padding:8px 4px'>"
+      +"<div style='overflow-x:auto;padding:8px 4px;position:relative'>"
         +hdr+rows+summaryRow
       +"</div>"
     +"</div>";
