@@ -430,13 +430,33 @@ function rDash(){
 
   // Filter fees[] for payments made this calendar month
   var thisMoPays = fees.filter(function(p){
-    var dt = String(p.date||"").slice(0,10);
+    var rawDt = String(p.date||""); var dt = rawDt.length > 10 ? rawDt.slice(0,10) : rawDt;
     if(dt.length < 7) return false;
     try{
       var d = new Date(dt+"T00:00:00");
       var mo = d.toLocaleString("en-IN",{month:"short"})+" "+d.getFullYear();
       return mo === curMoKey;
     }catch(e){ return false; }
+  });
+
+  
+  // Include students whose paidOn = this month but payment not yet in fees[]
+  // Handles overdue payments recorded before website, and synced student data
+  var feeSids = thisMoPays.map(function(p){return String(p.sid||p.studentId||"");});
+  students.filter(function(s){
+    if(s.inactive) return false;
+    var paidOn = String(s.paidOn||"").slice(0,10);
+    if(paidOn.length < 7) return false;
+    try{
+      var d = new Date(paidOn+"T00:00:00");
+      if(isNaN(d.getTime())) return false;
+      var mo = d.toLocaleString("en-IN",{month:"short"})+" "+d.getFullYear();
+      return mo === curMoKey;
+    }catch(e){ return false; }
+  }).forEach(function(s){
+    if(feeSids.indexOf(s.id) === -1){
+      thisMoPays.push({sid:s.id, date:s.paidOn, plan:s.plan, amt:Number(s.fee)||0, amount:Number(s.fee)||0, _fromStudent:true});
+    }
   });
 
   // Categorise each payment
@@ -515,7 +535,7 @@ function rDash(){
       return "<div style='display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #f3f4f6'>"
         +"<div>"
           +"<div style='font-size:12px;font-weight:500'>"+stu.name+"</div>"
-          +"<div style='font-size:10px;color:#6b7280'>"+p.date+" &middot; "+p.plan+"</div>"
+          +"<div style='font-size:10px;color:#6b7280'>"+String(p.date||"").slice(0,10)+" &middot; "+p.plan+"</div>"
         +"</div>"
         +"<div style='font-size:13px;font-weight:700;color:#16a34a'>"+fmt(p.amt||p.amount)+"</div>"
         +"</div>";
