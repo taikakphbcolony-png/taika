@@ -440,30 +440,12 @@ function rDash(){
   });
 
   
-  // Include students whose paidOn = this month but payment not yet in fees[]
-  // Handles overdue payments recorded before website, and synced student data
-  var feeSids = thisMoPays.map(function(p){return String(p.sid||p.studentId||"");});
-  students.filter(function(s){
-    if(s.inactive) return false;
-    var paidOn = String(s.paidOn||"").slice(0,10);
-    if(paidOn.length < 7) return false;
-    try{
-      var d = new Date(paidOn+"T00:00:00");
-      if(isNaN(d.getTime())) return false;
-      var mo = d.toLocaleString("en-IN",{month:"short"})+" "+d.getFullYear();
-      return mo === curMoKey;
-    }catch(e){ return false; }
-  }).forEach(function(s){
-    if(feeSids.indexOf(s.id) === -1){
-      thisMoPays.push({sid:s.id, date:s.paidOn, plan:s.plan, amt:Number(s.fee)||0, amount:Number(s.fee)||0, _fromStudent:true});
-    }
-  });
 
-  // Categorise each payment
+    // Categorise each payment
   var cat = { monthly:0, quarterly:0, halfYearly:0, yearly:0, dues:0 };
   var totalThisMo = 0;
   thisMoPays.forEach(function(p){
-    var amt  = Number(p.amt||p.amount||0);
+    var amt  = Number(p.amount||p.amt||0); // Sheets uses 'amount', local uses 'amt'
     var plan = String(p.plan||"1 Month").toLowerCase();
     totalThisMo += amt;
     if(plan.includes("12"))       cat.yearly     += amt;
@@ -535,7 +517,7 @@ function rDash(){
       return "<div style='display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #f3f4f6'>"
         +"<div>"
           +"<div style='font-size:12px;font-weight:500'>"+stu.name+"</div>"
-          +"<div style='font-size:10px;color:#6b7280'>"+String(p.date||"").slice(0,10)+" &middot; "+p.plan+"</div>"
+          +"<div style='font-size:10px;color:#6b7280'>"+(String(p.recordedOn||p.date||"").slice(0,10))+" &middot; "+p.plan+"</div>"
         +"</div>"
         +"<div style='font-size:13px;font-weight:700;color:#16a34a'>"+fmt(p.amt||p.amount)+"</div>"
         +"</div>";
@@ -642,9 +624,9 @@ function rFees(){
   if(!ovR)ovR="<tr><td colspan='5' style='text-align:center;color:#16a34a;padding:20px'>All fees are up to date!</td></tr>";
   var hist=fees.slice().reverse().slice(0,25);
   var hR="";
-  for(var j=0;j<hist.length;j++){var p=hist[j];var st=students.find(function(x){return x.id===p.sid||x.id===p.studentId;})||{name:"Unknown",phone:""};var amt=Number(p.amt||p.amount||0);var vt=String(p.valid||p.validTill||"").slice(0,10);var msg2="Dear "+String(st.parentName||st.name||"Parent")+","+"\n\nThank you for your payment! We are pleased to confirm receipt of the fees for "+st.name+"."+"\n\nPayment Confirmation"+"\nStudent Name    : "+st.name+"\nAmount Paid     : "+fmt(amt)+"\nPayment Date    : "+p.date+"\nMembership Plan : "+p.plan+"\nValid Till      : "+vt+"\n\nYour trust and continued support mean a great deal to us."+" We are committed to providing "+st.name+" with the best training experience at Taika Martial Arts Academy."+"\n\nWith warm regards,"+"\nCoach & Team"+"\nTaika Martial Arts Academy"+"\nGokul Plots";hR+="<tr><td><b>"+st.name+"</b></td><td style='color:#16a34a;font-weight:600'>"+fmt(amt)+"</td><td>"+p.date+"</td><td>"+vt+"</td><td>"+p.plan+"</td><td>"+waLink(st.phone,msg2,"Send Receipt")+"</td></tr>";}
+  for(var j=0;j<hist.length;j++){var p=hist[j];var st=students.find(function(x){return x.id===p.sid||x.id===p.studentId;})||{name:"Unknown",phone:""};var amt=Number(p.amt||p.amount||0);var vt=String(p.valid||p.validTill||"").slice(0,10);var msg2="Dear "+String(st.parentName||st.name||"Parent")+","+"\n\nThank you for your payment! We are pleased to confirm receipt of the fees for "+st.name+"."+"\n\nPayment Confirmation"+"\nStudent Name    : "+st.name+"\nAmount Paid     : "+fmt(amt)+"\nPayment Date    : "+p.date+"\nMembership Plan : "+p.plan+"\nValid Till      : "+vt+"\n\nYour trust and continued support mean a great deal to us."+" We are committed to providing "+st.name+" with the best training experience at Taika Martial Arts Academy."+"\n\nWith warm regards,"+"\nCoach & Team"+"\nTaika Martial Arts Academy"+"\nGokul Plots";hR+="<tr><td><b>"+st.name+"</b></td><td style='color:#16a34a;font-weight:600'>"+fmt(amt)+"</td><td>"+String(p.date||"").slice(0,10)+"</td><td>"+vt+"</td><td>"+p.plan+"</td><td style='color:var(--gray);font-size:12px'>"+(String(p.recordedOn||"").slice(0,10)||String(p.date||"").slice(0,10))+"</td><td>"+waLink(st.phone,msg2,"Send Receipt")+"</td></tr>";}
   if(!hR)hR="<tr><td colspan='6' style='text-align:center;color:var(--gray);padding:20px'>No payments recorded yet</td></tr>";
-  return "<div class='card' style='margin-bottom:18px'><div class='ch'><h3>Overdue Payments ("+ov.length+")</h3><button class='btn bto' style='font-size:12px' onclick='sendAllReminders()'>Send All Reminders</button></div><div style='overflow-x:auto'><table class='tbl'><thead><tr><th>Student</th><th>Fee</th><th>Was Valid Till</th><th>Status</th><th>Actions</th></tr></thead><tbody>"+ovR+"</tbody></table></div></div><div class='card'><div class='ch'><h3>Payment History</h3></div><div style='overflow-x:auto'><table class='tbl'><thead><tr><th>Student</th><th>Amount</th><th>Paid On</th><th>Valid Till</th><th>Plan</th><th>Receipt</th></tr></thead><tbody>"+hR+"</tbody></table></div></div>";
+  return "<div class='card' style='margin-bottom:18px'><div class='ch'><h3>Overdue Payments ("+ov.length+")</h3><button class='btn bto' style='font-size:12px' onclick='sendAllReminders()'>Send All Reminders</button></div><div style='overflow-x:auto'><table class='tbl'><thead><tr><th>Student</th><th>Fee</th><th>Was Valid Till</th><th>Status</th><th>Actions</th></tr></thead><tbody>"+ovR+"</tbody></table></div></div><div class='card'><div class='ch'><h3>Payment History</h3></div><div style='overflow-x:auto'><table class='tbl'><thead><tr><th>Student</th><th>Amount</th><th>Paid On</th><th>Valid Till</th><th>Plan</th><th>Recorded On</th><th>Receipt</th></tr></thead><tbody>"+hR+"</tbody></table></div></div>";
 }
 function sendAllReminders(){var ov=students.filter(function(s){return !s.inactive && isUp(s);});if(!ov.length){showToast("No overdue students!","ok");return;}showToast("Opening WhatsApp for "+ov.length+" reminders...","warn");var i=0;function next(){if(i>=ov.length)return;var s=ov[i++];var msg="Dear "+String(s.parentName||s.name)+","+" fees for "+s.name+" at Taika Martial Arts Academy are overdue. Amount: "+fmt(s.fee)+". Kindly pay at the earliest."+" Regards, Taika Martial Arts Academy, Gokul Plots.";window.open("https://wa.me/91"+String(s.phone).replace(/\D/g,"")+"?text="+encodeURIComponent(msg),"_blank");setTimeout(next,1500);}next();}
 function getHolidays(ym){
@@ -827,12 +809,12 @@ function saveF(){
   var dt=document.getElementById("fpd").value;
   if(!amt||!dt){alert("Payment amount and date are required.");return;}
   var pl=document.getElementById("fpp").value,vt=document.getElementById("fpv").value;
-  var rec={id:"P"+Date.now(),sid:curFS?curFS.id:"",amt:amt,amount:amt,date:dt,plan:pl,valid:vt,validTill:vt};
+  var rec={id:"P"+Date.now(),sid:curFS?curFS.id:"",amt:amt,amount:amt,date:dt,plan:pl,valid:vt,validTill:vt,recordedOn:tod()};
   fees.push(rec);
   if(curFS){var idx=students.findIndex(function(s){return s.id===curFS.id;});if(idx>=0){students[idx].paidOn=dt;students[idx].validTill=vt;students[idx].status="Paid";students[idx].plan=pl;students[idx].due=0;}}
   sv();closeM("mf");updBadges();render();
   if(curFS){
-    apiCall("addFeePayment",{studentId:curFS.id,studentName:curFS.name,amount:amt,date:dt,plan:pl,validTill:vt}).then(function(r){if(r&&r.ok)showToast("Payment saved to Google Sheets!","ok");});
+    apiCall("addFeePayment",{studentId:curFS.id,studentName:curFS.name,amount:amt,date:dt,plan:pl,validTill:vt,recordedOn:tod()}).then(function(r){if(r&&r.ok)showToast("Payment saved to Google Sheets!","ok");});
     var pname=String(curFS.parentName||curFS.name);
     var msg="Dear "+pname+","+"\n\nThank you for your payment! We are pleased to confirm receipt of the fees for "+curFS.name+"."+"\n\nPayment Confirmation"+"\nStudent Name    : "+curFS.name+"\nAmount Paid     : "+fmt(amt)+"\nPayment Date    : "+dt+"\nMembership Plan : "+pl+"\nValid Till      : "+vt+"\n\nYour trust and continued support mean a great deal to us."+" We are committed to providing "+curFS.name+" with the best training experience at Taika Martial Arts Academy."+"\n\nFor any queries, please feel free to contact us."+"\n\nWith warm regards,"+"\nCoach & Team"+"\nTaika Martial Arts Academy"+"\nGokul Plots";
     if(confirm("Payment saved! Send WhatsApp receipt to "+curFS.phone+"?"))window.open("https://wa.me/91"+String(curFS.phone).replace(/\D/g,"")+"?text="+encodeURIComponent(msg),"_blank");
