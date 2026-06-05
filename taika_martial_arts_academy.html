@@ -102,7 +102,7 @@ nav{flex:1;padding:14px 0;overflow-y:auto}
 .bnl{font-size:9px;font-weight:500;margin-top:3px;font-family:var(--fb);white-space:nowrap}
 
 /* ── MOBILE (≤768px) ─────────────────────────────────────── */
-@media(max-width:768px){
+@media(max-width:768px){#sp{width:100%!important;border-radius:16px 16px 0 0!important;top:auto!important;bottom:0!important;max-height:90vh!important}
   #bnav{display:flex}
   #mob-search{display:block!important}
   #ct{padding-bottom:70px}
@@ -185,6 +185,12 @@ nav{flex:1;padding:14px 0;overflow-y:auto}
   .adb{width:20px;height:20px;font-size:9px}
   .anm{width:90px;font-size:10px}
 }
+#sp.open{transform:translateX(0)}
+.sp-sec{padding:14px 18px;border-bottom:1px solid #f3f4f6}
+.sp-sec h4{font-size:11px;font-weight:700;color:var(--gray);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px}
+.sp-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;font-size:13px}
+.sp-row .lbl{color:var(--gray2)}.sp-row .val{font-weight:600}
+#bday-banner{background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;padding:10px 18px;display:flex;align-items:center;gap:10px;font-size:13px;flex-wrap:wrap}
 </style>
 
 <style id="print-hide">
@@ -216,8 +222,9 @@ nav{flex:1;padding:14px 0;overflow-y:auto}
     <button class="sbtn" onclick="fixSheetHeaders()" style="font-size:10px;opacity:0.7">&#128295; Fix Sheet Headers</button>
   </div>
 </aside>
-<div id="ov" onclick="closeSB()"></div>
+<div id="ov" onclick="closeSB();closeSP();"></div>
 <main id="mn">
+  <div id="bday-banner" style="display:none"></div>
   <div id="tb">
     <div style="display:flex;align-items:center;gap:10px">
       <button id="hb" onclick="toggleSB()">&#9776;</button>
@@ -295,6 +302,36 @@ nav{flex:1;padding:14px 0;overflow-y:auto}
   </div>
 </nav>
 
+
+<!-- Student profile side panel -->
+<div id="sp" style="position:fixed;right:0;top:0;bottom:0;width:400px;background:#fff;box-shadow:-4px 0 24px rgba(0,0,0,.12);z-index:210;transform:translateX(100%);transition:transform .35s cubic-bezier(.4,0,.2,1);display:flex;flex-direction:column">
+  <div style="padding:18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px">
+    <div id="sp-avatar" style="width:44px;height:44px;border-radius:50%;background:var(--red);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:var(--fh);font-size:18px;color:#fff">A</div>
+    <div style="flex:1">
+      <div id="sp-name" style="font-family:var(--fh);font-size:18px;font-weight:700">Student</div>
+      <div id="sp-sub" style="font-size:12px;color:var(--gray);margin-top:2px">Belt &middot; Plan</div>
+    </div>
+    <button class="btn btg" onclick="closeSP()" style="flex-shrink:0">&#10005;</button>
+  </div>
+  <div id="sp-body" style="flex:1;overflow-y:auto"></div>
+</div>
+<!-- Edit Student modal -->
+<div class="mo2" id="me">
+  <div class="mod">
+    <h3>&#9999;&#65039; Edit Student</h3>
+    <div class="fg">
+      <div class="fgi ff"><label>Student Name</label><input id="en" placeholder="Full name"></div>
+      <div class="fgi"><label>Parent Name</label><input id="ep2" placeholder="Father / Mother"></div>
+      <div class="fgi"><label>Phone</label><input id="eph" placeholder="10-digit mobile" type="tel"></div>
+      <div class="fgi"><label>Belt Level</label><select id="eb"><option>White</option><option>Yellow</option><option>Orange</option><option>Green</option><option>Blue</option><option>Brown-1</option><option>Brown-2</option><option>Brown-3</option><option>Maroon</option><option>KB</option><option>Black-1</option></select></div>
+      <div class="fgi"><label>Fee Plan</label><select id="epl"><option>1 Month</option><option>3 Months</option><option>6 Months</option><option>12 Months</option></select></div>
+      <div class="fgi"><label>Monthly Fee (Rs)</label><input id="ef2" type="number"></div>
+      <div class="fgi"><label>Date of Birth</label><input id="ed" type="date"></div>
+      <div class="fgi ff"><label>School</label><input id="esc" placeholder="School name"></div>
+    </div>
+    <div class="ma"><button class="btn bto" onclick="closeM('me')">Cancel</button><button class="btn btr" onclick="saveEdit()">Save Changes</button></div>
+  </div>
+</div>
 <div id="toast"></div>
 <script>
 var API="https://script.google.com/macros/s/AKfycbxd9RfbfjC45LAG4tgo9ZxR3DqTSJTfr7-3AtUv0_pzBx6qyHXOSQHfJkpMJb2j_iOEkg/exec";
@@ -306,6 +343,8 @@ var att=JSON.parse(localStorage.getItem("ta")||"{}");
 var exps=JSON.parse(localStorage.getItem("te")||"null")||SEED.expenses;
 var enqs=JSON.parse(localStorage.getItem("tq")||"[]");
 var monthly=SEED.monthly;
+var studFilter="all",feeFilter="all",attFilter="all";
+var curEditId=null;
 var curPage="dashboard",curFS=null,srch="",attMo="2026-05",syncInProgress=false;
 function sv(){try{localStorage.setItem("ts",JSON.stringify(students));localStorage.setItem("tf",JSON.stringify(fees));localStorage.setItem("ta",JSON.stringify(att));localStorage.setItem("te",JSON.stringify(exps));localStorage.setItem("tq",JSON.stringify(enqs));}catch(e){console.warn("save failed:",e);}}
 function showToast(msg,type){var t=document.getElementById("toast");t.innerHTML=msg;t.style.background=type==="error"?"#C0392B":type==="warn"?"#d97706":"#16a34a";t.style.color="#fff";t.style.opacity="1";clearTimeout(t._timer);t._timer=setTimeout(function(){t.style.opacity="0";},3500);}
@@ -329,14 +368,15 @@ function absCnt(sid,ym){var r=(att[ym||attMo]||{})[sid]||{};return Object.values
 function beltB(b){var c=BC[b]||"#f3f4f6";return "<span class='belt' style='background:"+c+"'></span>"+(b||"White");}
 function statB(s){if(isUp(s))return "<span class='bdg br2'>Overdue</span>";var d=dud(s);if(d<=5)return "<span class='bdg ba'>Due in "+d+"d</span>";return "<span class='bdg bg'>Paid</span>";}
 function waLink(ph,msg,lbl){if(!ph||ph==="undefined")return "";var u="https://wa.me/91"+String(ph).replace(/\D/g,"")+"?text="+encodeURIComponent(msg);return "<a href='"+u+"' target='_blank' class='wa'>&#128241; "+lbl+"</a>";}
-function getNots(){var n=[],ym=tod().slice(0,7);students.filter(function(s){return !s.inactive;}).forEach(function(s){var ab=absCnt(s.id,ym);if(ab>=2&&ab<5)n.push({t:"a2",s:s,ab:ab});else if(ab>=5)n.push({t:"a5",s:s,ab:ab});var d=dud(s);if(d>=0&&d<=5)n.push({t:"due",s:s,d:d});});return n;}
+function getNots(){var n=[],ym=tod().slice(0,7);students.filter(function(s){return !s.inactive;}).forEach(function(s){var ab=absCnt(s.id,ym);if(ab>=2&&ab<5)n.push({t:"a2",s:s,ab:ab});else if(ab>=5)n.push({t:"a5",s:s,ab:ab});var d=dud(s);if(d>=0&&d<=5)n.push({t:"due",s:s,d:d});});getBirthdays(1).forEach(function(b){n.push({t:"bday",s:b.s,diff:b.diff});});
+  return n;}
 function updBadges(){document.getElementById("ub").textContent=students.filter(function(s){return isUp(s);}).length;document.getElementById("nc").textContent=getNots().length;}
 function showPage(p){curPage=p;var pages=["dashboard","students","fees","attendance","expenses","enquiries",""];
   // Update bottom nav
   document.querySelectorAll(".bni").forEach(function(el){el.classList.remove("active");});
   var bn=document.getElementById("bn-"+p);if(bn)bn.classList.add("active");document.querySelectorAll(".ni").forEach(function(el,i){el.classList.toggle("active",pages[i]===p);});var titles={dashboard:"Dashboard",students:"Students",fees:"Fee Management",attendance:"Attendance",expenses:"Expenses & P&L",enquiries:"Enquiries"};document.getElementById("pt").textContent=titles[p]||"";var acts={dashboard:"+ Add Student",students:"+ Add Student",fees:"+ Record Payment",attendance:"Mark Today",expenses:"+ Add Expense",enquiries:"+ Add Enquiry"};document.getElementById("ta").innerHTML=acts[p]||"";var fns={dashboard:openAS,students:openAS,fees:function(){openFee(null);},attendance:function(){markAll(attMo);},expenses:openAE,enquiries:openAQ};document.getElementById("ta").onclick=fns[p]||openAS;updBadges();render();closeSB();}
 function render(){var fns={dashboard:rDash,students:rStud,fees:rFees,attendance:rAtt,expenses:rExp,enquiries:rEnq};try{if(fns[curPage])document.getElementById("ct").innerHTML=fns[curPage]();}catch(e){document.getElementById("ct").innerHTML="<div style='padding:40px;text-align:center;color:var(--gray)'>Error rendering. <button class='btn btr' onclick='doSyncSheets()'>Reload Data</button></div>";console.error("Render error:",e);}}
-function onSrch(v){srch=v;if(curPage==="students")render();}
+function onSrch(v){srch=v;render();}
 function rDash(){
   if(!students||students.length===0){return "<div style='padding:60px;text-align:center'><div style='font-size:48px;margin-bottom:16px'>&#129355;</div><div style='font-family:var(--fh);font-size:20px;margin-bottom:8px'>Welcome to Taika Martial Arts Academy</div><div style='font-size:13px;color:var(--gray);margin-bottom:24px'>Click below to load your data from Google Sheets</div><button class='btn btr' onclick='doSyncSheets()'>Load Data from Sheets</button></div>";}
   var active=students.filter(function(s){return !s.inactive;});
@@ -594,11 +634,24 @@ function rStud(){
     +"</div>";
 
   if(tab === "active"){
-    var fil = actS.filter(function(s){return !srch||s.name.toLowerCase().includes(sl)||String(s.phone||"").includes(srch)||String(s.parentName||"").toLowerCase().includes(sl)||String(s.belt||"").toLowerCase().includes(sl);});
+
+    var baseS=actS;
+    if(studFilter==="overdue")baseS=actS.filter(function(s){return isUp(s);});
+    else if(studFilter==="paid")baseS=actS.filter(function(s){return !isUp(s);});
+    else if(studFilter==="week")baseS=actS.filter(function(s){var d=dud(s);return d>=0&&d<=7;});
+    else if(studFilter==="nodob")baseS=actS.filter(function(s){return !String(s.dob||s.dateOfBirth||"").trim();});
+    var fil=baseS.filter(function(s){return !srch||s.name.toLowerCase().includes(sl)||String(s.phone||"").includes(srch)||String(s.parentName||"").toLowerCase().includes(sl)||String(s.belt||"").toLowerCase().includes(sl);});
+    var chips="<div class='fc'>"
+      +"<button class='chip"+(studFilter==="all"?" on":"")+"' onclick='setFilter(\"stud\",\"all\")'>All ("+actS.length+")</button>"
+      +"<button class='chip"+(studFilter==="overdue"?" on":"")+"' onclick='setFilter(\"stud\",\"overdue\")'>Overdue ("+actS.filter(function(s){return isUp(s);}).length+")</button>"
+      +"<button class='chip"+(studFilter==="paid"?" on":"")+"' onclick='setFilter(\"stud\",\"paid\")'>Paid ("+actS.filter(function(s){return !isUp(s);}).length+")</button>"
+      +"<button class='chip"+(studFilter==="week"?" on":"")+"' onclick='setFilter(\"stud\",\"week\")'>Due This Week</button>"
+      +"<button class='chip"+(studFilter==="nodob"?" on":"")+"' onclick='setFilter(\"stud\",\"nodob\")'>Missing DOB</button>"
+      +"</div>";
     var rows = "";
     for(var i=0;i<fil.length;i++){
       var s=fil[i];
-      rows += "<tr>"
+      rows += "<tr style='cursor:pointer' onclick='openSP(this.dataset.sid)' data-sid='"+s.id+"'>"
         +"<td><b>"+s.name+"</b><br><span style='color:var(--gray);font-size:11px'>"+s.phone+"</span></td>"
         +"<td>"+beltB(s.belt)+"</td><td>"+s.plan+"</td><td>"+fmt(s.fee)+"</td>"
         +"<td>"+String(s.validTill||"-").slice(0,10)+"</td>"
@@ -610,8 +663,8 @@ function rStud(){
         +"</tr>";
     }
     return "<div id='mob-search' style='display:none'>"+mobSearch+"</div>"
-      +tabs
-      +"<div class='card'><div class='ch'><h3>Active Students ("+fil.length+")</h3>"
+      +tabs+chips
+      +"<div class='card'><div class='ch'><h3>"+(studFilter==="all"?"Active":studFilter==="overdue"?"Overdue":studFilter==="paid"?"Paid":studFilter==="week"?"Due This Week":"Missing DOB")+" Students ("+fil.length+")</h3>"
         +"<div style='display:flex;gap:6px'>"
           +"<span class='bdg bg'>"+actS.filter(function(s){return !isUp(s);}).length+" Paid</span>"
           +"<span class='bdg br2'>"+actS.filter(function(s){return isUp(s);}).length+" Overdue</span>"
@@ -643,15 +696,23 @@ function rStud(){
 }
 
 function rFees(){
-  var ov=students.filter(function(s){return !s.inactive && isUp(s);});
+  var fsl=srch.toLowerCase();var ov=students.filter(function(s){return !s.inactive&&isUp(s)&&(!srch||s.name.toLowerCase().includes(fsl)||String(s.phone||'').includes(srch));});
   var ovR="";
   for(var i=0;i<ov.length;i++){var s=ov[i];var d=Math.abs(dud(s));var msg="Dear "+String(s.parentName||s.name)+","+"\n\nWarm greetings from Taika Martial Arts Academy, Gokul Plots."+"\n\nWe would like to bring to your kind attention that the membership fee for "+s.name+" is currently due."+"\n\nFee Details"+"\nStudent Name    : "+s.name+"\nFee Amount      : "+fmt(s.fee)+"\nMembership Plan : "+s.plan+"\n\nWe kindly request you to clear the dues at your earliest convenience so that "+s.name+" can continue training without any interruption."+"\n\nIf you have already made the payment, please ignore this message. For any queries, please feel free to reach out to us."+"\n\nWith warm regards,"+"\nCoach & Team"+"\nTaika Martial Arts Academy"+"\nGokul Plots";ovR+="<tr><td><b>"+s.name+"</b><br><span style='color:var(--gray);font-size:11px'>"+s.phone+"</span></td><td>"+fmt(s.fee)+"</td><td>"+String(s.validTill||"N/A").slice(0,10)+"</td><td><span class='bdg br2'>"+d+"d overdue</span></td><td><button class='btn btr' style='padding:4px 9px;font-size:12px' onclick='openFee(this.dataset.id)' data-id='"+s.id+"'>Record Pay</button> "+waLink(s.phone,msg,"Remind")+"</td></tr>";}
+
+  var fcFee="<div class='fc'>"
+    +"<button class='chip"+(feeFilter==="all"?" on":"")+"' onclick='setFilter(\"fee\",\"all\")'>All Overdue</button>"
+    +"<button class='chip"+(feeFilter==="30plus"?" on":"")+"' onclick='setFilter(\"fee\",\"30plus\")'>30+ Days Overdue</button>"
+    +"<button class='chip"+(feeFilter==="week"?" on":"")+"' onclick='setFilter(\"fee\",\"week\")'>Due This Week</button>"
+    +"</div>";
+  if(feeFilter==="30plus")ov=ov.filter(function(s){return Math.abs(dud(s))>=30;});
+  else if(feeFilter==="week")ov=students.filter(function(s){return !s.inactive&&!isUp(s)&&dud(s)>=0&&dud(s)<=7;});
   if(!ovR)ovR="<tr><td colspan='5' style='text-align:center;color:#16a34a;padding:20px'>All fees are up to date!</td></tr>";
   var hist=fees.slice().reverse().slice(0,25);
   var hR="";
   for(var j=0;j<hist.length;j++){var p=hist[j];var st=students.find(function(x){return x.id===p.sid||x.id===p.studentId;})||{name:"Unknown",phone:""};var amt=Number(p.amt||p.amount||0);var vt=String(p.valid||p.validTill||"").slice(0,10);var msg2="Dear "+String(st.parentName||st.name||"Parent")+","+"\n\nThank you for your payment! We are pleased to confirm receipt of the fees for "+st.name+"."+"\n\nPayment Confirmation"+"\nStudent Name    : "+st.name+"\nAmount Paid     : "+fmt(amt)+"\nPayment Date    : "+p.date+"\nMembership Plan : "+p.plan+"\nValid Till      : "+vt+"\n\nYour trust and continued support mean a great deal to us."+" We are committed to providing "+st.name+" with the best training experience at Taika Martial Arts Academy."+"\n\nWith warm regards,"+"\nCoach & Team"+"\nTaika Martial Arts Academy"+"\nGokul Plots";hR+="<tr><td><b>"+st.name+"</b></td><td style='color:#16a34a;font-weight:600'>"+fmt(amt)+"</td><td>"+String(p.date||"").slice(0,10)+"</td><td>"+vt+"</td><td>"+p.plan+"</td><td style='color:var(--gray);font-size:12px'>"+(String(p.recordedOn||"").slice(0,10)||String(p.date||"").slice(0,10))+"</td><td>"+waLink(st.phone,msg2,"Send Receipt")+"</td></tr>";}
   if(!hR)hR="<tr><td colspan='6' style='text-align:center;color:var(--gray);padding:20px'>No payments recorded yet</td></tr>";
-  return "<div class='card' style='margin-bottom:18px'><div class='ch'><h3>Overdue Payments ("+ov.length+")</h3><button class='btn bto' style='font-size:12px' onclick='sendAllReminders()'>Send All Reminders</button></div><div style='overflow-x:auto'><table class='tbl'><thead><tr><th>Student</th><th>Fee</th><th>Was Valid Till</th><th>Status</th><th>Actions</th></tr></thead><tbody>"+ovR+"</tbody></table></div></div><div class='card'><div class='ch'><h3>Payment History</h3></div><div style='overflow-x:auto'><table class='tbl'><thead><tr><th>Student</th><th>Amount</th><th>Paid On</th><th>Valid Till</th><th>Plan</th><th>Recorded On</th><th>Receipt</th></tr></thead><tbody>"+hR+"</tbody></table></div></div>";
+  return fcFee+"<div class='card' style='margin-bottom:18px'><div class='ch'><h3>Overdue Payments ("+ov.length+")</h3><button class='btn bto' style='font-size:12px' onclick='sendAllReminders()'>Send All Reminders</button></div><div style='overflow-x:auto'><table class='tbl'><thead><tr><th>Student</th><th>Fee</th><th>Was Valid Till</th><th>Status</th><th>Actions</th></tr></thead><tbody>"+ovR+"</tbody></table></div></div><div class='card'><div class='ch'><h3>Payment History</h3></div><div style='overflow-x:auto'><table class='tbl'><thead><tr><th>Student</th><th>Amount</th><th>Paid On</th><th>Valid Till</th><th>Plan</th><th>Recorded On</th><th>Receipt</th></tr></thead><tbody>"+hR+"</tbody></table></div></div>";
 }
 function sendAllReminders(){var ov=students.filter(function(s){return !s.inactive && isUp(s);});if(!ov.length){showToast("No overdue students!","ok");return;}showToast("Opening WhatsApp for "+ov.length+" reminders...","warn");var i=0;function next(){if(i>=ov.length)return;var s=ov[i++];var msg="Dear "+String(s.parentName||s.name)+","+" fees for "+s.name+" at Taika Martial Arts Academy are overdue. Amount: "+fmt(s.fee)+". Kindly pay at the earliest."+" Regards, Taika Martial Arts Academy, Gokul Plots.";window.open("https://wa.me/91"+String(s.phone).replace(/\D/g,"")+"?text="+encodeURIComponent(msg),"_blank");setTimeout(next,1500);}next();}
 function getHolidays(ym){
@@ -684,7 +745,15 @@ function rAtt(){
 
   // ── Day headers ──────────────────────────────────────────────────────────
   var dayNames=["Su","Mo","Tu","We","Th","Fr","Sa"];
-  var hdr="<div style='display:flex;align-items:center;gap:2px;margin-bottom:4px;padding:0 4px;position:sticky;top:0;z-index:3;background:#fff'>"
+
+  var fcAtt="<div class='fc' style='margin-bottom:10px'>"
+    +"<button class='chip"+(attFilter==="all"?" on":"")+"' onclick='setFilter(\"att\",\"all\")'>All ("+attS.length+")</button>"
+    +"<button class='chip"+(attFilter==="absent"?" on":"")+"' onclick='setFilter(\"att\",\"absent\")'>High Absence (5+)</button>"
+    +"<button class='chip"+(attFilter==="perfect"?" on":"")+"' onclick='setFilter(\"att\",\"perfect\")'>Perfect Attendance</button>"
+    +"</div>";
+  if(attFilter==="absent")attS=attS.filter(function(s){var ab=Object.values((rec[s.id]||{})).filter(function(v){return v==="A";}).length;return ab>=5;});
+  else if(attFilter==="perfect")attS=attS.filter(function(s){return Object.values((rec[s.id]||{})).filter(function(v){return v==="A";}).length===0;});
+  var hdr="<div style='display:flex;align-items:center;gap:2px';margin-bottom:4px;padding:0 4px;position:sticky;top:0;z-index:3;background:#fff'>"
     +"<div style='width:140px;flex-shrink:0;position:sticky;left:0;background:#fff;z-index:2'></div>";
   for(var d=1;d<=dim;d++){
     var dayNum=new Date(yr,mo-1,d).getDay();
@@ -726,7 +795,7 @@ function rAtt(){
     }
     var absBg=absCnt>5?"#fee2e2":absCnt>2?"#fef9c3":"#f3f4f6";
     var absCol=absCnt>5?"#dc2626":absCnt>2?"#b45309":"#6b7280";
-    rows+="<div style='display:flex;align-items:center;gap:2px;margin-bottom:2px;padding:0 4px;background:"+(i%2===0?"#fff":"#fafafa")+"'>"
+    rows+="<div style='display:flex;align-items:center;gap:2px;margin-bottom:2px;padding:0 4px;background:"+(function(){var hl=srch&&s.name.toLowerCase().includes(srch.toLowerCase());return hl?"#fef9c3":(i%2===0?"#fff":"#fafafa");})()+"'>"
       +"<div style='width:140px;flex-shrink:0;font-size:12px;font-weight:500;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;padding-right:6px;position:sticky;left:0;background:inherit;z-index:1;box-shadow:2px 0 4px rgba(0,0,0,.06)'>"+s.name+"</div>"
       +cells
       +"<div style='width:36px;text-align:center;flex-shrink:0;font-size:12px;font-weight:700;color:"+absCol+";background:"+absBg+";border-radius:4px;padding:2px 0'>"+absCnt+"</div>"
@@ -749,7 +818,11 @@ function rAtt(){
   }
   summaryRow+="<div style='width:36px'></div></div>";
 
-  return "<div style='display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap'>"
+  
+  var topAbs=attS.map(function(s){var ab=Object.values(rec[s.id]||{}).filter(function(v){return v==="A";}).length;var pr=Object.values(rec[s.id]||{}).filter(function(v){return v==="P";}).length;return {s:s,ab:ab,pr:pr};}).filter(function(x){return x.ab>0;}).sort(function(a,b){return b.ab-a.ab;}).slice(0,5);
+  var summHTML="";
+  if(topAbs.length){summHTML="<div class='card' style='margin-top:14px'><div class='ch'><h3>Top Absentees &mdash; "+ym+"</h3></div><div style='padding:4px 18px'>";topAbs.forEach(function(x){var pct=x.pr+x.ab>0?Math.round(x.pr/(x.pr+x.ab)*100):0;summHTML+="<div style='display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #f3f4f6'><span style='flex:1;font-size:13px;font-weight:500'>"+x.s.name+"</span><span class='bdg br2'>"+x.ab+" absent</span><span style='font-size:12px;color:var(--gray)'>"+pct+"% present</span></div>";});summHTML+="</div></div>";}
+return "<div style='display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap'>"
     +"<select onchange='attMo=this.value;render()' style='padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px'>"+sel+"</select>"
     +"<button class='btn btr' onclick='markAllPresent(attMo)'>Mark All Present</button>"
     +"<button class='btn bto' onclick='markHoliday(attMo)'>Mark Holiday</button>"
@@ -793,7 +866,7 @@ function rExp(){
 function rEnq(){
   var sc={"New":"bb","Contacted":"ba","Joined":"bg","Lost":"br2"};
   var rows="";
-  for(var i=0;i<enqs.length;i++){var e=enqs[i];var opts=["New","Contacted","Joined","Lost"].map(function(s){return "<option"+(s===e.status?" selected":"")+">"+s+"</option>";}).join("");rows+="<tr><td><b>"+e.name+"</b></td><td>"+e.phone+"</td><td>"+e.date+"</td><td>"+(e.source||"-")+"</td><td><span class='bdg "+(sc[e.status]||"")+"'>"+e.status+"</span></td><td>"+waLink(e.phone,"Dear "+e.name+","+"\n\nWarm greetings from Taika Martial Arts Academy, Gokul Plots!"+"\n\nThank you for showing interest in our academy. We would be absolutely delighted to have you as part of the Taika family."+"\n\nAt Taika, we offer world-class martial arts training in a disciplined, encouraging, and friendly environment."+" Our experienced coaches are dedicated to bringing out the best in every student."+"\n\nWe warmly invite you for a FREE TRIAL CLASS at your convenient time."+" Come, experience the Taika difference for yourself!"+"\n\nFor more details or to schedule your trial class, feel free to reply to this message or call us directly."+"\n\nWe look forward to welcoming you!"+"\n\nWith warm regards,"+"\nCoach & Team"+"\nTaika Martial Arts Academy"+"\nGokul Plots","Invite")+" <select onchange='updEnq("+i+",this.value)' style='padding:3px 6px;border:1px solid var(--border);border-radius:5px;font-size:11px'>"+opts+"</select></td></tr>";}
+  var esl=srch.toLowerCase();var fEnqs=enqs.filter(function(e){return !srch||e.name.toLowerCase().includes(esl)||String(e.phone||'').includes(srch);});  for(var i=0;i<fEnqs.length;i++){var e=fEnqs[i];var opts=["New","Contacted","Joined","Lost"].map(function(s){return "<option"+(s===e.status?" selected":"")+">"+s+"</option>";}).join("");rows+="<tr><td><b>"+e.name+"</b></td><td>"+e.phone+"</td><td>"+e.date+"</td><td>"+(e.source||"-")+"</td><td><span class='bdg "+(sc[e.status]||"")+"'>"+e.status+"</span></td><td>"+waLink(e.phone,"Dear "+e.name+","+"\n\nWarm greetings from Taika Martial Arts Academy, Gokul Plots!"+"\n\nThank you for showing interest in our academy. We would be absolutely delighted to have you as part of the Taika family."+"\n\nAt Taika, we offer world-class martial arts training in a disciplined, encouraging, and friendly environment."+" Our experienced coaches are dedicated to bringing out the best in every student."+"\n\nWe warmly invite you for a FREE TRIAL CLASS at your convenient time."+" Come, experience the Taika difference for yourself!"+"\n\nFor more details or to schedule your trial class, feel free to reply to this message or call us directly."+"\n\nWe look forward to welcoming you!"+"\n\nWith warm regards,"+"\nCoach & Team"+"\nTaika Martial Arts Academy"+"\nGokul Plots","Invite")+" <select onchange='updEnq("+i+",this.value)' style='padding:3px 6px;border:1px solid var(--border);border-radius:5px;font-size:11px'>"+opts+"</select></td></tr>";}
   if(!rows)rows="<tr><td colspan='6' style='text-align:center;color:var(--gray);padding:20px'>No enquiries yet</td></tr>";
   var stat=["New","Contacted","Joined","Lost"];var cards=stat.map(function(s){return "<div class='sc'><div class='lb'>"+s+"</div><div class='vl'>"+enqs.filter(function(e){return e.status===s;}).length+"</div></div>";}).join("");
   return "<div style='display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:18px'>"+cards+"</div><div class='card'><div class='ch'><h3>Enquiry Pipeline</h3></div><div style='overflow-x:auto'><table class='tbl'><thead><tr><th>Name</th><th>Phone</th><th>Date</th><th>Source</th><th>Status</th><th>Actions</th></tr></thead><tbody>"+rows+"</tbody></table></div></div>";
@@ -805,6 +878,7 @@ function toggleNP(){
   nots.forEach(function(n){var t="",m="",b="";
     if(n.t==="a2"){t="Absent Alert - "+n.s.name;m=n.s.name+" absent "+n.ab+" days this month";b=waLink(n.s.phone,"Dear "+String(n.s.parentName||n.s.name)+","+"\n\nWarm greetings from Taika Martial Arts Academy, Gokul Plots."+"\n\nWe wanted to let you know that "+n.s.name+" has been absent for "+n.ab+" days this month."+" Regular attendance plays a vital role in a student's progress and skill development."+"\n\nWe would appreciate it if you could encourage "+n.s.name+" to attend classes regularly."+" Please feel free to reach out if there is anything we can assist with."+"\n\nWith warm regards,"+"\nCoach & Team"+"\nTaika Martial Arts Academy"+"\nGokul Plots","Send Alert");}
     else if(n.t==="a5"){t="High Absence - "+n.s.name;m=n.s.name+" absent "+n.ab+" days";b=waLink(n.s.phone,"Dear "+String(n.s.parentName||n.s.name)+","+"\n\nWarm greetings from Taika Martial Arts Academy, Gokul Plots."+"\n\nWe are concerned to inform you that "+n.s.name+" has been absent for "+n.ab+" days this month."+" We genuinely care about every student's progress and well-being."+"\n\nWe would kindly request you to get in touch with us at your earliest convenience"+" so we can understand the situation and support "+n.s.name+" in the best possible way."+"\n\nWith warm regards,"+"\nCoach & Team"+"\nTaika Martial Arts Academy"+"\nGokul Plots","Send Alert");}
+    else if(n.t==="bday"){t="Birthday "+(n.diff===0?"Today!":"Tomorrow");m=n.s.name+"'s birthday is "+(n.diff===0?"today!":"tomorrow!");b=waLink(n.s.phone,"Dear "+String(n.s.parentName||n.s.name)+",\n\nWarm birthday wishes to "+n.s.name+" from all of us at Taika Martial Arts Academy!\n\nWith warm regards,\nCoach & Team\nTaika Martial Arts Academy\nGokul Plots","Send Wish");}
     else if(n.t==="due"){t="Fee Due - "+n.s.name;m="Expires in "+n.d+" day(s). Valid till "+String(n.s.validTill||"").slice(0,10);b=waLink(n.s.phone,"Dear "+String(n.s.parentName||n.s.name)+","+"\n\nWarm greetings from Taika Martial Arts Academy, Gokul Plots."+"\n\nThis is a friendly reminder that the membership for "+n.s.name+" is due for renewal in "+n.d+" day(s)."+"\n\nFee Details"+"\nStudent Name    : "+n.s.name+"\nFee Amount      : "+fmt(n.s.fee)+"\nMembership Plan : "+n.s.plan+"\nRenewal Due By  : "+String(n.s.validTill).slice(0,10)+"\n\nKindly renew the membership at your earliest convenience to ensure uninterrupted training for "+n.s.name+"."+"\n\nWith warm regards,"+"\nCoach & Team"+"\nTaika Martial Arts Academy"+"\nGokul Plots","Send Reminder");}
     h+="<div class='nit'><div class='nt'>"+t+"</div><div class='nm'>"+m+"</div>"+b+"</div>";});
   document.getElementById("npl").innerHTML=h;
@@ -941,10 +1015,196 @@ function printAtt(){
   w.onload=function(){w.print();};
 }
 
+function setFilter(type,val){
+  if(type==="stud")studFilter=val;
+  else if(type==="fee")feeFilter=val;
+  else if(type==="att")attFilter=val;
+  render();
+}
+function fixSheetHeaders(){
+  showToast("Fixing headers...","ok");
+  apiGet("fixHeaders").then(function(r){
+    showToast(r&&r.ok?(r.msg||"Headers fixed!"):"Fix failed","ok");
+  });
+}
 function openAE(){var det=prompt("Expense description:");if(!det)return;var amt=parseFloat(prompt("Amount (Rs):"));if(!amt||isNaN(amt))return;var by=prompt("Paid by (e.g. Dinesh / Nanditha):");var e={date:tod(),detail:det,expense:amt,credit:0,paidBy:by||""};exps.unshift(e);sv();render();apiCall("addExpense",e).then(function(r){if(r&&r.ok)showToast("Expense saved to Sheets!","ok");});}
 function openAQ(){var name=prompt("Enquiry - Full Name:");if(!name)return;var phone=prompt("Mobile Number:");if(!phone)return;var src=prompt("Source (Referral / Pamphlet / Social Media / Walk-in):");var q={name:name,phone:phone,date:tod(),source:src||"Walk-in",status:"New"};enqs.push(q);sv();render();apiCall("addEnquiry",q).then(function(r){if(r&&r.ok)showToast("Enquiry added to Sheets!","ok");});}
 function toggleSB(){document.getElementById("sb").classList.toggle("open");document.getElementById("ov").classList.toggle("show");}
-function closeSB(){document.getElementById("sb").classList.remove("open");document.getElementById("ov").classList.remove("show");}
+function closeSB(){document.getElementById("sb").classList.remove("open");if(document.getElementById("sp"))document.getElementById("sp").classList.remove("open");document.getElementById("ov").classList.remove("show");}
+// ════════════════════════════════════════════════════════════════════════
+// NEW FEATURES - Added to existing JS
+// ════════════════════════════════════════════════════════════════════════
+
+// ── Filter function ──────────────────────────────────────────────────────
+function setFilter(type, val){
+  if(type==="stud") studFilter=val;
+  else if(type==="fee")  feeFilter=val;
+  else if(type==="att")  attFilter=val;
+  render();
+}
+
+// ── Fix Sheet Headers ────────────────────────────────────────────────────
+async function fixSheetHeaders(){
+  showToast("Fixing sheet headers...", "ok");
+  var r = await apiGet("fixHeaders");
+  if(r && r.ok) showToast(r.msg || "Headers fixed!", "ok");
+  else showToast("Fix failed - redeploy Apps Script first", "error");
+}
+
+// ── Birthday helpers ─────────────────────────────────────────────────────
+function getBirthdays(daysAhead){
+  var today = new Date();
+  var result = [];
+  students.forEach(function(s){
+    if(s.inactive) return;
+    var dob = String(s.dob||s.dateOfBirth||"").slice(0,10);
+    if(!dob || dob.length < 8) return;
+    try{
+      var d = new Date(dob);
+      // Compare month+day only
+      var bDay = new Date(today.getFullYear(), d.getMonth(), d.getDate());
+      if(bDay < today) bDay.setFullYear(today.getFullYear()+1);
+      var diff = Math.round((bDay - today) / 864e5);
+      if(diff >= 0 && diff <= daysAhead){
+        result.push({s:s, diff:diff, bDay:bDay});
+      }
+    }catch(e){}
+  });
+  return result.sort(function(a,b){return a.diff-b.diff;});
+}
+
+function showBirthdayBanner(){
+  var banner = document.getElementById("bday-banner");
+  var bdays = getBirthdays(3);
+  if(!bdays.length){ banner.style.display="none"; return; }
+  var msg = "&#127874; Birthday";
+  if(bdays.length > 1) msg += "s";
+  msg += ": ";
+  msg += bdays.map(function(b){
+    var when = b.diff===0?"Today":b.diff===1?"Tomorrow":"In "+b.diff+" days";
+    return "<b>"+b.s.name+"</b> ("+when+") "+
+      "<a href='https://wa.me/91"+String(b.s.phone||"").replace(/\D/g,"")+"?text="+
+      encodeURIComponent("Dear "+String(b.s.parentName||b.s.name)+",\n\nWarm birthday wishes to "+b.s.name+" from all of us at Taika Martial Arts Academy, Gokul Plots!\n\nWishing "+b.s.name+" a wonderful birthday filled with joy and happiness.\n\nWith warm regards,\nCoach & Team\nTaika Martial Arts Academy\nGokul Plots")+
+      "' target='_blank' style='background:rgba(255,255,255,.25);padding:2px 8px;border-radius:4px;color:#fff;text-decoration:none;font-size:11px;margin-left:4px'>Send Wish</a>";
+  }).join(" &nbsp;|&nbsp; ");
+  banner.innerHTML = msg;
+  banner.style.display = "flex";
+}
+
+// ── Student Profile Side Panel ───────────────────────────────────────────
+function openSP(sid){
+  var s = students.find(function(x){return x.id===sid;});
+  if(!s) return;
+  // Header
+  document.getElementById("sp-avatar").textContent = s.name.charAt(0).toUpperCase();
+  document.getElementById("sp-name").textContent = s.name;
+  document.getElementById("sp-sub").textContent = (s.belt||"White") + " Belt  \u00b7  " + (s.plan||"1 Month");
+
+  var ym = attMo;
+  var attRec = (att[ym]||{})[s.id]||{};
+  var parts = ym.split("-"), yr=parseInt(parts[0]), mo=parseInt(parts[1]);
+  var dim = new Date(yr,mo,0).getDate();
+  var hols = getHolidays(ym);
+  var todStr = tod();
+  var presnt=0, absnt=0;
+  var attCells = "";
+  for(var d=1;d<=dim;d++){
+    var ds=ym+"-"+(d<10?"0":"")+d;
+    var v=attRec[d]||"";
+    var isH=hols.has(d), isFut=ds>todStr;
+    var bg=isH?"#fee2e2":v==="P"?"#dcfce7":v==="A"?"#fee2e2":isFut?"#f9fafb":"#f3f4f6";
+    var col=isH?"#dc2626":v==="P"?"#16a34a":v==="A"?"#dc2626":"#9ca3af";
+    var txt=isH?"H":v||"";
+    if(v==="P") presnt++;
+    if(v==="A") absnt++;
+    attCells+="<span style='display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:4px;background:"+bg+";color:"+col+";font-size:10px;font-weight:700;margin:1px'>"+txt+"</span>";
+  }
+
+  // Payment history
+  var stuFees = fees.filter(function(p){return (p.sid||p.studentId)===s.id;}).slice(-6).reverse();
+  var payRows = stuFees.length ? stuFees.map(function(p){
+    var amt=Number(p.amount||p.amt||0);
+    return "<div style='display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #f3f4f6'>"
+      +"<div><div style='font-size:13px;font-weight:500'>"+fmt(amt)+"</div>"
+      +"<div style='font-size:11px;color:var(--gray2)'>"+String(p.date||"").slice(0,10)+" \u00b7 "+p.plan+"</div></div>"
+      +"<span style='font-size:11px;color:#16a34a;font-weight:600'>"+String(p.validTill||p.valid||"").slice(0,10)+"</span>"
+      +"</div>";
+  }).join("") : "<div style='color:var(--gray);font-size:13px;padding:8px 0'>No payments recorded</div>";
+
+  // Status badge
+  var statusBadge = isUp(s)
+    ? "<span class='bdg br2'>Overdue "+Math.abs(dud(s))+"d</span>"
+    : dud(s)<=5
+      ? "<span class='bdg ba'>Due in "+dud(s)+"d</span>"
+      : "<span class='bdg bg'>Paid until "+String(s.validTill||"").slice(0,10)+"</span>";
+
+  document.getElementById("sp-body").innerHTML =
+    "<div class='sp-sec'><h4>Student Details</h4>"
+    +"<div class='sp-row'><span class='lbl'>Phone</span><span class='val'>"+s.phone+"</span></div>"
+    +"<div class='sp-row'><span class='lbl'>Parent</span><span class='val'>"+(s.parentName||"-")+"</span></div>"
+    +"<div class='sp-row'><span class='lbl'>Belt</span><span class='val'>"+beltB(s.belt)+"</span></div>"
+    +"<div class='sp-row'><span class='lbl'>Joined</span><span class='val'>"+String(s.joinedDate||"-").slice(0,10)+"</span></div>"
+    +"<div class='sp-row'><span class='lbl'>DOB</span><span class='val'>"+(String(s.dob||s.dateOfBirth||"").slice(0,10)||"<span style='color:var(--red)'>Not set</span>")+"</span></div>"
+    +"<div class='sp-row'><span class='lbl'>Status</span><span>"+statusBadge+"</span></div>"
+    +"</div>"
+    +"<div class='sp-sec'><h4>Payments (Last 6)</h4>"+payRows+"</div>"
+    +"<div class='sp-sec'><h4>Attendance &mdash; "+ym+"</h4>"
+    +"<div style='line-height:1.2;margin-bottom:8px'>"+attCells+"</div>"
+    +"<div style='display:flex;gap:16px;font-size:12px'>"
+    +"<span style='color:#16a34a;font-weight:600'>&#10003; Present: "+presnt+"</span>"
+    +"<span style='color:#dc2626;font-weight:600'>&#10007; Absent: "+absnt+"</span>"
+    +"</div></div>"
+    +"<div style='padding:16px 18px;display:flex;gap:8px'>"
+    +"<button class='btn btr' style='flex:1' onclick=\"openFee('"+s.id+"');closeSP()\">Pay Now</button>"
+    +"<button class='btn bto' style='flex:1' onclick=\"toggleInactive('"+s.id+"',"+(!s.inactive)+")\">"+( s.inactive?"Reactivate":"Pause")+"</button>"
+    +"<button class='btn bto' style='flex:1' onclick=\"openEdit('"+s.id+"')\">&#9999; Edit</button>"
+    +"</div>";
+
+  document.getElementById("sp").classList.add("open");
+  document.getElementById("ov").classList.add("show");
+}
+
+function closeSP(){
+  document.getElementById("sp").classList.remove("open");
+  document.getElementById("ov").classList.remove("show");
+}
+
+// ── Student Edit ─────────────────────────────────────────────────────────
+function openEdit(sid){
+  var s = students.find(function(x){return x.id===sid;});
+  if(!s) return;
+  curEditId = sid;
+  document.getElementById("en").value  = s.name||"";
+  document.getElementById("ep2").value = s.parentName||"";
+  document.getElementById("eph").value = s.phone||"";
+  document.getElementById("eb").value  = s.belt||"White";
+  document.getElementById("epl").value = s.plan||"1 Month";
+  document.getElementById("ef2").value = s.fee||"";
+  document.getElementById("ed").value  = String(s.dob||s.dateOfBirth||"").slice(0,10);
+  document.getElementById("esc").value = s.school||"";
+  document.getElementById("me").classList.add("open");
+}
+
+function saveEdit(){
+  var idx = students.findIndex(function(s){return s.id===curEditId;});
+  if(idx<0) return;
+  var s = students[idx];
+  s.name       = document.getElementById("en").value.trim() || s.name;
+  s.parentName = document.getElementById("ep2").value.trim();
+  s.phone      = document.getElementById("eph").value.trim() || s.phone;
+  s.belt       = document.getElementById("eb").value;
+  s.plan       = document.getElementById("epl").value;
+  s.fee        = parseInt(document.getElementById("ef2").value)||s.fee;
+  s.dob        = document.getElementById("ed").value;
+  s.school     = document.getElementById("esc").value;
+  students[idx] = s;
+  sv(); closeM("me"); render(); updBadges();
+  showToast(s.name+" updated!", "ok");
+  apiCall("updateStudent", {id:s.id, name:s.name, parentName:s.parentName, phone:s.phone,
+    belt:s.belt, plan:s.plan, fee:s.fee, dob:s.dob, school:s.school});
+}
+
+
 (async function(){updBadges();render();try{var r=await apiGet("ping");if(r&&r.ok){document.getElementById("conn-status").innerHTML="&#9679; Connected &#10003;";document.getElementById("conn-status").style.color="#4ade80";showToast("Connected to Google Sheets!","ok");if(!localStorage.getItem("ts"))await doSyncSheets();}}catch(e){console.log("Auto-connect:",e.message);}})();
 </script>
 </body>
