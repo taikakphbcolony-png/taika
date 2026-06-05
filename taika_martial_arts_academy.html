@@ -190,14 +190,37 @@ nav{flex:1;padding:14px 0;overflow-y:auto}
 .sp-sec h4{font-size:11px;font-weight:700;color:var(--gray);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px}
 .sp-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;font-size:13px}
 .sp-row .lbl{color:var(--gray2)}.sp-row .val{font-weight:600}
-#bday-banner{background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;padding:10px 18px;display:flex;align-items:center;gap:10px;font-size:13px;flex-wrap:wrap}
+#bday-banner{background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;padding:12px 20px;display:flex;align-items:center;gap:10px;font-size:13px;flex-wrap:wrap;box-shadow:0 2px 8px rgba(217,119,6,.4)}
+
+/* ── Rich Filter Chips ─────────────────────────────────────────────── */
+.fc{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;border:none;background:#fff;color:var(--gray);font-family:var(--fb);transition:all .25s;white-space:nowrap;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+.chip:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(0,0,0,.12);color:var(--red)}
+.chip.on{background:var(--red);color:#fff;box-shadow:0 4px 14px rgba(192,57,43,.4)}
+.chip.on:hover{background:var(--red2);transform:translateY(-1px)}
+.chip-n{background:var(--bg);color:var(--gray2);border-radius:20px;padding:1px 7px;font-size:11px;font-weight:700}
+.chip.on .chip-n{background:rgba(255,255,255,.25);color:#fff}
+.chip-warn{background:#fef2f2;color:var(--red)}
+.chip-warn.on{background:var(--red)}
+/* Birthday banner */
+#bday-banner{background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;padding:12px 20px;display:flex;align-items:center;gap:10px;font-size:13px;flex-wrap:wrap;box-shadow:0 2px 8px rgba(217,119,6,.4)}
+
+
+/* ── Rich Filter Chips ─────────────────────────────────────────────── */
+.fc{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;border:none;background:#fff;color:var(--gray);font-family:var(--fb);transition:all .25s;white-space:nowrap;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+.chip:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(0,0,0,.12);color:var(--red)}
+.chip.on{background:var(--red);color:#fff;box-shadow:0 4px 14px rgba(192,57,43,.4)}
+.chip.on:hover{background:var(--red2);transform:translateY(-1px)}
+.chip-n{background:var(--bg);color:var(--gray2);border-radius:20px;padding:1px 7px;font-size:11px;font-weight:700}
+.chip.on .chip-n{background:rgba(255,255,255,.25);color:#fff}
+.chip-warn{color:var(--red)}
+.chip-warn.on{background:var(--red);color:#fff}
+#bday-banner{background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;padding:12px 20px;display:flex;align-items:center;gap:10px;font-size:13px;flex-wrap:wrap;box-shadow:0 2px 8px rgba(217,119,6,.4)}
 </style>
 
 <style id="print-hide">
 @media print {
-  #sb, #tb, #bnav, #att-toolbar { display: none !important; }
-  #ct { padding: 0 !important; }
-}
 </style>
 </head>
 <body>
@@ -642,11 +665,11 @@ function rStud(){
     else if(studFilter==="nodob")baseS=actS.filter(function(s){return !String(s.dob||s.dateOfBirth||"").trim();});
     var fil=baseS.filter(function(s){return !srch||s.name.toLowerCase().includes(sl)||String(s.phone||"").includes(srch)||String(s.parentName||"").toLowerCase().includes(sl)||String(s.belt||"").toLowerCase().includes(sl);});
     var chips="<div class='fc'>"
-      +"<button class='chip"+(studFilter==="all"?" on":"")+"' onclick='setFilter(\"stud\",\"all\")'>All ("+actS.length+")</button>"
-      +"<button class='chip"+(studFilter==="overdue"?" on":"")+"' onclick='setFilter(\"stud\",\"overdue\")'>Overdue ("+actS.filter(function(s){return isUp(s);}).length+")</button>"
-      +"<button class='chip"+(studFilter==="paid"?" on":"")+"' onclick='setFilter(\"stud\",\"paid\")'>Paid ("+actS.filter(function(s){return !isUp(s);}).length+")</button>"
+      +"<button class='chip"+(studFilter==="all"?" on":"")+"' onclick='setFilter(\"stud\",\"all\")'><span>All</span><span class='chip-count'>"+actS.length+"</span></button>"
+      +"<button class='chip"+(studFilter==="overdue"?" on":"")+"' onclick='setFilter(\"stud\",\"overdue\")' style='"+(studFilter==="overdue"?"":"")+"'><span>Overdue</span><span class='chip-count'>"+actS.filter(function(s){return isUp(s);}).length+"</span></button>"
+      +"<button class='chip"+(studFilter==="paid"?" on":"")+"' onclick='setFilter(\"stud\",\"paid\")'><span>Paid</span><span class='chip-count'>"+actS.filter(function(s){return !isUp(s);}).length+"</span></button>"
       +"<button class='chip"+(studFilter==="week"?" on":"")+"' onclick='setFilter(\"stud\",\"week\")'>Due This Week</button>"
-      +"<button class='chip"+(studFilter==="nodob"?" on":"")+"' onclick='setFilter(\"stud\",\"nodob\")'>Missing DOB</button>"
+      +"<button class='chip"+(studFilter==="nodob"?" on":"")+"' onclick='setFilter(\"stud\",\"nodob\")'><span style='color:"+(studFilter==="nodob"?"#fff":"#dc2626")+"'>Missing DOB</span></button>"
       +"</div>";
     var rows = "";
     for(var i=0;i<fil.length;i++){
@@ -701,9 +724,9 @@ function rFees(){
   for(var i=0;i<ov.length;i++){var s=ov[i];var d=Math.abs(dud(s));var msg="Dear "+String(s.parentName||s.name)+","+"\n\nWarm greetings from Taika Martial Arts Academy, Gokul Plots."+"\n\nWe would like to bring to your kind attention that the membership fee for "+s.name+" is currently due."+"\n\nFee Details"+"\nStudent Name    : "+s.name+"\nFee Amount      : "+fmt(s.fee)+"\nMembership Plan : "+s.plan+"\n\nWe kindly request you to clear the dues at your earliest convenience so that "+s.name+" can continue training without any interruption."+"\n\nIf you have already made the payment, please ignore this message. For any queries, please feel free to reach out to us."+"\n\nWith warm regards,"+"\nCoach & Team"+"\nTaika Martial Arts Academy"+"\nGokul Plots";ovR+="<tr><td><b>"+s.name+"</b><br><span style='color:var(--gray);font-size:11px'>"+s.phone+"</span></td><td>"+fmt(s.fee)+"</td><td>"+String(s.validTill||"N/A").slice(0,10)+"</td><td><span class='bdg br2'>"+d+"d overdue</span></td><td><button class='btn btr' style='padding:4px 9px;font-size:12px' onclick='openFee(this.dataset.id)' data-id='"+s.id+"'>Record Pay</button> "+waLink(s.phone,msg,"Remind")+"</td></tr>";}
 
   var fcFee="<div class='fc'>"
-    +"<button class='chip"+(feeFilter==="all"?" on":"")+"' onclick='setFilter(\"fee\",\"all\")'>All Overdue</button>"
-    +"<button class='chip"+(feeFilter==="30plus"?" on":"")+"' onclick='setFilter(\"fee\",\"30plus\")'>30+ Days Overdue</button>"
-    +"<button class='chip"+(feeFilter==="week"?" on":"")+"' onclick='setFilter(\"fee\",\"week\")'>Due This Week</button>"
+    +"<button class='chip"+(feeFilter==="all"?" on":"")+"' onclick='setFilter(\"fee\",\"all\")'><span>All Overdue</span></button>"
+    +"<button class='chip"+(feeFilter==="30plus"?" on":"")+"' onclick='setFilter(\"fee\",\"30plus\")'><span>30+ Days</span></button>"
+    +"<button class='chip"+(feeFilter==="week"?" on":"")+"' onclick='setFilter(\"fee\",\"week\")'><span>Due This Week</span></button>"
     +"</div>";
   if(feeFilter==="30plus")ov=ov.filter(function(s){return Math.abs(dud(s))>=30;});
   else if(feeFilter==="week")ov=students.filter(function(s){return !s.inactive&&!isUp(s)&&dud(s)>=0&&dud(s)<=7;});
@@ -747,9 +770,9 @@ function rAtt(){
   var dayNames=["Su","Mo","Tu","We","Th","Fr","Sa"];
 
   var fcAtt="<div class='fc' style='margin-bottom:10px'>"
-    +"<button class='chip"+(attFilter==="all"?" on":"")+"' onclick='setFilter(\"att\",\"all\")'>All ("+attS.length+")</button>"
-    +"<button class='chip"+(attFilter==="absent"?" on":"")+"' onclick='setFilter(\"att\",\"absent\")'>High Absence (5+)</button>"
-    +"<button class='chip"+(attFilter==="perfect"?" on":"")+"' onclick='setFilter(\"att\",\"perfect\")'>Perfect Attendance</button>"
+    +"<button class='chip"+(attFilter==="all"?" on":"")+"' onclick='setFilter(\"att\",\"all\")'><span>All</span><span class='chip-count'>"+attS.length+"</span></button>"
+    +"<button class='chip"+(attFilter==="absent"?" on":"")+"' onclick='setFilter(\"att\",\"absent\")'><span>High Absence</span><span class='chip-count'>5+</span></button>"
+    +"<button class='chip"+(attFilter==="perfect"?" on":"")+"' onclick='setFilter(\"att\",\"perfect\")'><span>Perfect Attendance</span></button>"
     +"</div>";
   if(attFilter==="absent")attS=attS.filter(function(s){var ab=Object.values((rec[s.id]||{})).filter(function(v){return v==="A";}).length;return ab>=5;});
   else if(attFilter==="perfect")attS=attS.filter(function(s){return Object.values((rec[s.id]||{})).filter(function(v){return v==="A";}).length===0;});
@@ -998,7 +1021,7 @@ function printAtt(){
     +"th{background:#f3f4f6;font-weight:700}"
     +"tr:nth-child(even){background:#fafafa}"
     +"@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}"
-    +"</style></head><body>"
+    
     +"<div class='header'>"
       +"<div><div class='title'>Taika Martial Arts Academy &mdash; Gokul Plots</div>"
       +"<div class='subtitle'>Attendance Sheet &middot; "+ym+" &middot; "+attS.length+" students &middot; Printed: "+new Date().toLocaleDateString("en-IN")+"</div></div>"
@@ -1074,6 +1097,9 @@ function getBirthdays(daysAhead){
 }
 
 function showBirthdayBanner(){
+  // Also update notifications badge
+  updBadges();
+
   var banner = document.getElementById("bday-banner");
   var bdays = getBirthdays(3);
   if(!bdays.length){ banner.style.display="none"; return; }
