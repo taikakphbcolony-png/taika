@@ -217,6 +217,10 @@ nav{flex:1;padding:14px 0;overflow-y:auto}
 .chip-warn{color:var(--red)}
 .chip-warn.on{background:var(--red);color:#fff}
 #bday-banner{background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;padding:12px 20px;display:flex;align-items:center;gap:10px;font-size:13px;flex-wrap:wrap;box-shadow:0 2px 8px rgba(217,119,6,.4)}
+
+/* Sticky attendance name column */
+.att-name-sticky{position:sticky!important;left:0!important;z-index:9!important;background:inherit!important;box-shadow:2px 0 6px rgba(0,0,0,.08)!important}
+.att-scroll-container{overflow-x:auto;overflow-y:visible;-webkit-overflow-scrolling:touch;position:relative;isolation:isolate}
 </style>
 
 <style id="print-hide">
@@ -381,7 +385,22 @@ async function fixSheetHeaders(){
   else showToast("Fix failed - redeploy Apps Script first", "error");
 }
 async function doTestConn(){setBtnLoading("btn-test",true,"Testing...");var r=await apiGet("ping");setBtnLoading("btn-test",false,"&#9889; Test Connection");if(r&&r.ok){document.getElementById("conn-status").innerHTML="&#9679; Connected &#10003;";document.getElementById("conn-status").style.color="#4ade80";showToast("Connected to Google Sheets!","ok");}else{document.getElementById("conn-status").innerHTML="&#9679; Not connected";document.getElementById("conn-status").style.color="#f87171";showToast("Connection failed - check Apps Script","error");}}
-async function doSyncSheets(){if(syncInProgress){showToast("Sync already in progress...","warn");return;}syncInProgress=true;setBtnLoading("btn-sync",true,"Syncing...");showToast("<span class='spin'></span> Loading from Google Sheets...","ok");var errors=[];try{localStorage.removeItem("ts");localStorage.removeItem("tf");localStorage.removeItem("te");localStorage.removeItem("tq");students=JSON.parse(JSON.stringify(SEED.students));fees=[];exps=JSON.parse(JSON.stringify(SEED.expenses));enqs=[];var ss=await apiGet("getStudents");if(ss&&Array.isArray(ss)&&ss.length>0){students=ss.map(function(s){s.fee=Number(s.fee)||0;s.due=Number(s.due)||0;s.phone=String(s.phone||"");s.inactive=(s.inactive==="true"||s.inactive===true);return s;});}else errors.push("students");var ff=await apiGet("getFees");if(ff&&Array.isArray(ff))fees=ff;else errors.push("fees");var ee=await apiGet("getExpenses");if(ee&&Array.isArray(ee)){var historical=SEED.expenses;exps=historical.concat(ee);}else errors.push("expenses");var qq=await apiGet("getEnquiries");if(qq&&Array.isArray(qq))enqs=qq;else errors.push("enquiries");sv();updBadges();render();if(errors.length===0)showToast("Synced "+students.length+" students successfully!","ok");else showToast("Partial sync. Failed: "+errors.join(", "),"warn");}catch(e){showToast("Sync error: "+e.message,"error");}finally{syncInProgress=false;setBtnLoading("btn-sync",false,"&#128260; Sync from Sheets");}}
+async function doSyncSheets(){if(syncInProgress){showToast("Sync already in progress...","warn");return;}syncInProgress=true;setBtnLoading("btn-sync",true,"Syncing...");showToast("<span class='spin'></span> Loading from Google Sheets...","ok");var errors=[];try{localStorage.removeItem("ts");localStorage.removeItem("tf");localStorage.removeItem("te");localStorage.removeItem("tq");students=JSON.parse(JSON.stringify(SEED.students));fees=[];exps=JSON.parse(JSON.stringify(SEED.expenses));enqs=[];var ss=await apiGet("getStudents");if(ss&&Array.isArray(ss)&&ss.length>0){students=ss.map(function(s){s.fee=Number(s.fee)||0;s.due=Number(s.due)||0;s.phone=String(s.phone||"");s.inactive=(s.inactive==="true"||s.inactive===true);return s;});}else errors.push("students");var ff=await apiGet("getFees");if(ff&&Array.isArray(ff))fees=ff;else errors.push("fees");var ee=await apiGet("getExpenses");if(ee&&Array.isArray(ee)){var historical=SEED.expenses;exps=historical.concat(ee);}else errors.push("expenses");var qq=await apiGet("getEnquiries");if(qq&&Array.isArray(qq))enqs=qq;else errors.push("enquiries");
+    // Sync attendance from Sheets
+    var aa=await apiGet("getAttendance");
+    if(aa&&Array.isArray(aa)){
+      aa.forEach(function(r){
+        var ym=String(r.month||"").trim();
+        var sid=String(r.studentId||"").trim();
+        var dt=String(r.date||"").slice(0,10);
+        var status=String(r.status||"").trim();
+        if(!ym||!sid||!dt||!status)return;
+        var day=parseInt(dt.slice(8));
+        if(!att[ym])att[ym]={};
+        if(!att[ym][sid])att[ym][sid]={};
+        att[ym][sid][day]=status;
+      });
+    }sv();updBadges();render();if(errors.length===0)showToast("Synced "+students.length+" students successfully!","ok");else showToast("Partial sync. Failed: "+errors.join(", "),"warn");}catch(e){showToast("Sync error: "+e.message,"error");}finally{syncInProgress=false;setBtnLoading("btn-sync",false,"&#128260; Sync from Sheets");}}
 async function seedToSheets(){showToast("Seeding "+students.length+" students...");var ok=0;for(var i=0;i<students.length;i++){var r=await apiCall("addStudent",students[i]);if(r&&r.ok)ok++;}showToast("Seeded "+ok+" of "+students.length+" students!","ok");}
 function fmt(n){return "Rs "+Number(n||0).toLocaleString("en-IN");}
 function tod(){return new Date().toISOString().slice(0,10);}
@@ -675,13 +694,13 @@ function rStud(){
     for(var i=0;i<fil.length;i++){
       var s=fil[i];
       rows += "<tr style='cursor:pointer' onclick='openSP(this.dataset.sid)' data-sid='"+s.id+"'>"
-        +"<td><b>"+s.name+"</b><br><span style='color:var(--gray);font-size:11px'>"+s.phone+"</span></td>"
+        +"<td style='cursor:pointer' onclick='openSP(this.parentElement.dataset.sid)'><b>"+s.name+"</b><br><span style='color:var(--gray);font-size:11px'>"+s.phone+"</span></td>"
         +"<td>"+beltB(s.belt)+"</td><td>"+s.plan+"</td><td>"+fmt(s.fee)+"</td>"
         +"<td>"+String(s.validTill||"-").slice(0,10)+"</td>"
         +"<td>"+statB(s)+"</td>"
         +"<td style='white-space:nowrap'>"
           +"<button class='btn btr' style='padding:4px 8px;font-size:11px' onclick='openFee(this.dataset.id)' data-id='"+s.id+"'>Pay</button> "
-          +"<button class='btn bto' style='padding:4px 8px;font-size:11px' onclick='toggleInactive(this.dataset.id,true)' data-id='"+s.id+"' title='Mark as On Break'>Pause</button>"
+          +"<button class='btn bto' style='padding:4px 8px;font-size:11px' onclick='toggleInactive(this.dataset.id,true)' data-id='"+s.id+"'>Pause</button> "+"<button class='btn bto' style='padding:4px 8px;font-size:11px;color:#7c3aed;border-color:#7c3aed' onclick='openEdit(this.dataset.id)' data-id='"+s.id+"'>&#9999;</button>"
         +"</td>"
         +"</tr>";
     }
@@ -777,7 +796,7 @@ function rAtt(){
   if(attFilter==="absent")attS=attS.filter(function(s){var ab=Object.values((rec[s.id]||{})).filter(function(v){return v==="A";}).length;return ab>=5;});
   else if(attFilter==="perfect")attS=attS.filter(function(s){return Object.values((rec[s.id]||{})).filter(function(v){return v==="A";}).length===0;});
   var hdr="<div style='display:flex;align-items:center;gap:2px';margin-bottom:4px;padding:0 4px;position:sticky;top:0;z-index:3;background:#fff'>"
-    +"<div style='width:140px;flex-shrink:0;position:sticky;left:0;background:#fff;z-index:2'></div>";
+    +"<div style='width:140px;flex-shrink:0;position:sticky;left:0;background:#fff;z-index:10;box-shadow:2px 0 6px rgba(0,0,0,.08)'></div>";
   for(var d=1;d<=dim;d++){
     var dayNum=new Date(yr,mo-1,d).getDay();
     var isHol=hols.has(d);
@@ -819,7 +838,7 @@ function rAtt(){
     var absBg=absCnt>5?"#fee2e2":absCnt>2?"#fef9c3":"#f3f4f6";
     var absCol=absCnt>5?"#dc2626":absCnt>2?"#b45309":"#6b7280";
     rows+="<div style='display:flex;align-items:center;gap:2px;margin-bottom:2px;padding:0 4px;background:"+(function(){var hl=srch&&s.name.toLowerCase().includes(srch.toLowerCase());return hl?"#fef9c3":(i%2===0?"#fff":"#fafafa");})()+"'>"
-      +"<div style='width:140px;flex-shrink:0;font-size:12px;font-weight:500;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;padding-right:6px;position:sticky;left:0;background:inherit;z-index:1;box-shadow:2px 0 4px rgba(0,0,0,.06)'>"+s.name+"</div>"
+      +"<div style='width:140px;flex-shrink:0;font-size:12px;font-weight:500;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;padding-right:6px;position:sticky;left:0;background:inherit;z-index:9;box-shadow:3px 0 8px rgba(0,0,0,.1)'>"+s.name+"</div>"
       +cells
       +"<div style='width:36px;text-align:center;flex-shrink:0;font-size:12px;font-weight:700;color:"+absCol+";background:"+absBg+";border-radius:4px;padding:2px 0'>"+absCnt+"</div>"
       +"</div>";
@@ -827,7 +846,7 @@ function rAtt(){
 
   // ── Summary row ───────────────────────────────────────────────────────────
   var summaryRow="<div style='display:flex;align-items:center;gap:2px;margin-top:4px;padding:4px 4px 0;border-top:2px solid var(--border)'>"
-    +"<div style='width:140px;flex-shrink:0;font-size:11px;font-weight:700;color:var(--gray);padding-right:6px;position:sticky;left:0;background:#f9fafb;z-index:1;box-shadow:2px 0 4px rgba(0,0,0,.06)'>Present Count</div>";
+    +"<div style='width:140px;flex-shrink:0;font-size:11px;font-weight:700;color:var(--gray);padding-right:6px;position:sticky;left:0;background:#f9fafb;z-index:9;box-shadow:3px 0 8px rgba(0,0,0,.1)'>Present Count</div>";
   for(var d=1;d<=dim;d++){
     if(hols.has(d)){
       summaryRow+="<div style='width:28px;height:20px;flex-shrink:0'></div>";
@@ -855,7 +874,7 @@ return "<div style='display:flex;align-items:center;gap:10px;margin-bottom:14px;
     +"</div>"
     +"<div class='card' id='att-card'>"
       +"<div class='ch'><h3>Attendance &mdash; "+ym+"</h3><span class='bdg bb'>Tap to toggle P/A</span></div>"
-      +"<div style='overflow-x:auto;padding:8px 4px;position:relative'>"
+      +"<div class='att-scroll-container' style='padding:8px 4px'>"
         +hdr+rows+summaryRow
       +"</div>"
     +"</div>";
