@@ -219,16 +219,16 @@ nav{flex:1;padding:14px 0;overflow-y:auto}
 #bday-banner{background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;padding:12px 20px;display:flex;align-items:center;gap:10px;font-size:13px;flex-wrap:wrap;box-shadow:0 2px 8px rgba(217,119,6,.4)}
 
 /* Sticky attendance name column */
-.att-name-sticky{position:sticky!important;left:0!important;z-index:9!important;background:inherit!important;box-shadow:2px 0 6px rgba(0,0,0,.08)!important}
-.att-scroll-container{overflow-x:auto;overflow-y:visible;-webkit-overflow-scrolling:touch;position:relative;isolation:isolate}
 
-.att-tw{overflow-x:auto;-webkit-overflow-scrolling:touch}
-.att-tbl{border-collapse:collapse;table-layout:fixed}
-.att-tbl td,.att-tbl th{border:1px solid #f0f0f0}
-.att-nt{position:sticky!important;left:0!important;z-index:20!important;min-width:120px;max-width:120px;width:120px;padding:4px 8px;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;box-shadow:3px 0 6px rgba(0,0,0,.08);border-right:2px solid #e5e7eb!important}
-.att-tbl thead .att-nt{background:#f9fafb;font-weight:700;color:var(--gray);z-index:30!important}
-.att-tbl tfoot .att-nt{z-index:20!important}
-@media(max-width:768px){.att-nt{min-width:100px;max-width:100px;width:100px;font-size:11px;padding:3px 5px}}
+
+
+.att-tw{display:block;overflow-x:auto;overflow-y:visible;-webkit-overflow-scrolling:touch;border-radius:0 0 12px 12px}
+.att-tbl{border-collapse:separate;border-spacing:0;table-layout:fixed;font-family:var(--fb)}
+.att-tbl td,.att-tbl th{border-bottom:1px solid #f0f0f0;border-right:1px solid #f0f0f0}
+.att-nt{position:sticky;left:0;z-index:20;background:#fff;min-width:120px;max-width:120px;width:120px;padding:5px 8px;font-size:12px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-right:2px solid #e2e8f0!important;box-shadow:4px 0 8px -2px rgba(0,0,0,.12)}
+.att-tbl thead th.att-nt{background:#f9fafb;font-weight:700;color:var(--gray);z-index:30;font-size:11px}
+.att-tbl tfoot td.att-nt{background:#f9fafb;z-index:20}
+@media(max-width:768px){.att-nt{min-width:100px;max-width:100px;width:100px;font-size:11px;padding:4px 6px}}
 </style>
 
 <style id="print-hide">
@@ -403,10 +403,11 @@ async function doSyncSheets(){if(syncInProgress){showToast("Sync already in prog
         var dt=String(r.date||"").slice(0,10);
         var status=String(r.status||"").trim();
         if(!ym||!sid||!dt||!status)return;
+        var aYm=dt.slice(0,7);
         var day=parseInt(dt.slice(8));
-        if(!att[ym])att[ym]={};
-        if(!att[ym][sid])att[ym][sid]={};
-        att[ym][sid][day]=status;
+        if(!att[aYm])att[aYm]={};
+        if(!att[aYm][sid])att[aYm][sid]={};
+        att[aYm][sid][day]=status;
       });
     }sv();updBadges();render();if(errors.length===0)showToast("Synced "+students.length+" students successfully!","ok");else showToast("Partial sync. Failed: "+errors.join(", "),"warn");}catch(e){showToast("Sync error: "+e.message,"error");}finally{syncInProgress=false;setBtnLoading("btn-sync",false,"&#128260; Sync from Sheets");}}
 async function seedToSheets(){showToast("Seeding "+students.length+" students...");var ok=0;for(var i=0;i<students.length;i++){var r=await apiCall("addStudent",students[i]);if(r&&r.ok)ok++;}showToast("Seeded "+ok+" of "+students.length+" students!","ok");}
@@ -1086,9 +1087,11 @@ async function fetchMonthAtt(ym){
         var dt=String(r.date||"").slice(0,10);
         var stat=String(r.status||"").trim();
         if(!sid||!dt||!stat)return;
+        var recYm=dt.slice(0,7);
         var day=parseInt(dt.slice(8));
-        if(!att[ym][sid])att[ym][sid]={};
-        att[ym][sid][day]=stat;
+        if(!att[recYm])att[recYm]={};
+        if(!att[recYm][sid])att[recYm][sid]={};
+        att[recYm][sid][day]=stat;
       });
       sv();render();
       showToast("Loaded "+data.length+" records for "+ym,"ok");
