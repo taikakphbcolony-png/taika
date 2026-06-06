@@ -40,8 +40,8 @@ nav{flex:1;padding:14px 0;overflow-y:auto}
 .sc .vl{font-family:var(--fh);font-size:26px;font-weight:700;margin:5px 0 3px}
 .sc .sb2{font-size:12px;color:var(--gray2)}
 .sc.rd .vl{color:var(--red)}.sc.gn .vl{color:#16a34a}.sc.gd .vl{color:var(--gold)}
-.card{background:#fff;border-radius:var(--r);box-shadow:var(--sh);overflow:hidden;margin-bottom:18px}
-.ch{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.card{background:#fff;border-radius:var(--r);box-shadow:var(--sh);overflow:visible;margin-bottom:18px}
+.ch{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;overflow:hidden}
 .ch h3{font-family:var(--fh);font-size:16px;font-weight:600}
 .tbl{width:100%;border-collapse:collapse}
 .tbl th{background:#f9fafb;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--gray);font-weight:600;padding:9px 14px;text-align:left;border-bottom:1px solid var(--border)}
@@ -222,13 +222,20 @@ nav{flex:1;padding:14px 0;overflow-y:auto}
 
 
 
-.att-tw{display:block;overflow-x:auto;overflow-y:visible;-webkit-overflow-scrolling:touch;border-radius:0 0 12px 12px}
+.att-tw{display:block;overflow-x:auto;overflow-y:visible;-webkit-overflow-scrolling:touch;border-radius:0 0 var(--r) var(--r)}
 .att-tbl{border-collapse:separate;border-spacing:0;table-layout:fixed;font-family:var(--fb)}
 .att-tbl td,.att-tbl th{border-bottom:1px solid #f0f0f0;border-right:1px solid #f0f0f0}
-.att-nt{position:sticky;left:0;z-index:20;background:#fff;min-width:120px;max-width:120px;width:120px;padding:5px 8px;font-size:12px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-right:2px solid #e2e8f0!important;box-shadow:4px 0 8px -2px rgba(0,0,0,.12)}
+.att-nt{position:sticky;left:0;z-index:20;background:#fff;will-change:transform;min-width:120px;max-width:120px;width:120px;padding:5px 8px;font-size:12px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-right:2px solid #e2e8f0!important;box-shadow:4px 0 8px -2px rgba(0,0,0,.12)}
 .att-tbl thead th.att-nt{background:#f9fafb;font-weight:700;color:var(--gray);z-index:30;font-size:11px}
 .att-tbl tfoot td.att-nt{background:#f9fafb;z-index:20}
 @media(max-width:768px){.att-nt{min-width:100px;max-width:100px;width:100px;font-size:11px;padding:4px 6px}}
+
+.att-card-wrap{background:#fff;border-radius:var(--r);box-shadow:var(--sh);margin-bottom:18px;overflow:visible}
+.att-card-wrap .ch{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+
+/* Attendance card — needs overflow:visible for sticky to work */
+.att-card{overflow:visible!important}
+.att-card .ch{border-radius:var(--r) var(--r) 0 0;overflow:hidden}
 </style>
 
 <style id="print-hide">
@@ -668,7 +675,7 @@ function rDash(){
   }
   // ── END PIE CHART ─────────────────────────────────────────────────────────
 
-  return "<div class='sg5'><div class='sc'><div class='lb'>Total Students</div><div class='vl'>"+active.length+"</div><div class='sb2'>"+( inactive.length>0 ? inactive.length+" on break" : "All active" )+"</div></div><div class='sc gn'><div class='lb'>Fee Paid</div><div class='vl'>"+paid+"</div><div class='sb2'>"+Math.round(active.length ? paid/active.length*100 : 0)+"% of batch</div></div><div class='sc rd'><div class='lb'>Overdue</div><div class='vl'>"+unp+"</div><div class='sb2'>"+fmt(tDue)+" pending</div></div><div class='sc gd'><div class='lb'>Total Collected</div><div class='vl'>"+fmt(totalCol)+"</div><div class='sb2'>"+dateRange+"</div></div><div class='sc' style='border-left:4px solid #16a34a'><div class='lb'>Wallet Balance</div><div class='vl' style='color:#16a34a'>"+fmt(wallet)+"</div><div class='sb2'>After all expenses</div></div></div>"+pieCard+"<div style='display:grid;grid-template-columns:1fr 1fr;gap:18px' id='dash-grid'><div class='card'><div class='ch'><h3>Monthly P&L</h3><div style='display:flex;gap:14px;margin-top:3px'><span style='display:flex;align-items:center;gap:4px;font-size:11px;color:#16a34a'><span style='width:10px;height:10px;background:#16a34a;border-radius:2px;display:inline-block'></span>Collected</span><span style='display:flex;align-items:center;gap:4px;font-size:11px;color:#6b7280'><span style='width:10px;height:10px;background:#94a3b8;border-radius:2px;display:inline-block'></span>Expenses</span></div></div><div style='padding:4px 18px 12px'><div class='cw'>"+mRows+"</div></div></div><div class='card'><div class='ch'><h3>Recently Joined</h3></div><table class='tbl'><thead><tr><th>Name</th><th>Belt</th><th>Status</th></tr></thead><tbody>"+rRows+"</tbody></table></div></div>";
+  return "<div class='sg5'><div class='sc'><div class='lb'>Total Students</div><div class='vl'>"+active.length+"</div><div class='sb2'>"+( inactive.length>0 ? inactive.length+" on break" : "All active" )+"</div></div><div class='sc gn'><div class='lb'>Fee Paid</div><div class='vl'>"+paid+"</div><div class='sb2'>"+Math.round(active.length ? paid/active.length*100 : 0)+"% of batch</div></div><div class='sc rd'><div class='lb'>Overdue</div><div class='vl'>"+unp+"</div><div class='sb2'>"+fmt(tDue)+" pending</div></div><div class='sc gd'><div class='lb'>Total Collected</div><div class='vl'>"+fmt(totalCol)+"</div><div class='sb2'>"+dateRange+"</div></div><div class='sc' style='border-left:4px solid #16a34a'><div class='lb'>Wallet Balance</div><div class='vl' style='color:#16a34a'>"+fmt(wallet)+"</div><div class='sb2'>After all expenses</div></div></div>"+pieCard+"<div style='display:grid;grid-template-columns:1fr 1fr;gap:18px' id='dash-grid'><div class='card'><div class='ch'><h3>Monthly P&L</h3><div style='display:flex;gap:14px;margin-top:3px'><span style='display:flex;align-items:center;gap:4px;font-size:11px;color:#16a34a'><span style='width:10px;height:10px;background:#16a34a;border-radius:2px;display:inline-block'></span>Collected</span><span style='display:flex;align-items:center;gap:4px;font-size:11px;color:#6b7280'><span style='width:10px;height:10px;background:#94a3b8;border-radius:2px;display:inline-block'></span>Expenses</span></div></div><div style='padding:4px 18px 12px'><div class='cw'>"+mRows+"</div></div></div><div class='card'><div class='ch'><h3>Recently Joined</h3></div><table class='tbl'><thead><tr><th>Name</th><th>Belt</th><th>Status</th></tr></thead><tbody>"+rRows+"</tbody></table></div>";
 }
 function rStud(){
   var tab = window._studTab || "active";
@@ -742,7 +749,7 @@ function rStud(){
       +"<div class='card'><div class='ch'><h3>Students on Break ("+fil2.length+")</h3>"
         +"<span style='font-size:12px;color:var(--gray)'>Excluded from fees, attendance &amp; notifications</span></div>"
       +"<div style='overflow-x:auto'><table class='tbl'><thead><tr><th>Student</th><th>Belt</th><th>Plan</th><th>Fee</th><th>Status</th><th>Actions</th></tr></thead>"
-      +"<tbody>"+rows2+"</tbody></table></div></div>";
+      +"<tbody>"+rows2+"</tbody></table></div>";
   }
 }
 
@@ -763,7 +770,7 @@ function rFees(){
   var hR="";
   for(var j=0;j<hist.length;j++){var p=hist[j];var st=students.find(function(x){return x.id===p.sid||x.id===p.studentId;})||{name:"Unknown",phone:""};var amt=Number(p.amt||p.amount||0);var vt=String(p.valid||p.validTill||"").slice(0,10);var msg2="Dear "+String(st.parentName||st.name||"Parent")+","+"\n\nThank you for your payment! We are pleased to confirm receipt of the fees for "+st.name+"."+"\n\nPayment Confirmation"+"\nStudent Name    : "+st.name+"\nAmount Paid     : "+fmt(amt)+"\nPayment Date    : "+p.date+"\nMembership Plan : "+p.plan+"\nValid Till      : "+vt+"\n\nYour trust and continued support mean a great deal to us."+" We are committed to providing "+st.name+" with the best training experience at Taika Martial Arts Academy."+"\n\nWith warm regards,"+"\nCoach & Team"+"\nTaika Martial Arts Academy"+"\nGokul Plots";hR+="<tr><td><b>"+st.name+"</b></td><td style='color:#16a34a;font-weight:600'>"+fmt(amt)+"</td><td>"+String(p.date||"").slice(0,10)+"</td><td>"+vt+"</td><td>"+p.plan+"</td><td style='color:var(--gray);font-size:12px'>"+(String(p.recordedOn||"").slice(0,10)||String(p.date||"").slice(0,10))+"</td><td>"+waLink(st.phone,msg2,"Send Receipt")+"</td></tr>";}
   if(!hR)hR="<tr><td colspan='6' style='text-align:center;color:var(--gray);padding:20px'>No payments recorded yet</td></tr>";
-  return fcFee+"<div class='card' style='margin-bottom:18px'><div class='ch'><h3>Overdue Payments ("+ov.length+")</h3><button class='btn bto' style='font-size:12px' onclick='sendAllReminders()'>Send All Reminders</button></div><div style='overflow-x:auto'><table class='tbl'><thead><tr><th>Student</th><th>Fee</th><th>Was Valid Till</th><th>Status</th><th>Actions</th></tr></thead><tbody>"+ovR+"</tbody></table></div></div><div class='card'><div class='ch'><h3>Payment History</h3></div><div style='overflow-x:auto'><table class='tbl'><thead><tr><th>Student</th><th>Amount</th><th>Paid On</th><th>Valid Till</th><th>Plan</th><th>Recorded On</th><th>Receipt</th></tr></thead><tbody>"+hR+"</tbody></table></div></div>";
+  return fcFee+"<div class='card' style='margin-bottom:18px'><div class='ch'><h3>Overdue Payments ("+ov.length+")</h3><button class='btn bto' style='font-size:12px' onclick='sendAllReminders()'>Send All Reminders</button></div><div style='overflow-x:auto'><table class='tbl'><thead><tr><th>Student</th><th>Fee</th><th>Was Valid Till</th><th>Status</th><th>Actions</th></tr></thead><tbody>"+ovR+"</tbody></table></div></div><div class='card'><div class='ch'><h3>Payment History</h3></div><div style='overflow-x:auto'><table class='tbl'><thead><tr><th>Student</th><th>Amount</th><th>Paid On</th><th>Valid Till</th><th>Plan</th><th>Recorded On</th><th>Receipt</th></tr></thead><tbody>"+hR+"</tbody></table></div>";
 }
 function sendAllReminders(){var ov=students.filter(function(s){return !s.inactive && isUp(s);});if(!ov.length){showToast("No overdue students!","ok");return;}showToast("Opening WhatsApp for "+ov.length+" reminders...","warn");var i=0;function next(){if(i>=ov.length)return;var s=ov[i++];var msg="Dear "+String(s.parentName||s.name)+","+" fees for "+s.name+" at Taika Martial Arts Academy are overdue. Amount: "+fmt(s.fee)+". Kindly pay at the earliest."+" Regards, Taika Martial Arts Academy, Gokul Plots.";window.open("https://wa.me/91"+String(s.phone).replace(/\D/g,"")+"?text="+encodeURIComponent(msg),"_blank");setTimeout(next,1500);}next();}
 function getHolidays(ym){
@@ -879,7 +886,7 @@ function rAtt(){
       +"<button class='btn bto' onclick='printAtt()' style='border-color:#7c3aed;color:#7c3aed'>Print Sheet</button>"
       +"<span style='font-size:12px;color:var(--gray)'>"+attS.length+" students</span>"
     +"</div>"
-    +"<div class='card'><div class='ch'><h3>Attendance &mdash; "+ym+"</h3><span class='bdg bb'>Tap to toggle P / A</span></div>"
+    +"<div class='att-card-wrap'><div class='ch'><h3>Attendance &mdash; "+ym+"</h3><span class='bdg bb'>Tap to toggle P / A</span></div>"
     +"<div class='att-tw'><table class='att-tbl'>"+thead+tbody+tfoot+"</table></div>"
     +"</div>"
     +summHTML;
@@ -916,7 +923,7 @@ function rEnq(){
   var esl=srch.toLowerCase();var fEnqs=enqs.filter(function(e){return !srch||e.name.toLowerCase().includes(esl)||String(e.phone||'').includes(srch);});  for(var i=0;i<fEnqs.length;i++){var e=fEnqs[i];var opts=["New","Contacted","Joined","Lost"].map(function(s){return "<option"+(s===e.status?" selected":"")+">"+s+"</option>";}).join("");rows+="<tr><td><b>"+e.name+"</b></td><td>"+e.phone+"</td><td>"+e.date+"</td><td>"+(e.source||"-")+"</td><td><span class='bdg "+(sc[e.status]||"")+"'>"+e.status+"</span></td><td>"+waLink(e.phone,"Dear "+e.name+","+"\n\nWarm greetings from Taika Martial Arts Academy, Gokul Plots!"+"\n\nThank you for showing interest in our academy. We would be absolutely delighted to have you as part of the Taika family."+"\n\nAt Taika, we offer world-class martial arts training in a disciplined, encouraging, and friendly environment."+" Our experienced coaches are dedicated to bringing out the best in every student."+"\n\nWe warmly invite you for a FREE TRIAL CLASS at your convenient time."+" Come, experience the Taika difference for yourself!"+"\n\nFor more details or to schedule your trial class, feel free to reply to this message or call us directly."+"\n\nWe look forward to welcoming you!"+"\n\nWith warm regards,"+"\nCoach & Team"+"\nTaika Martial Arts Academy"+"\nGokul Plots","Invite")+" <select onchange='updEnq("+i+",this.value)' style='padding:3px 6px;border:1px solid var(--border);border-radius:5px;font-size:11px'>"+opts+"</select></td></tr>";}
   if(!rows)rows="<tr><td colspan='6' style='text-align:center;color:var(--gray);padding:20px'>No enquiries yet</td></tr>";
   var stat=["New","Contacted","Joined","Lost"];var cards=stat.map(function(s){return "<div class='sc'><div class='lb'>"+s+"</div><div class='vl'>"+enqs.filter(function(e){return e.status===s;}).length+"</div></div>";}).join("");
-  return "<div style='display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:18px'>"+cards+"</div><div class='card'><div class='ch'><h3>Enquiry Pipeline</h3></div><div style='overflow-x:auto'><table class='tbl'><thead><tr><th>Name</th><th>Phone</th><th>Date</th><th>Source</th><th>Status</th><th>Actions</th></tr></thead><tbody>"+rows+"</tbody></table></div></div>";
+  return "<div style='display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:18px'>"+cards+"</div><div class='card'><div class='ch'><h3>Enquiry Pipeline</h3></div><div style='overflow-x:auto'><table class='tbl'><thead><tr><th>Name</th><th>Phone</th><th>Date</th><th>Source</th><th>Status</th><th>Actions</th></tr></thead><tbody>"+rows+"</tbody></table></div>";
 }
 function updEnq(i,v){enqs[i].status=v;sv();render();apiCall("updateEnquiry",{id:enqs[i].id,status:v});}
 function toggleNP(){
