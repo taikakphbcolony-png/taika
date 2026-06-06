@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<style>html{overflow-x:hidden}</style>
 <meta charset="UTF-8">
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
@@ -9,7 +10,7 @@
 <style>
 :root{--red:#C0392B;--red2:#922B21;--gold:#D4AC0D;--black:#111;--dark:#1c1c1e;--gray:#6b7280;--gray2:#9ca3af;--border:#e5e7eb;--bg:#f4f4f6;--fh:"Oswald",sans-serif;--fb:"DM Sans",sans-serif;--r:12px;--sh:0 2px 16px rgba(0,0,0,.07);--sb:240px}
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:var(--fb);background:var(--bg);color:var(--black);display:flex;min-height:100vh}
+body{font-family:var(--fb);background:var(--bg);color:var(--black);display:flex;min-height:100vh;overflow-x:hidden;max-width:100vw}
 #sb{width:var(--sb);min-height:100vh;background:var(--dark);display:flex;flex-direction:column;position:fixed;left:0;top:0;bottom:0;z-index:100;transition:transform .3s}
 .lw{padding:18px 16px;border-bottom:1px solid rgba(255,255,255,.08);display:flex;align-items:center;gap:10px}
 .lw img{width:48px;height:48px;border-radius:50%;object-fit:cover;flex-shrink:0}
@@ -25,7 +26,7 @@ nav{flex:1;padding:14px 0;overflow-y:auto}
 .sf span{color:rgba(255,255,255,.4);font-size:11px}
 .sbtn{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.7);border-radius:6px;padding:5px 10px;font-size:11px;cursor:pointer;font-family:var(--fb);width:100%;text-align:left;transition:all .2s}
 .sbtn:hover{background:rgba(255,255,255,.2)}.sbtn:disabled{opacity:.5;cursor:not-allowed}
-#mn{margin-left:var(--sb);flex:1;display:flex;flex-direction:column}
+#mn{margin-left:var(--sb);flex:1;display:flex;flex-direction:column;overflow-x:hidden;min-width:0}
 #tb{background:#fff;border-bottom:1px solid var(--border);padding:0 24px;height:58px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50}
 #tb .pt{font-family:var(--fh);font-size:20px;font-weight:600;letter-spacing:.5px}
 .tr{display:flex;align-items:center;gap:10px}
@@ -111,7 +112,7 @@ nav{flex:1;padding:14px 0;overflow-y:auto}
   #mn{margin-left:0}
   #hb{display:block}
   #ov.show{display:block}
-  #ct{padding:12px}
+  #ct{padding:12px;overflow-x:hidden;max-width:100vw}
 
   /* Topbar */
   #tb{padding:0 12px;height:52px}
@@ -222,11 +223,11 @@ nav{flex:1;padding:14px 0;overflow-y:auto}
 
 
 
-.att-tw{display:block;overflow-x:auto;overflow-y:visible;-webkit-overflow-scrolling:touch;border-radius:0 0 var(--r) var(--r)}
+.att-tw{display:block;overflow-x:scroll;overflow-y:visible;-webkit-overflow-scrolling:touch;border-radius:0 0 var(--r) var(--r);max-width:100%;width:100%}
 .att-tbl{border-collapse:separate;border-spacing:0;table-layout:fixed;font-family:var(--fb)}
 .att-tbl td,.att-tbl th{border-bottom:1px solid #f0f0f0;border-right:1px solid #f0f0f0}
-.att-nt{position:sticky;left:0;z-index:20;background:#fff;will-change:transform;min-width:120px;max-width:120px;width:120px;padding:5px 8px;font-size:12px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-right:2px solid #e2e8f0!important;box-shadow:4px 0 8px -2px rgba(0,0,0,.12)}
-.att-tbl thead th.att-nt{background:#f9fafb;font-weight:700;color:var(--gray);z-index:30;font-size:11px}
+.att-nt{position:-webkit-sticky!important;position:sticky!important;left:0!important;z-index:20;background:#fff;min-width:120px;max-width:120px;width:120px;padding:5px 8px;font-size:12px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-right:2px solid #e2e8f0!important;box-shadow:4px 0 8px -2px rgba(0,0,0,.12)}
+.att-tbl thead th.att-nt{background:#f9fafb!important;font-weight:700;color:var(--gray);z-index:30;font-size:11px}
 .att-tbl tfoot td.att-nt{background:#f9fafb;z-index:20}
 @media(max-width:768px){.att-nt{min-width:100px;max-width:100px;width:100px;font-size:11px;padding:4px 6px}}
 
@@ -433,7 +434,7 @@ function showPage(p){curPage=p;try{history.replaceState(null,'','#'+p);}catch(e)
   // Update bottom nav
   document.querySelectorAll(".bni").forEach(function(el){el.classList.remove("active");});
   var bn=document.getElementById("bn-"+p);if(bn)bn.classList.add("active");document.querySelectorAll(".ni").forEach(function(el,i){el.classList.toggle("active",pages[i]===p);});var titles={dashboard:"Dashboard",students:"Students",fees:"Fee Management",attendance:"Attendance",expenses:"Expenses & P&L",enquiries:"Enquiries"};document.getElementById("pt").textContent=titles[p]||"";var acts={dashboard:"+ Add Student",students:"+ Add Student",fees:"+ Record Payment",attendance:"Mark Today",expenses:"+ Add Expense",enquiries:"+ Add Enquiry"};document.getElementById("ta").innerHTML=acts[p]||"";var fns={dashboard:openAS,students:openAS,fees:function(){openFee(null);},attendance:function(){markAll(attMo);},expenses:openAE,enquiries:openAQ};document.getElementById("ta").onclick=fns[p]||openAS;updBadges();render();closeSB();}
-function render(){var fns={dashboard:rDash,students:rStud,fees:rFees,attendance:rAtt,expenses:rExp,enquiries:rEnq};try{if(fns[curPage])document.getElementById("ct").innerHTML=fns[curPage]();}catch(e){document.getElementById("ct").innerHTML="<div style='padding:40px;text-align:center;color:var(--gray)'>Error rendering. <button class='btn btr' onclick='doSyncSheets()'>Reload Data</button></div>";console.error("Render error:",e);}}
+function render(){var fns={dashboard:rDash,students:rStud,fees:rFees,attendance:rAtt,expenses:rExp,enquiries:rEnq};try{if(fns[curPage]){document.getElementById("ct").innerHTML=fns[curPage]();if(curPage==="attendance")fixAttSticky();}}catch(e){document.getElementById("ct").innerHTML="<div style='padding:40px;text-align:center;color:var(--gray)'>Error rendering. <button class='btn btr' onclick='doSyncSheets()'>Reload Data</button></div>";console.error("Render error:",e);}}
 function onSrch(v){srch=v;render();}
 function rDash(){
   if(!students||students.length===0){return "<div style='padding:60px;text-align:center'><div style='font-size:48px;margin-bottom:16px'>&#129355;</div><div style='font-family:var(--fh);font-size:20px;margin-bottom:8px'>Welcome to Taika Martial Arts Academy</div><div style='font-size:13px;color:var(--gray);margin-bottom:24px'>Click below to load your data from Google Sheets</div><button class='btn btr' onclick='doSyncSheets()'>Load Data from Sheets</button></div>";}
@@ -826,7 +827,7 @@ function rAtt(){
     if(srch&&s.name.toLowerCase().includes(srch.toLowerCase())) rowBg="#fef9c3";
     var absCnt=0;
     tbody+="<tr>";
-    tbody+="<td class='att-nt' style='background:"+rowBg+"' onclick='openSP(\""+s.id+"\")'>"
+    tbody+="<td class='att-nt' style='position:-webkit-sticky;position:sticky;left:0;background:"+rowBg+"' onclick='openSP(\""+s.id+"\")'>"
       +"<span style='font-size:12px;font-weight:500'>"+s.name+"</span></td>";
     for(var d=1;d<=dim;d++){
       var ds=ym+"-"+(d<10?"0":"")+d, v=sr[d]||"";
@@ -1104,6 +1105,19 @@ async function fetchMonthAtt(ym){
       showToast("Loaded "+data.length+" records for "+ym,"ok");
     } else { showToast("No data for "+ym,"ok"); }
   }catch(e){showToast("Could not load attendance","error");}
+}
+
+// Force sticky on attendance name column after DOM render
+function fixAttSticky(){
+  setTimeout(function(){
+    var cells = document.querySelectorAll('.att-nt');
+    cells.forEach(function(c){
+      c.style.position = '-webkit-sticky';
+      c.style.position = 'sticky';
+      c.style.left = '0';
+      c.style.zIndex = '20';
+    });
+  }, 50);
 }
 function openAE(){var det=prompt("Expense description:");if(!det)return;var amt=parseFloat(prompt("Amount (Rs):"));if(!amt||isNaN(amt))return;var by=prompt("Paid by (e.g. Dinesh / Nanditha):");var e={date:tod(),detail:det,expense:amt,credit:0,paidBy:by||""};exps.unshift(e);sv();render();apiCall("addExpense",e).then(function(r){if(r&&r.ok)showToast("Expense saved to Sheets!","ok");});}
 function openAQ(){var name=prompt("Enquiry - Full Name:");if(!name)return;var phone=prompt("Mobile Number:");if(!phone)return;var src=prompt("Source (Referral / Pamphlet / Social Media / Walk-in):");var q={name:name,phone:phone,date:tod(),source:src||"Walk-in",status:"New"};enqs.push(q);sv();render();apiCall("addEnquiry",q).then(function(r){if(r&&r.ok)showToast("Enquiry added to Sheets!","ok");});}
