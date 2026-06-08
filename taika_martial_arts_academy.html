@@ -419,7 +419,7 @@ async function doSyncSheets(){if(syncInProgress){showToast("Sync already in prog
       });
     }sv();updBadges();render();if(errors.length===0)showToast("Synced "+students.length+" students successfully!","ok");else showToast("Partial sync. Failed: "+errors.join(", "),"warn");}catch(e){showToast("Sync error: "+e.message,"error");}finally{syncInProgress=false;setBtnLoading("btn-sync",false,"&#128260; Sync from Sheets");}}
 async function seedToSheets(){showToast("Seeding "+students.length+" students...");var ok=0;for(var i=0;i<students.length;i++){var r=await apiCall("addStudent",students[i]);if(r&&r.ok)ok++;}showToast("Seeded "+ok+" of "+students.length+" students!","ok");}
-function fmt(n){return "Rs "+Number(n||0).toLocaleString("en-IN");}
+function fmt(n){return "Rs "+Number(n||0).toLocaleString("en-IN");}
 function tod(){return new Date().toISOString().slice(0,10);}
 function isUp(s){if(s.inactive)return false;if(!s.validTill)return true;return String(s.validTill).slice(0,10)<tod();}
 function dud(s){if(!s.validTill)return -999;return Math.ceil((new Date(String(s.validTill).slice(0,10))-new Date(tod()))/864e5);}
@@ -492,7 +492,7 @@ function rDash(){
   var upToNow=allArr.filter(function(m){var p=m.month.split(" ");return parseInt(p[1])*12+mths.indexOf(p[0])<=nowNum;});
   var liveArr=upToNow.slice(-6).reverse();
   var maxA=liveArr.length?Math.max.apply(null,liveArr.map(function(m){return Math.max(m.collected||1,m.expenses||1);})):1;
-  var dateRange=allArr.length?allArr[0].month+" – "+allArr[allArr.length-1].month:"";
+  var dateRange=allArr.length?allArr[0].month+" - "+allArr[allArr.length-1].month:"";
   var mRows=liveArr.map(function(m){
     var wc=Math.round((m.collected||0)/maxA*100);
     var we=Math.round((m.expenses||0)/maxA*100);
@@ -528,7 +528,7 @@ function rDash(){
     return "<tr><td><b>"+s.name+"</b><br><span style=\'font-size:11px;color:var(--gray2)\'>Joined "+when+"</span></td><td>"+beltB(s.belt)+"</td><td>"+statB(s)+"</td></tr>";
   }).join("");
 
-  // ── THIS MONTH PIE CHART ─────────────────────────────────────────────────
+  // -- THIS MONTH PIE CHART -------------------------------------------------
   // Collect ALL payments made this month regardless of which month they cover
   var nowDate = new Date();
   var curMoLabel = nowDate.toLocaleString("en-IN",{month:"long"})+" "+nowDate.getFullYear();
@@ -569,12 +569,12 @@ function rDash(){
     else if(plan.includes("6"))   cat.halfYearly += amt;
     else if(plan.includes("3"))   cat.quarterly  += amt;
     else                          cat.monthly    += amt;
-    // If payment date > validTill of previous cycle → it was a due payment
+    // If payment date > validTill of previous cycle -> it was a due payment
     // Simple heuristic: if paidOn (before this payment) was more than 35 days ago, it's a due
   });
 
   // If fees[] total is less than SEED base, the difference is from 
-  // payments not yet in fees[] — add them as Monthly Plan
+  // payments not yet in fees[] - add them as Monthly Plan
   if(totalThisMo < seedBase && seedBase > 0){
     var diff = seedBase - totalThisMo;
     cat.monthly += diff;
@@ -674,7 +674,7 @@ function rDash(){
       +"<div style='font-size:12px;color:var(--gray2);margin-top:6px'>Record a fee payment to see the breakdown here.</div>"
     +"</div>";
   }
-  // ── END PIE CHART ─────────────────────────────────────────────────────────
+  // -- END PIE CHART ---------------------------------------------------------
 
   return "<div class='sg5'><div class='sc'><div class='lb'>Total Students</div><div class='vl'>"+active.length+"</div><div class='sb2'>"+( inactive.length>0 ? inactive.length+" on break" : "All active" )+"</div></div><div class='sc gn'><div class='lb'>Fee Paid</div><div class='vl'>"+paid+"</div><div class='sb2'>"+Math.round(active.length ? paid/active.length*100 : 0)+"% of batch</div></div><div class='sc rd'><div class='lb'>Overdue</div><div class='vl'>"+unp+"</div><div class='sb2'>"+fmt(tDue)+" pending</div></div><div class='sc gd'><div class='lb'>Total Collected</div><div class='vl'>"+fmt(totalCol)+"</div><div class='sb2'>"+dateRange+"</div></div><div class='sc' style='border-left:4px solid #16a34a'><div class='lb'>Wallet Balance</div><div class='vl' style='color:#16a34a'>"+fmt(wallet)+"</div><div class='sb2'>After all expenses</div></div></div>"+pieCard+"<div style='display:grid;grid-template-columns:1fr 1fr;gap:18px' id='dash-grid'><div class='card'><div class='ch'><h3>Monthly P&L</h3><div style='display:flex;gap:14px;margin-top:3px'><span style='display:flex;align-items:center;gap:4px;font-size:11px;color:#16a34a'><span style='width:10px;height:10px;background:#16a34a;border-radius:2px;display:inline-block'></span>Collected</span><span style='display:flex;align-items:center;gap:4px;font-size:11px;color:#6b7280'><span style='width:10px;height:10px;background:#94a3b8;border-radius:2px;display:inline-block'></span>Expenses</span></div></div><div style='padding:4px 18px 12px'><div class='cw'>"+mRows+"</div></div></div><div class='card'><div class='ch'><h3>Recently Joined</h3></div><table class='tbl'><thead><tr><th>Name</th><th>Belt</th><th>Status</th></tr></thead><tbody>"+rRows+"</tbody></table></div>";
 }
@@ -814,7 +814,7 @@ function rAtt(){
   for(var d=1;d<=dim;d++){
     var dw=new Date(yr,mo-1,d).getDay(), isH=hols.has(d);
     thead+="<th style='text-align:center;font-size:9px;padding:3px 1px;min-width:26px;max-width:26px;width:26px;"
-      +"background:"+(isH?"#fee2e2":"#f9fafb")+";color:"+(isH?"#dc2626":"#6b7280")+"'>"
+      +"background:"+(isH?"#fff7ed":"#f9fafb")+";color:"+(isH?"#c2410c":"#6b7280")+"'>"
       +"<div>"+dn[dw]+"</div><div style='font-weight:700;font-size:10px'>"+d+"</div></th>";
   }
   thead+="<th style='text-align:center;font-size:10px;padding:2px;min-width:30px;background:#f9fafb'>Abs</th></tr></thead>";
@@ -832,9 +832,8 @@ function rAtt(){
     for(var d=1;d<=dim;d++){
       var ds=ym+"-"+(d<10?"0":"")+d, v=sr[d]||"";
       var isH=hols.has(d), isFut=ds>todStr;
-      if(v==="A") absCnt++;
       var bg,col,txt;
-      if(isH){bg="#fee2e2";col="#dc2626";txt="H";}
+      if(isH){bg="#fff7ed";col="#c2410c";txt="H";}
       else if(isFut){bg=rowBg;col="#e5e7eb";txt="";}
       else if(v==="P"){bg="#dcfce7";col="#16a34a";txt="P";}
       else if(v==="A"){bg="#fee2e2";col="#dc2626";txt="A";}
@@ -843,7 +842,7 @@ function rAtt(){
         +" style='text-align:center;font-size:11px;font-weight:700;color:"+col+";background:"+bg
         +";cursor:"+(isH||isFut?"default":"pointer")+";padding:0;height:28px;min-width:26px;max-width:26px;-webkit-tap-highlight-color:transparent'>"+txt+"</td>";
     }
-    var ac=absCnt, absBg=ac>5?"#fee2e2":ac>2?"#fef9c3":"transparent", absCol=ac>5?"#dc2626":ac>2?"#b45309":"#6b7280";
+    var ac=Object.keys(sr).filter(function(k){return k!=="__holidays"&&sr[k]==="A";}).length; var absBg=ac>5?"#fee2e2":ac>2?"#fef9c3":"transparent", absCol=ac>5?"#dc2626":ac>2?"#b45309":"#6b7280";
     tbody+="<td style='text-align:center;font-size:12px;font-weight:700;color:"+absCol+";background:"+absBg+";padding:2px'>"+ac+"</td></tr>";
   }
   tbody+="</tbody>";
@@ -851,7 +850,7 @@ function rAtt(){
   // TFOOT
   var tfoot="<tfoot><tr style='background:#f9fafb'><td class='att-nt' style='background:#f9fafb;font-size:11px;color:#6b7280;font-weight:700'>Present</td>";
   for(var d=1;d<=dim;d++){
-    if(hols.has(d)){tfoot+="<td style='background:#fee2e2'></td>";continue;}
+    if(hols.has(d)){tfoot+="<td style='background:#fff7ed'></td>";continue;}
     var cnt=0; attS.forEach(function(s){if((rec[s.id]||{})[d]==="P")cnt++;});
     var pct=attS.length?Math.round(cnt/attS.length*100):0;
     var bg=pct>=80?"#dcfce7":pct>=60?"#fef9c3":"#fff";
@@ -893,7 +892,8 @@ function rAtt(){
     +summHTML;
 }
 
-function tAtt(sid,day,ym){var hols=getHolidays(ym);if(hols.has(parseInt(day)))return;if(!att[ym])att[ym]={};if(!att[ym][sid])att[ym][sid]={};var c=att[ym][sid][day]||"";att[ym][sid][day]=c==="P"?"A":c==="A"?"":"P";sv();render();updBadges();var ds=ym+"-"+(day<10?"0":"")+day;var st=students.find(function(x){return x.id===sid;});if(st&&att[ym][sid][day])apiCall("markAttendance",{records:[{studentId:sid,studentName:st.name,date:ds,month:ym,status:att[ym][sid][day]}]});}
+function tAtt(sid,day,ym){var hols=getHolidays(ym);if(hols.has(parseInt(day)))return;if(!att[ym])att[ym]={};if(!att[ym][sid])att[ym][sid]={};var c=att[ym][sid][day]||"";att[ym][sid][day]=c==="P"?"A":"P";
+  sv();render();updBadges();var ds=ym+"-"+(day<10?"0":"")+day;var st=students.find(function(x){return x.id===sid;});if(st&&att[ym][sid][day])apiCall("markAttendance",{records:[{studentId:sid,studentName:st.name,date:ds,month:ym,status:att[ym][sid][day]}]});}
 function markAllPresent(ym){ return markAll(ym); }
 function markAll(ym){if(!att[ym])att[ym]={};var d=parseInt(tod().slice(8)),recs=[];
   var hols=getHolidays(ym);
@@ -1004,9 +1004,9 @@ function printAtt(){
     for(var d=1;d<=dim;d++){
       var v=sr[d]||"";
       var isH=hols.has(d);
-      var bg=isH?"#fde8e8":v==="P"?"#d1fae5":v==="A"?"#fee2e2":"#fff";
+      var bg=isH?"#fff7ed":v==="P"?"#d1fae5":v==="A"?"#fee2e2":"#fff";
       var txt=isH?"H":v||"";
-      var col=isH?"#b91c1c":v==="P"?"#065f46":v==="A"?"#991b1b":"#9ca3af";
+      var col=isH?"#c2410c":v==="P"?"#065f46":v==="A"?"#991b1b":"#9ca3af";
       if(v==="A")abs++;
       cells+="<td style='background:"+bg+";color:"+col+";text-align:center;font-weight:700;font-size:9px;width:20px;min-width:20px;max-width:20px;padding:2px 0'>"+txt+"</td>";
     }
@@ -1076,12 +1076,7 @@ function setFilter(type,val){
   else if(type==="att")attFilter=val;
   render();
 }
-function fixSheetHeaders(){
-  showToast("Fixing headers...","ok");
-  apiGet("fixHeaders").then(function(r){
-    showToast(r&&r.ok?(r.msg||"Headers fixed!"):"Fix failed","ok");
-  });
-}
+
 async function fetchMonthAtt(ym){
   var existing=att[ym]&&Object.keys(att[ym]).filter(function(k){return k!=="__holidays";}).length>0;
   if(existing)return;
@@ -1123,27 +1118,17 @@ function openAE(){var det=prompt("Expense description:");if(!det)return;var amt=
 function openAQ(){var name=prompt("Enquiry - Full Name:");if(!name)return;var phone=prompt("Mobile Number:");if(!phone)return;var src=prompt("Source (Referral / Pamphlet / Social Media / Walk-in):");var q={name:name,phone:phone,date:tod(),source:src||"Walk-in",status:"New"};enqs.push(q);sv();render();apiCall("addEnquiry",q).then(function(r){if(r&&r.ok)showToast("Enquiry added to Sheets!","ok");});}
 function toggleSB(){document.getElementById("sb").classList.toggle("open");document.getElementById("ov").classList.toggle("show");}
 function closeSB(){document.getElementById("sb").classList.remove("open");if(document.getElementById("sp"))document.getElementById("sp").classList.remove("open");document.getElementById("ov").classList.remove("show");}
-// ════════════════════════════════════════════════════════════════════════
+// ========================================================================
 // NEW FEATURES - Added to existing JS
-// ════════════════════════════════════════════════════════════════════════
+// ========================================================================
 
-// ── Filter function ──────────────────────────────────────────────────────
-function setFilter(type, val){
-  if(type==="stud") studFilter=val;
-  else if(type==="fee")  feeFilter=val;
-  else if(type==="att")  attFilter=val;
-  render();
-}
+// -- Filter function ------------------------------------------------------
 
-// ── Fix Sheet Headers ────────────────────────────────────────────────────
-async function fixSheetHeaders(){
-  showToast("Fixing sheet headers...", "ok");
-  var r = await apiGet("fixHeaders");
-  if(r && r.ok) showToast(r.msg || "Headers fixed!", "ok");
-  else showToast("Fix failed - redeploy Apps Script first", "error");
-}
 
-// ── Birthday helpers ─────────────────────────────────────────────────────
+// -- Fix Sheet Headers ----------------------------------------------------
+
+
+// -- Birthday helpers -----------------------------------------------------
 function getBirthdays(daysAhead){
   var today = new Date();
   var result = [];
@@ -1186,7 +1171,7 @@ function showBirthdayBanner(){
   banner.style.display = "flex";
 }
 
-// ── Student Profile Side Panel ───────────────────────────────────────────
+// -- Student Profile Side Panel -------------------------------------------
 function openSP(sid){
   var s = students.find(function(x){return x.id===sid;});
   if(!s) return;
@@ -1264,7 +1249,7 @@ function closeSP(){
   document.getElementById("ov").classList.remove("show");
 }
 
-// ── Student Edit ─────────────────────────────────────────────────────────
+// -- Student Edit ---------------------------------------------------------
 function openEdit(sid){
   var s = students.find(function(x){return x.id===sid;});
   if(!s) return;
