@@ -795,8 +795,8 @@ function rAtt(){
   var rec=att[ym]||{}, todStr=tod();
   var hols=getHolidays(ym);
   var attS=students.filter(function(x){return !x.inactive;});
-  if(attFilter==="absent") attS=attS.filter(function(s){return Object.values((rec[s.id]||{})).filter(function(v){return v==="A";}).length>=5;});
-  else if(attFilter==="perfect") attS=attS.filter(function(s){return Object.values((rec[s.id]||{})).filter(function(v){return v==="A";}).length===0;});
+  if(attFilter==="absent") attS=attS.filter(function(s){var hd3=getHolidays(ym); return Object.keys((rec[s.id]||{})).filter(function(k){return !hd3.has(parseInt(k))&&(rec[s.id]||{})[k]==="A";}).length>=5;});
+  else if(attFilter==="perfect") attS=attS.filter(function(s){var hd2=getHolidays(ym); return Object.keys((rec[s.id]||{})).filter(function(k){return !hd2.has(parseInt(k))&&(rec[s.id]||{})[k]==="A";}).length===0;});
 
   var fcAtt="<div class='fc' style='margin-bottom:10px'>"
     +"<button class='chip"+(attFilter==="all"?" on":"")+"' onclick='setFilter(\"att\",\"all\")'>All Students <span class='chip-n'>"+attS.length+"</span></button>"
@@ -842,7 +842,7 @@ function rAtt(){
         +" style='text-align:center;font-size:11px;font-weight:700;color:"+col+";background:"+bg
         +";cursor:"+(isH||isFut?"default":"pointer")+";padding:0;height:28px;min-width:26px;max-width:26px;-webkit-tap-highlight-color:transparent'>"+txt+"</td>";
     }
-    var ac=Object.keys(sr).filter(function(k){return k!=="__holidays"&&sr[k]==="A";}).length; var absBg=ac>5?"#fee2e2":ac>2?"#fef9c3":"transparent", absCol=ac>5?"#dc2626":ac>2?"#b45309":"#6b7280";
+    var hdays=getHolidays(ym); var ac=Object.keys(sr).filter(function(k){return k!=="__holidays"&&sr[k]==="A"&&!hdays.has(parseInt(k));}).length; var absBg=ac>5?"#fee2e2":ac>2?"#fef9c3":"transparent", absCol=ac>5?"#dc2626":ac>2?"#b45309":"#6b7280";
     tbody+="<td style='text-align:center;font-size:12px;font-weight:700;color:"+absCol+";background:"+absBg+";padding:2px'>"+ac+"</td></tr>";
   }
   tbody+="</tbody>";
@@ -860,7 +860,7 @@ function rAtt(){
 
   // TOP ABSENTEES
   var topAbs=attS.map(function(s){
-    var ab=Object.values(rec[s.id]||{}).filter(function(v){return v==="A";}).length;
+    var hds=getHolidays(ym); var ab=Object.keys(rec[s.id]||{}).filter(function(k){return !hds.has(parseInt(k))&&(rec[s.id]||{})[k]==="A";}).length;
     var pr=Object.values(rec[s.id]||{}).filter(function(v){return v==="P";}).length;
     return {s:s,ab:ab,pr:pr};
   }).filter(function(x){return x.ab>0;}).sort(function(a,b){return b.ab-a.ab;}).slice(0,5);
