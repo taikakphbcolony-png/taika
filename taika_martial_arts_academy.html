@@ -256,6 +256,7 @@ nav{flex:1;padding:14px 0;overflow-y:auto}
     <div class="ni" onclick="showPage('attendance')"><span class="ico">&#128203;</span>Attendance</div>
     <div class="ni" onclick="showPage('expenses')"><span class="ico">&#129534;</span>Expenses</div>
     <div class="ni" onclick="showPage('enquiries')"><span class="ico">&#128222;</span>Enquiries</div>
+    <div class="ni" onclick="showPage('birthdays')"><span class="ico">&#127874;</span>Birthdays<span class="nb" id="bdc" style="background:#d97706">0</span></div>
     <div class="ni" onclick="toggleNP()"><span class="ico">&#128276;</span>Notifications<span class="nb" id="nc">0</span></div>
   </nav>
   <div class="sf">
@@ -343,6 +344,10 @@ nav{flex:1;padding:14px 0;overflow-y:auto}
   <div class="bni" onclick="showPage('enquiries')" id="bn-enquiries">
     <span class="bico">&#128222;</span>
     <span class="bnl">Enquiry</span>
+  </div>
+  <div class="bni" onclick="showPage('birthdays')" id="bn-birthdays">
+    <span class="bico">&#127874;</span>
+    <span class="bnl">Birthdays</span>
   </div>
 </nav>
 
@@ -435,12 +440,18 @@ function getNots(){var n=[],ym=tod().slice(0,7);students.filter(function(s){retu
   var today=tod();
   return n.filter(function(x){var k=notKey(x)+'-'+today; return !dismissedNots[k];});
 }
-function updBadges(){document.getElementById("ub").textContent=students.filter(function(s){return isUp(s);}).length;document.getElementById("nc").textContent=getNots().length;}
+function updBadges(){
+  document.getElementById("ub").textContent=students.filter(function(s){return isUp(s);}).length;
+  document.getElementById("nc").textContent=getNots().length;
+  var bdEl=document.getElementById("bdc");
+  if(bdEl){var bdc=getBirthdays(7).length;bdEl.textContent=bdc;bdEl.style.display=bdc?"inline":"none";}
+  showBirthdayBanner();
+}
 function showPage(p){curPage=p;try{history.replaceState(null,'','#'+p);}catch(e){}var pages=["dashboard","students","fees","attendance","expenses","enquiries",""];
   // Update bottom nav
   document.querySelectorAll(".bni").forEach(function(el){el.classList.remove("active");});
   var bn=document.getElementById("bn-"+p);if(bn)bn.classList.add("active");document.querySelectorAll(".ni").forEach(function(el,i){el.classList.toggle("active",pages[i]===p);});var titles={dashboard:"Dashboard",students:"Students",fees:"Fee Management",attendance:"Attendance",expenses:"Expenses & P&L",enquiries:"Enquiries"};document.getElementById("pt").textContent=titles[p]||"";var acts={dashboard:"+ Add Student",students:"+ Add Student",fees:"+ Record Payment",attendance:"Mark Today",expenses:"+ Add Expense",enquiries:"+ Add Enquiry"};document.getElementById("ta").innerHTML=acts[p]||"";var fns={dashboard:openAS,students:openAS,fees:function(){openFee(null);},attendance:function(){markAll(attMo);},expenses:openAE,enquiries:openAQ};document.getElementById("ta").onclick=fns[p]||openAS;updBadges();render();closeSB();}
-function render(){var fns={dashboard:rDash,students:rStud,fees:rFees,attendance:rAtt,expenses:rExp,enquiries:rEnq};try{if(fns[curPage]){document.getElementById("ct").innerHTML=fns[curPage]();if(curPage==="attendance")fixAttSticky();}}catch(e){document.getElementById("ct").innerHTML="<div style='padding:40px;text-align:center;color:var(--gray)'>Error rendering. <button class='btn btr' onclick='doSyncSheets()'>Reload Data</button></div>";console.error("Render error:",e);}}
+function render(){var fns={dashboard:rDash,students:rStud,fees:rFees,attendance:rAtt,expenses:rExp,enquiries:rEnq,birthdays:rBdays};try{if(fns[curPage]){document.getElementById("ct").innerHTML=fns[curPage]();if(curPage==="attendance")fixAttSticky();}}catch(e){document.getElementById("ct").innerHTML="<div style='padding:40px;text-align:center;color:var(--gray)'>Error rendering. <button class='btn btr' onclick='doSyncSheets()'>Reload Data</button></div>";console.error("Render error:",e);}}
 function onSrch(v){srch=v;render();}
 function rDash(){
   if(!students||students.length===0){return "<div style='padding:60px;text-align:center'><div style='font-size:48px;margin-bottom:16px'>&#129355;</div><div style='font-family:var(--fh);font-size:20px;margin-bottom:8px'>Welcome to Taika Martial Arts Academy</div><div style='font-size:13px;color:var(--gray);margin-bottom:24px'>Click below to load your data from Google Sheets</div><button class='btn btr' onclick='doSyncSheets()'>Load Data from Sheets</button></div>";}
@@ -1058,12 +1069,17 @@ function switchNotTab(tab){
   document.getElementById("nt-bdays-content").style.display=isA?"none":"block";
 }
 
-function updBadges(){document.getElementById("ub").textContent=students.filter(function(s){return isUp(s);}).length;document.getElementById("nc").textContent=getNots().length;}
+function updBadges(){
+  document.getElementById("ub").textContent=students.filter(function(s){return isUp(s);}).length;
+  document.getElementById("nc").textContent=getNots().length;
+  var bdEl=document.getElementById("bdc");
+  if(bdEl){var bc=getBirthdays(7).length;bdEl.textContent=bc;bdEl.style.display=bc>0?"inline":"none";}
+}
 function showPage(p){curPage=p;try{history.replaceState(null,'','#'+p);}catch(e){}var pages=["dashboard","students","fees","attendance","expenses","enquiries",""];
   // Update bottom nav
   document.querySelectorAll(".bni").forEach(function(el){el.classList.remove("active");});
   var bn=document.getElementById("bn-"+p);if(bn)bn.classList.add("active");document.querySelectorAll(".ni").forEach(function(el,i){el.classList.toggle("active",pages[i]===p);});var titles={dashboard:"Dashboard",students:"Students",fees:"Fee Management",attendance:"Attendance",expenses:"Expenses & P&L",enquiries:"Enquiries"};document.getElementById("pt").textContent=titles[p]||"";var acts={dashboard:"+ Add Student",students:"+ Add Student",fees:"+ Record Payment",attendance:"Mark Today",expenses:"+ Add Expense",enquiries:"+ Add Enquiry"};document.getElementById("ta").innerHTML=acts[p]||"";var fns={dashboard:openAS,students:openAS,fees:function(){openFee(null);},attendance:function(){markAll(attMo);},expenses:openAE,enquiries:openAQ};document.getElementById("ta").onclick=fns[p]||openAS;updBadges();render();closeSB();}
-function render(){var fns={dashboard:rDash,students:rStud,fees:rFees,attendance:rAtt,expenses:rExp,enquiries:rEnq};try{if(fns[curPage]){document.getElementById("ct").innerHTML=fns[curPage]();if(curPage==="attendance")fixAttSticky();}}catch(e){document.getElementById("ct").innerHTML="<div style='padding:40px;text-align:center;color:var(--gray)'>Error rendering. <button class='btn btr' onclick='doSyncSheets()'>Reload Data</button></div>";console.error("Render error:",e);}}
+function render(){var fns={dashboard:rDash,students:rStud,fees:rFees,attendance:rAtt,expenses:rExp,enquiries:rEnq,birthdays:rBdays};try{if(fns[curPage]){document.getElementById("ct").innerHTML=fns[curPage]();if(curPage==="attendance")fixAttSticky();}}catch(e){document.getElementById("ct").innerHTML="<div style='padding:40px;text-align:center;color:var(--gray)'>Error rendering. <button class='btn btr' onclick='doSyncSheets()'>Reload Data</button></div>";console.error("Render error:",e);}}
 function onSrch(v){srch=v;render();}
 function rDash(){
   if(!students||students.length===0){return "<div style='padding:60px;text-align:center'><div style='font-size:48px;margin-bottom:16px'>&#129355;</div><div style='font-family:var(--fh);font-size:20px;margin-bottom:8px'>Welcome to Taika Martial Arts Academy</div><div style='font-size:13px;color:var(--gray);margin-bottom:24px'>Click below to load your data from Google Sheets</div><button class='btn btr' onclick='doSyncSheets()'>Load Data from Sheets</button></div>";}
@@ -1820,9 +1836,6 @@ function getBirthdays(daysAhead){
 }
 
 function showBirthdayBanner(){
-  // Also update notifications badge
-  updBadges();
-
   var banner = document.getElementById("bday-banner");
   var bdays = getBirthdays(3);
   if(!bdays.length){ banner.style.display="none"; return; }
@@ -1954,7 +1967,133 @@ function saveEdit(){
 }
 
 
-(async function(){var _hp=(location.hash||'').replace('#','');var _vp=['dashboard','students','fees','attendance','expenses','enquiries'];if(_hp&&_vp.indexOf(_hp)!==-1)curPage=_hp;updBadges();render();try{var r=await apiGet("ping");if(r&&r.ok){document.getElementById("conn-status").innerHTML="&#9679; Connected &#10003;";document.getElementById("conn-status").style.color="#4ade80";showToast("Connected to Google Sheets!","ok");if(!localStorage.getItem("ts"))await doSyncSheets();}}catch(e){console.log("Auto-connect:",e.message);}})();
+
+function rBdays(){
+  var upcoming = getBirthdays(30);
+  var todayBdays = upcoming.filter(function(b){return b.diff===0;});
+  var soon = upcoming.filter(function(b){return b.diff>0&&b.diff<=7;});
+  var later = upcoming.filter(function(b){return b.diff>7;});
+
+  // Students missing DOB
+  var missingDOB = students.filter(function(s){
+    return !s.inactive && !String(s.dob||s.dateOfBirth||"").trim();
+  });
+
+  function bdayCard(b){
+    var when = b.diff===0?"Today!":b.diff===1?"Tomorrow":"In "+b.diff+" days";
+    var age = "";
+    try{
+      var yr = new Date().getFullYear() - new Date(String(b.s.dob||"").slice(0,10)+"T00:00:00").getFullYear();
+      age = " · Turning "+yr;
+    }catch(e){}
+    var msg = "Dear "+String(b.s.parentName||b.s.name)+",\n\nWarm birthday wishes to "+b.s.name+" from all of us at Taika Martial Arts Academy, Gokul Plots!\n\nWishing "+b.s.name+" a wonderful birthday filled with joy and happiness.\n\nWith warm regards,\nCoach & Team\nTaika Martial Arts Academy, Gokul Plots";
+    var isToday = b.diff===0;
+    return "<div style='display:flex;align-items:center;gap:14px;padding:12px 18px;border-bottom:1px solid #f3f4f6;"+(isToday?"background:linear-gradient(135deg,#fffbeb,#fef3c7);":"")+";'>"
+      +"<div style='font-size:28px'>"+(b.diff===0?"&#127881;":b.diff<=3?"&#127874;":"&#128197;")+"</div>"
+      +"<div style='flex:1'>"
+        +"<div style='font-size:14px;font-weight:700;color:var(--dark)'>"+b.s.name+"</div>"
+        +"<div style='font-size:12px;color:var(--gray)'>"+String(b.s.dob||"").slice(0,10)+age+"</div>"
+        +"<div style='font-size:12px;color:"+(isToday?"#d97706":"var(--gray2)")+"'>"+when+"</div>"
+      +"</div>"
+      +"<div style='display:flex;flex-direction:column;gap:6px;align-items:flex-end'>"
+        +waLink(b.s.phone, msg, "Send Wish")
+      +"</div>"
+    +"</div>";
+  }
+
+  var html = "";
+
+  // Today's birthdays — prominent section
+  if(todayBdays.length){
+    html += "<div class='card' style='border:2px solid #f59e0b;background:linear-gradient(135deg,#fffbeb,#fff)'>"
+      +"<div class='ch' style='background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff'>"
+        +"<h3>&#127881; Today's Birthdays ("+todayBdays.length+")</h3>"
+      +"</div>"
+      +todayBdays.map(bdayCard).join("")
+    +"</div>";
+  }
+
+  // Next 7 days
+  if(soon.length){
+    html += "<div class='card'>"
+      +"<div class='ch'><h3>&#127874; This Week ("+soon.length+")</h3></div>"
+      +soon.map(bdayCard).join("")
+    +"</div>";
+  }
+
+  // Next 30 days
+  if(later.length){
+    html += "<div class='card'>"
+      +"<div class='ch'><h3>&#128197; This Month ("+later.length+")</h3></div>"
+      +later.map(bdayCard).join("")
+    +"</div>";
+  }
+
+  if(!upcoming.length){
+    html = "<div class='card'><div style='padding:32px;text-align:center'>"
+      +"<div style='font-size:48px;margin-bottom:12px'>&#127874;</div>"
+      +"<div style='font-size:16px;font-weight:600;margin-bottom:6px'>No upcoming birthdays</div>"
+      +"<div style='font-size:13px;color:var(--gray)'>No birthdays in the next 30 days</div>"
+    +"</div></div>";
+  }
+
+  // Missing DOB warning
+  if(missingDOB.length){
+    html += "<div class='card' style='border-left:4px solid #f59e0b'>"
+      +"<div class='ch'><h3>&#9888;&#65039; Missing Date of Birth ("+missingDOB.length+")</h3>"
+      +"<span style='font-size:12px;color:var(--gray)'>These students have no birthday recorded</span></div>"
+      +"<div style='padding:12px 18px'>"
+        +"<div style='display:flex;flex-wrap:wrap;gap:8px'>"
+        +missingDOB.slice(0,20).map(function(s){
+          return "<span style='background:#fef9c3;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:500;cursor:pointer' onclick='openEdit(\""+s.id+"\")'>"
+            +s.name+" &#9999;&#65039;"
+          +"</span>";
+        }).join("")
+        +(missingDOB.length>20?"<span style='font-size:12px;color:var(--gray);padding:4px 8px'>...and "+(missingDOB.length-20)+" more</span>":"")
+        +"</div>"
+        +"<div style='margin-top:10px;font-size:12px;color:var(--gray2)'>Click a student name above to add their birthday</div>"
+      +"</div>"
+    +"</div>";
+  }
+
+  return html;
+}
+
+
+function rBdays(){
+  var upcoming=getBirthdays(30);
+  var todayB=upcoming.filter(function(b){return b.diff===0;});
+  var soonB=upcoming.filter(function(b){return b.diff>0&&b.diff<=7;});
+  var laterB=upcoming.filter(function(b){return b.diff>7;});
+  var missingDOB=students.filter(function(s){return !s.inactive&&!String(s.dob||s.dateOfBirth||"").trim();});
+
+  function bdayCard(b){
+    var when=b.diff===0?"Today!":b.diff===1?"Tomorrow":"In "+b.diff+" days";
+    var age="";
+    try{var yr=new Date().getFullYear()-new Date(String(b.s.dob||"").slice(0,10)+"T00:00:00").getFullYear();age=" · Turning "+yr;}catch(e){}
+    var msg="Dear "+String(b.s.parentName||b.s.name)+",\n\nWarm birthday wishes to "+b.s.name+" from all of us at Taika Martial Arts Academy, Gokul Plots!\n\nWishing "+b.s.name+" a wonderful birthday filled with joy and happiness.\n\nWith warm regards,\nCoach & Team\nTaika Martial Arts Academy, Gokul Plots";
+    var isT=b.diff===0;
+    return "<div style=\'display:flex;align-items:center;gap:14px;padding:12px 18px;border-bottom:1px solid #f3f4f6;"+(isT?"background:#fffbeb;":"")+"\' >"
+      +"<div style=\'font-size:28px\'>"+(b.diff===0?"&#127881;":b.diff<=3?"&#127874;":"&#128197;")+"</div>"
+      +"<div style=\'flex:1\'>"
+        +"<div style=\'font-size:14px;font-weight:700\'>"+b.s.name+"</div>"
+        +"<div style=\'font-size:12px;color:var(--gray)\'>"+String(b.s.dob||"").slice(0,10)+age+"</div>"
+        +"<div style=\'font-size:12px;color:"+(isT?"#d97706":"var(--gray2)")+"\'>"+when+"</div>"
+      +"</div>"
+      +waLink(b.s.phone,msg,"Send Wish")
+      +"</div>";
+  }
+
+  var out="";
+  if(todayB.length) out+="<div class=\'card\' style=\'border:2px solid #f59e0b\'><div class=\'ch\' style=\'background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff\'><h3>&#127881; Today ("+todayB.length+")</h3></div>"+todayB.map(bdayCard).join("")+"</div>";
+  if(soonB.length)  out+="<div class=\'card\'><div class=\'ch\'><h3>&#127874; This Week ("+soonB.length+")</h3></div>"+soonB.map(bdayCard).join("")+"</div>";
+  if(laterB.length) out+="<div class=\'card\'><div class=\'ch\'><h3>&#128197; This Month ("+laterB.length+")</h3></div>"+laterB.map(bdayCard).join("")+"</div>";
+  if(!upcoming.length) out="<div class=\'card\'><div style=\'padding:32px;text-align:center\'><div style=\'font-size:48px;margin-bottom:12px\'>&#127874;</div><div style=\'font-size:16px;font-weight:600;margin-bottom:6px\'>No upcoming birthdays</div><div style=\'font-size:13px;color:var(--gray)\'>No birthdays in the next 30 days</div></div></div>";
+  if(missingDOB.length) out+="<div class=\'card\' style=\'border-left:4px solid #f59e0b\'><div class=\'ch\'><h3>&#9888;&#65039; Missing DOB ("+missingDOB.length+")</h3><span style=\'font-size:12px;color:var(--gray)\'>Click a name to add birthday</span></div><div style=\'padding:12px 18px\'><div style=\'display:flex;flex-wrap:wrap;gap:8px\'>"+missingDOB.slice(0,30).map(function(s){return "<span style=\'background:#fef9c3;padding:4px 10px;border-radius:20px;font-size:12px;cursor:pointer\' onclick=\'openEdit(this.dataset.id)\' data-id=\'"+s.id+"\'>"+s.name+" &#9999;&#65039;</span>";}).join("")+(missingDOB.length>30?"<span style=\'font-size:12px;color:var(--gray);padding:4px 8px\'>...and "+(missingDOB.length-30)+" more</span>":"")+"</div></div></div>";
+  return out;
+}
+
+(async function(){var _hp=(location.hash||'').replace('#','');var _vp=['dashboard','students','fees','attendance','expenses','enquiries','birthdays'];if(_hp&&_vp.indexOf(_hp)!==-1)curPage=_hp;updBadges();render();try{var r=await apiGet("ping");if(r&&r.ok){document.getElementById("conn-status").innerHTML="&#9679; Connected &#10003;";document.getElementById("conn-status").style.color="#4ade80";showToast("Connected to Google Sheets!","ok");if(!localStorage.getItem("ts"))await doSyncSheets();}}catch(e){console.log("Auto-connect:",e.message);}})();
 </script>
 </body>
 </html>
