@@ -263,6 +263,7 @@ nav{flex:1;padding:14px 0;overflow-y:auto}
     <button class="sbtn" id="btn-test" onclick="doTestConn()">&#9889; Test Connection</button>
     <button class="sbtn" id="btn-sync" onclick="doSyncSheets()">&#128260; Sync from Sheets</button>
     <button class="sbtn" onclick="fixSheetHeaders()" style="font-size:10px;opacity:0.7">&#128295; Fix Sheet Headers</button>
+    <button class="sbtn" onclick="cleanupAttDupes()" style="font-size:10px;opacity:.7;color:#fbbf24">&#129529; Clean Att Duplicates</button>
   </div>
 </aside>
 <div id="ov" onclick="closeSB();closeSP();"></div>
@@ -1125,6 +1126,17 @@ function fixAttSticky(){
     });
   }, 50);
 }
+
+async function cleanupAttDupes(){
+  if(!confirm("This will remove all duplicate attendance rows from Sheets. Continue?")) return;
+  showToast("Cleaning duplicates...", "ok");
+  var r = await apiGet("cleanupAtt");
+  if(r && r.ok) showToast(r.msg || "Duplicates removed!", "ok");
+  else showToast("Cleanup failed", "error");
+}
+
+
+async function cleanupAttDupes(){if(!confirm('This will remove duplicate attendance rows from Sheets. Continue?'))return;showToast('Cleaning duplicates...','ok');var r=await apiGet('cleanupAtt');if(r&&r.ok)showToast(r.msg||'Duplicates removed!','ok');else showToast('Cleanup failed','error');}
 function openAE(){var det=prompt("Expense description:");if(!det)return;var amt=parseFloat(prompt("Amount (Rs):"));if(!amt||isNaN(amt))return;var by=prompt("Paid by (e.g. Dinesh / Nanditha):");var e={date:tod(),detail:det,expense:amt,credit:0,paidBy:by||""};exps.unshift(e);sv();render();apiCall("addExpense",e).then(function(r){if(r&&r.ok)showToast("Expense saved to Sheets!","ok");});}
 function openAQ(){var name=prompt("Enquiry - Full Name:");if(!name)return;var phone=prompt("Mobile Number:");if(!phone)return;var src=prompt("Source (Referral / Pamphlet / Social Media / Walk-in):");var q={name:name,phone:phone,date:tod(),source:src||"Walk-in",status:"New"};enqs.push(q);sv();render();apiCall("addEnquiry",q).then(function(r){if(r&&r.ok)showToast("Enquiry added to Sheets!","ok");});}
 function toggleSB(){document.getElementById("sb").classList.toggle("open");document.getElementById("ov").classList.toggle("show");}
