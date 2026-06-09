@@ -892,8 +892,19 @@ function rAtt(){
     +summHTML;
 }
 
-function tAtt(sid,day,ym){var hols=getHolidays(ym);if(hols.has(parseInt(day)))return;if(!att[ym])att[ym]={};if(!att[ym][sid])att[ym][sid]={};var c=att[ym][sid][day]||"";att[ym][sid][day]=c==="P"?"A":"P";
-  sv();render();updBadges();var ds=ym+"-"+(day<10?"0":"")+day;var st=students.find(function(x){return x.id===sid;});if(st&&att[ym][sid][day])apiCall("markAttendance",{records:[{studentId:sid,studentName:st.name,date:ds,month:ym,status:att[ym][sid][day]}]});}
+function tAtt(sid,day,ym){
+  var hols=getHolidays(ym);
+  if(hols.has(parseInt(day)))return;
+  var ds=ym+"-"+(day<10?"0":"")+day;
+  if(ds>tod()){showToast("Cannot mark future dates","error");return;}
+  if(!att[ym])att[ym]={};
+  if(!att[ym][sid])att[ym][sid]={};
+  var c=att[ym][sid][day]||"";
+  att[ym][sid][day]=c==="P"?"A":"P";
+  sv();render();updBadges();
+  var st=students.find(function(x){return x.id===sid;});
+  if(st&&att[ym][sid][day])apiCall("markAttendance",{records:[{studentId:sid,studentName:st.name,date:ds,month:ym,status:att[ym][sid][day]}]});
+}
 function markAllPresent(ym){ return markAll(ym); }
 function markAll(ym){if(!att[ym])att[ym]={};var d=parseInt(tod().slice(8)),recs=[];
   var hols=getHolidays(ym);
