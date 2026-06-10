@@ -2141,30 +2141,39 @@ function openBdayWish(sid){
     if(age>0&&age<30) ageStr=" Turning "+age+" today";
   }catch(e){}
   
+  var E={
+    cake: String.fromCodePoint(0x1F382),
+    star: String.fromCodePoint(0x1F31F),
+    party: String.fromCodePoint(0x1F389),
+    check: String.fromCodePoint(0x2705),
+    spark: String.fromCodePoint(0x1F4AB),
+    belt: String.fromCodePoint(0x1F94B),
+    pin: String.fromCodePoint(0x1F4CD)
+  };
   var eng=
-     "🎂 Happy Birthday "+fn+"! 🎂"
+     E.cake+" Happy Birthday "+fn+"! "+E.cake
     +"\n\n"
     +"Dear "+(s.parentName||s.name)+","
     +"\n\n"
     +"On behalf of the entire Taika Martial Arts Academy family, "
-    +"we send our warmest birthday wishes to "+fn+ageStr+"! 🥋"
+    +"we send our warmest birthday wishes to "+fn+ageStr+"! "+E.belt
     +"\n\n"
-    +"🌟 "+fn+", you are a star! Every day you step onto the mat, "
+    +E.star+" "+fn+", you are a star! Every day you step onto the mat, "
     +"you show courage, discipline and dedication that makes us so proud. "
     +"Keep that spirit alive always!"
     +"\n\n"
-    +"🎉 May this birthday bring you:"
-    +"\n✅ Endless joy & laughter"
-    +"\n✅ Good health & strength"
-    +"\n✅ New belts & achievements"
-    +"\n✅ Beautiful memories with family"
+    +E.party+" May this birthday bring you:"
+    +"\n"+E.check+" Endless joy & laughter"
+    +"\n"+E.check+" Good health & strength"
+    +"\n"+E.check+" New belts & achievements"
+    +"\n"+E.check+" Beautiful memories with family"
     +"\n\n"
-    +"💫 Wishing you the most wonderful year ahead, "+fn+"!"
+    +E.spark+" Wishing you the most wonderful year ahead, "+fn+"!"
     +"\n\n"
     +"With lots of love & warm wishes,\n"
-    +"🥋 Coach & Team\n"
+    +E.belt+" Coach & Team\n"
     +"Taika Martial Arts Academy\n"
-    +"Gokul Plots 📍";
+    +"Gokul Plots "+E.pin;
   s._tel=tel; s._eng=eng;
   document.getElementById("bday-modal-title").textContent="\uD83C\uDF89 Happy Birthday "+fn+"!";
   document.getElementById("bday-modal-sub").textContent=(String(s.dob||"").slice(0,10)||"DOB not set")+" \u00B7 "+s.belt+" Belt";
