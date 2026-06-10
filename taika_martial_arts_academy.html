@@ -381,6 +381,34 @@ nav{flex:1;padding:14px 0;overflow-y:auto}
     <div class="ma"><button class="btn bto" onclick="closeM('me')">Cancel</button><button class="btn btr" onclick="saveEdit()">Save Changes</button></div>
   </div>
 </div>
+
+<!-- Birthday Voice Greeting Modal -->
+<div class="mo2" id="mbday">
+  <div class="mod" style="max-width:420px;text-align:center">
+    <div style="font-size:48px;margin-bottom:8px">&#127881;</div>
+    <h3 id="bday-modal-title" style="margin-bottom:4px">Birthday Wish</h3>
+    <p id="bday-modal-sub" style="font-size:13px;color:var(--gray);margin-bottom:20px"></p>
+    <div style="background:#f9fafb;border-radius:12px;padding:16px;margin-bottom:16px">
+      <div style="font-size:11px;color:var(--gray2);margin-bottom:10px;text-transform:uppercase;letter-spacing:.5px;font-weight:600">Voice Greeting (English)</div>
+      <div id="bday-voice-text" style="font-size:13px;color:var(--dark);line-height:1.6;margin-bottom:12px;text-align:left"></div>
+      <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
+        <button class="btn btr" onclick="playBdayVoice()" id="bday-play-btn">&#9654; Play</button>
+        <button class="btn bto" onclick="stopBdayVoice()" id="bday-stop-btn" style="display:none">&#9646;&#9646; Stop</button>
+        <button class="btn bto" onclick="downloadBdayVoice()" id="bday-dl-btn">&#11015; Download</button>
+      </div>
+      <div id="bday-voice-status" style="font-size:11px;color:var(--gray2);margin-top:8px;min-height:16px"></div>
+    </div>
+    <div style="background:#f0fdf4;border-radius:12px;padding:14px;margin-bottom:16px;text-align:left">
+      <div style="font-size:11px;color:#16a34a;margin-bottom:6px;font-weight:600;text-transform:uppercase;letter-spacing:.5px">WhatsApp Text Message</div>
+      <div id="bday-wa-text" style="font-size:12px;color:var(--dark);line-height:1.6;white-space:pre-line"></div>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
+      <button class="btn btr" onclick="sendBdayWA()" style="min-width:140px">&#128172; Send on WhatsApp</button>
+      <button class="btn bto" onclick="closeM('mbday')">Close</button>
+    </div>
+    <p style="font-size:11px;color:var(--gray2);margin-top:10px">Play &amp; download the greeting, then attach as voice note in WhatsApp</p>
+  </div>
+</div>
 <div id="toast"></div>
 <script>
 var API="https://script.google.com/macros/s/AKfycbxd9RfbfjC45LAG4tgo9ZxR3DqTSJTfr7-3AtUv0_pzBx6qyHXOSQHfJkpMJb2j_iOEkg/exec";
@@ -1036,7 +1064,7 @@ function toggleNP(){
           +"<div style='font-size:13px;font-weight:600'>"+b.s.name+"</div>"
           +"<div style='font-size:11px;color:var(--gray)'>"+when+age+"</div>"
         +"</div>"
-        +waLink(b.s.phone,msg,"Send Wish")
+        +"<button class='btn btr' onclick='openBdayWish(this.dataset.id)' data-id='"+b.s.id+"' style='min-width:110px'>&#127881; Send Wish</button>"
         +"</div>";
     }).join("");
   }
@@ -2080,7 +2108,7 @@ function rBdays(){
         +"<div style=\'font-size:12px;color:var(--gray)\'>"+String(b.s.dob||"").slice(0,10)+age+"</div>"
         +"<div style=\'font-size:12px;color:"+(isT?"#d97706":"var(--gray2)")+"\'>"+when+"</div>"
       +"</div>"
-      +waLink(b.s.phone,msg,"Send Wish")
+      +"<button class='btn btr' onclick='openBdayWish(this.dataset.id)' data-id='"+b.s.id+"' style='min-width:110px'>&#127881; Send Wish</button>"
       +"</div>";
   }
 
@@ -2091,6 +2119,119 @@ function rBdays(){
   if(!upcoming.length) out="<div class=\'card\'><div style=\'padding:32px;text-align:center\'><div style=\'font-size:48px;margin-bottom:12px\'>&#127874;</div><div style=\'font-size:16px;font-weight:600;margin-bottom:6px\'>No upcoming birthdays</div><div style=\'font-size:13px;color:var(--gray)\'>No birthdays in the next 30 days</div></div></div>";
   if(missingDOB.length) out+="<div class=\'card\' style=\'border-left:4px solid #f59e0b\'><div class=\'ch\'><h3>&#9888;&#65039; Missing DOB ("+missingDOB.length+")</h3><span style=\'font-size:12px;color:var(--gray)\'>Click a name to add birthday</span></div><div style=\'padding:12px 18px\'><div style=\'display:flex;flex-wrap:wrap;gap:8px\'>"+missingDOB.slice(0,30).map(function(s){return "<span style=\'background:#fef9c3;padding:4px 10px;border-radius:20px;font-size:12px;cursor:pointer\' onclick=\'openEdit(this.dataset.id)\' data-id=\'"+s.id+"\'>"+s.name+" &#9999;&#65039;</span>";}).join("")+(missingDOB.length>30?"<span style=\'font-size:12px;color:var(--gray);padding:4px 8px\'>...and "+(missingDOB.length-30)+" more</span>":"")+"</div></div></div>";
   return out;
+}
+
+
+var _bdayStu=null;
+function openBdayWish(sid){
+  var s=students.find(function(x){return x.id===sid;});
+  if(!s)return;
+  _bdayStu=s;
+  var fn=s.name.split(" ")[0];
+  var tel="Happy Birthday "+fn+"! "
+    +"Today is your special day and we want you to know how proud we are of you. "
+    +"You are an amazing student and a true martial arts star. "
+    +"All of us at Taika Martial Arts Academy wish you a fantastic birthday! "
+    +"Keep shining, keep training, and have a super birthday "+fn+"!";
+  // Calculate age if DOB available
+  var ageStr="";
+  try{
+    var dobY=new Date(String(s.dob||"").slice(0,10)+"T00:00:00").getFullYear();
+    var age=new Date().getFullYear()-dobY;
+    if(age>0&&age<30) ageStr=" Turning "+age+" today";
+  }catch(e){}
+  
+  var eng=
+     "\uD83C\uDF82 Happy Birthday "+fn+"! \uD83C\uDF82"
+    +"\n\n"
+    +"Dear "+(s.parentName||s.name)+","
+    +"\n\n"
+    +"On behalf of the entire Taika Martial Arts Academy family, "
+    +"we send our warmest birthday wishes to "+fn+ageStr+"! \uD83E\uDD4B"
+    +"\n\n"
+    +"\uD83C\uDF1F "+fn+", you are a star! Every day you step onto the mat, "
+    +"you show courage, discipline and dedication that makes us so proud. "
+    +"Keep that spirit alive always!"
+    +"\n\n"
+    +"\uD83C\uDF89 May this birthday bring you:"
+    +"\n\u2705 Endless joy & laughter"
+    +"\n\u2705 Good health & strength"
+    +"\n\u2705 New belts & achievements"
+    +"\n\u2705 Beautiful memories with family"
+    +"\n\n"
+    +"\uD83D\uDCAB Wishing you the most wonderful year ahead, "+fn+"!"
+    +"\n\n"
+    +"With lots of love & warm wishes,\n"
+    +"\uD83E\uDD4B Coach & Team\n"
+    +"Taika Martial Arts Academy\n"
+    +"Gokul Plots \uD83D\uDCCD";
+  s._tel=tel; s._eng=eng;
+  document.getElementById("bday-modal-title").textContent="\uD83C\uDF89 Happy Birthday "+fn+"!";
+  document.getElementById("bday-modal-sub").textContent=(String(s.dob||"").slice(0,10)||"DOB not set")+" \u00B7 "+s.belt+" Belt";
+  document.getElementById("bday-voice-text").textContent=tel;
+  document.getElementById("bday-wa-text").textContent=eng;
+  document.getElementById("bday-stop-btn").style.display="none";
+  document.getElementById("bday-play-btn").style.display="inline-flex";
+  document.getElementById("bday-voice-status").textContent="";
+  document.getElementById("mbday").classList.add("open");
+}
+function playBdayVoice(){
+  if(!window.speechSynthesis){document.getElementById("bday-voice-status").textContent="Voice not supported on this browser";return;}
+  stopBdayVoice();
+  var utt=new SpeechSynthesisUtterance(_bdayStu._tel);
+  var voices=window.speechSynthesis.getVoices();
+  var ev=voices.find(function(v){return v.lang&&v.lang.startsWith("en")&&(v.name.includes("Female")||v.name.includes("Samantha")||v.name.includes("Karen")||v.name.includes("Google"));});
+  if(!ev) ev=voices.find(function(v){return v.lang&&v.lang.startsWith("en");});
+  if(ev){utt.voice=ev;utt.lang="en-IN";}
+  utt.rate=0.85;utt.pitch=1.1;utt.volume=1.0;
+  var st=document.getElementById("bday-voice-status");
+  utt.onstart=function(){st.textContent="\uD83C\uDFB5 Playing...";document.getElementById("bday-play-btn").style.display="none";document.getElementById("bday-stop-btn").style.display="inline-flex";};
+  utt.onend=function(){st.textContent="\u2713 Done! Download and send as voice note on WhatsApp.";document.getElementById("bday-play-btn").style.display="inline-flex";document.getElementById("bday-stop-btn").style.display="none";};
+  utt.onerror=function(e){st.textContent="Error playing voice. Try again.";document.getElementById("bday-play-btn").style.display="inline-flex";document.getElementById("bday-stop-btn").style.display="none";};
+  window.speechSynthesis.speak(utt);
+}
+function stopBdayVoice(){
+  if(window.speechSynthesis)window.speechSynthesis.cancel();
+  document.getElementById("bday-play-btn").style.display="inline-flex";
+  document.getElementById("bday-stop-btn").style.display="none";
+  document.getElementById("bday-voice-status").textContent="";
+}
+function downloadBdayVoice(){
+  var st=document.getElementById("bday-voice-status");
+  if(!window.speechSynthesis){st.textContent="Not supported";return;}
+  st.textContent="\uD83C\uDFA4 Recording... please wait";
+  try{
+    var AC=window.AudioContext||window.webkitAudioContext;
+    var ctx=new AC();
+    var dest=ctx.createMediaStreamDestination();
+    var rec=new MediaRecorder(dest.stream);
+    var chunks=[];
+    rec.ondataavailable=function(e){if(e.data.size>0)chunks.push(e.data);};
+    rec.onstop=function(){
+      var blob=new Blob(chunks,{type:"audio/webm"});
+      var url=URL.createObjectURL(blob);
+      var a=document.createElement("a");
+      a.href=url;a.download="birthday_"+_bdayStu.name.replace(/\s+/g,"_")+".webm";
+      a.click();URL.revokeObjectURL(url);
+      st.textContent="\u2713 Downloaded! Attach as voice note in WhatsApp.";
+      ctx.close();
+    };
+    var osc=ctx.createOscillator();osc.connect(dest);osc.start();
+    rec.start();
+    var utt=new SpeechSynthesisUtterance(_bdayStu._tel);
+    utt.rate=0.85;utt.pitch=1.1;
+    utt.onend=function(){setTimeout(function(){rec.stop();try{osc.stop();}catch(e){}},300);};
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(utt);
+  }catch(e){
+    st.textContent="Download failed. Play and record manually.";
+  }
+}
+function sendBdayWA(){
+  stopBdayVoice();
+  var ph=String(_bdayStu.phone||"").replace(/\D/g,"");
+  if(ph.length===10)ph="91"+ph;
+  window.open("https://wa.me/"+ph+"?text="+encodeURIComponent(_bdayStu._eng),"_blank");
 }
 
 (async function(){var _hp=(location.hash||'').replace('#','');var _vp=['dashboard','students','fees','attendance','expenses','enquiries','birthdays'];if(_hp&&_vp.indexOf(_hp)!==-1)curPage=_hp;updBadges();render();try{var r=await apiGet("ping");if(r&&r.ok){document.getElementById("conn-status").innerHTML="&#9679; Connected &#10003;";document.getElementById("conn-status").style.color="#4ade80";showToast("Connected to Google Sheets!","ok");if(!localStorage.getItem("ts"))await doSyncSheets();}}catch(e){console.log("Auto-connect:",e.message);}})();
