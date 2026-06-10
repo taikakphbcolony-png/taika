@@ -2150,30 +2150,44 @@ function openBdayWish(sid){
     belt:  "❤",
     pin:   "❤"
   };
+  var CAKE=String.fromCodePoint(0x1F382);
+  var BELT=String.fromCodePoint(0x1F94B);
+  var STAR=String.fromCodePoint(0x1F31F);
+  var PARTY=String.fromCodePoint(0x1F389);
+  var HEART=String.fromCodePoint(0x2764);
+  var SPARK=String.fromCodePoint(0x2728);
+  var CHECK=String.fromCodePoint(0x2705);
   var eng=
-     "✨ Happy Birthday "+fn+"! ✨"
+     CAKE+" "+CAKE+" "+CAKE+" Happy Birthday, "+fn+"! "+CAKE+" "+CAKE+" "+CAKE
     +"\n\n"
     +"Dear "+(s.parentName||s.name)+","
     +"\n\n"
-    +"On behalf of the entire Taika Martial Arts Academy family, "
-    +"we send our warmest birthday wishes to "+fn+ageStr+"! ❤"
+    +"Today is a very special day "+SPARK+" "+fn
+    +(ageStr ? " turns "+ageStr.replace(" Turning ","").replace(" today","")+" today" : "'s birthday today")
+    +"! "+PARTY
     +"\n\n"
-    +"⭐ "+fn+", you are a star! Every day you step onto the mat, "
-    +"you show courage, discipline and dedication that makes us so proud. "
-    +"Keep that spirit alive always!"
+    +"We at Taika "+BELT+" Martial Arts Academy feel truly blessed "
+    +"to have "+fn+" as part of our Taika family. "
+    +"Watching "+fn+" grow, learn and shine on the mat "
+    +"has been such a joy for all of us. "+STAR
     +"\n\n"
-    +"✨ May this birthday bring you:"
-    +"\n✅ Endless joy & laughter"
-    +"\n✅ Good health & strength"
-    +"\n✅ New belts & achievements"
-    +"\n✅ Beautiful memories with family"
+    +"On this special day, we wish "+fn+":"
+    +"\n"
+    +CHECK+" Boundless joy & laughter"
+    +"\n"+CHECK+" Good health & great strength"
+    +"\n"+CHECK+" New achievements & higher belts "+BELT
+    +"\n"+CHECK+" Wonderful memories with loved ones"
     +"\n\n"
-    +"❤ Wishing you the most wonderful year ahead, "+fn+"!"
+    +CAKE+" May every dream come true, "+fn
+    +". Keep training, keep smiling, keep shining! "+BELT
     +"\n\n"
-    +"With lots of love & warm wishes,\n"
-    +"❤ Coach & Team\n"
-    +"Taika Martial Arts Academy\n"
-    +"Gokul Plots";
+    +"With warm wishes & lots of love, "+HEART
+    +"\n"
+    +"Coach & the entire Taika "+BELT+" Family"
+    +"\n"
+    +"Taika Martial Arts Academy"
+    +"\n"
+    +"Gokul Plots "+STAR;
   s._tel=tel; s._eng=eng;
   document.getElementById("bday-modal-title").textContent="\uD83C\uDF89 Happy Birthday "+fn+"!";
   document.getElementById("bday-modal-sub").textContent=(String(s.dob||"").slice(0,10)||"DOB not set")+" \u00B7 "+s.belt+" Belt";
