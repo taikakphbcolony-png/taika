@@ -2163,10 +2163,10 @@ function openBdayWish(sid){
     +"Keep that spirit alive always!"
     +"\n\n"
     +"✨ May this birthday bring you:"
-    +"\n✔ Endless joy & laughter"
-    +"\n✔ Good health & strength"
-    +"\n✔ New belts & achievements"
-    +"\n✔ Beautiful memories with family"
+    +"\n✅ Endless joy & laughter"
+    +"\n✅ Good health & strength"
+    +"\n✅ New belts & achievements"
+    +"\n✅ Beautiful memories with family"
     +"\n\n"
     +"❤ Wishing you the most wonderful year ahead, "+fn+"!"
     +"\n\n"
@@ -2240,7 +2240,27 @@ function sendBdayWA(){
   stopBdayVoice();
   var ph=String(_bdayStu.phone||"").replace(/\D/g,"");
   if(ph.length===10)ph="91"+ph;
-  window.open("https://wa.me/"+ph+"?text="+encodeURIComponent(_bdayStu._eng),"_blank");
+  var msg=_bdayStu._eng;
+
+  // Copy message to clipboard
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(msg).then(function(){
+      showToast("Message copied! Opening WhatsApp — just paste and send.","ok");
+    }).catch(function(){});
+  } else {
+    // Fallback clipboard copy
+    var ta=document.createElement("textarea");
+    ta.value=msg; ta.style.position="fixed"; ta.style.opacity="0";
+    document.body.appendChild(ta); ta.select();
+    try{document.execCommand("copy");}catch(e){}
+    document.body.removeChild(ta);
+    showToast("Message copied! Opening WhatsApp — just paste and send.","ok");
+  }
+
+  // Open WhatsApp with just the phone number (no text in URL = no encoding corruption)
+  setTimeout(function(){
+    window.open("https://wa.me/"+ph,"_blank");
+  },800);
 }
 
 (async function(){var _hp=(location.hash||'').replace('#','');var _vp=['dashboard','students','fees','attendance','expenses','enquiries','birthdays'];if(_hp&&_vp.indexOf(_hp)!==-1)curPage=_hp;updBadges();render();try{var r=await apiGet("ping");if(r&&r.ok){document.getElementById("conn-status").innerHTML="&#9679; Connected &#10003;";document.getElementById("conn-status").style.color="#4ade80";showToast("Connected to Google Sheets!","ok");if(!localStorage.getItem("ts"))await doSyncSheets();}}catch(e){console.log("Auto-connect:",e.message);}})();
