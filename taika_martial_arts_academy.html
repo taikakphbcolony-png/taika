@@ -1900,6 +1900,149 @@ function saveEdit(){
 
 
 
+function openScheduler(){
+  if(document.getElementById('sched-modal'))return document.getElementById('sched-modal').remove();
+  var saved=JSON.parse(localStorage.getItem("taika_schedule")||"{}");
+  var dayOpts=["<option value=''>-- Disabled --</option>"];
+  for(var d=1;d<=28;d++) dayOpts.push("<option value='"+d+"'"+(saved.day===d?" selected":"")+">Day "+d+"</option>");
+  var m=document.createElement("div");
+  m.id="sched-modal";
+  m.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:999;display:flex;align-items:center;justify-content:center;padding:16px";
+  m.innerHTML="<div style='background:#fff;border-radius:16px;padding:24px;width:100%;max-width:400px;box-shadow:0 20px 60px rgba(0,0,0,.3)'>"
+    +"<div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:16px'>"
+      +"<h3 style='margin:0;font-size:18px'>"+CAL+" Monthly Reminders</h3>"
+      +"<button onclick='document.getElementById('sched-modal').remove()' style='background:none;border:none;font-size:22px;cursor:pointer;color:#9ca3af'>&times;</button>"
+    +"</div>"
+    +"<div style='font-size:13px;color:#6b7280;margin-bottom:18px;line-height:1.6'>"
+      +"On the selected day of each month, a reminder will appear on the dashboard to send fee reminders to all overdue parents."
+    +"</div>"
+    +"<div style='margin-bottom:14px'>"
+      +"<label style='font-size:11px;font-weight:600;color:#374151;display:block;margin-bottom:6px'>Send reminder on day</label>"
+      +"<select id='sched-day' style='width:100%;padding:8px;border:1px solid #e2e8f0;border-radius:8px;font-size:14px'>"+dayOpts.join("")+"</select>"
+    +"</div>"
+    +"<div style='margin-bottom:18px'>"
+      +"<label style='display:flex;align-items:center;gap:8px;cursor:pointer'>"
+        +"<input type='checkbox' id='sched-abs'"+(saved.absences?" checked":"")+" style='width:15px;height:15px'>"
+        +"<span style='font-size:13px'>Also remind for absences (3+ days)</span>"
+      +"</label>"
+    +"</div>"
+    +"<div style='display:flex;gap:8px;justify-content:flex-end'>"
+      +"<button onclick='document.getElementById('sched-modal').remove()' style='padding:8px 18px;border:1px solid #e2e8f0;border-radius:8px;cursor:pointer;background:#fff;font-size:13px'>Cancel</button>"
+      +"<button onclick='saveSchedule()' style='padding:8px 18px;background:#7c3aed;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600'>"+CHECK+" Save</button>"
+    +"</div>"
+  +"</div>";
+  document.body.appendChild(m);
+}
+
+function saveSchedule(){
+  var day=parseInt(document.getElementById("sched-day").value)||0;
+  var abs=document.getElementById("sched-abs").checked;
+  localStorage.setItem("taika_schedule",JSON.stringify({day:day,absences:abs}));
+  document.getElementById("sched-modal").remove();
+  showToast(day?CAL+" Reminder set for day "+day+" of each month":CAL+" Scheduled reminders disabled","ok");
+}
+
+function checkScheduledReminders(){
+  var sched=JSON.parse(localStorage.getItem("taika_schedule")||"{}");
+  if(!sched.day)return;
+  var today=new Date();
+  if(today.getDate()!==sched.day)return;
+  var lastRun=localStorage.getItem("taika_sched_lastrun")||"";
+  if(lastRun===tod())return;
+  setTimeout(function(){
+    var ov=students.filter(function(s){return !s.inactive&&isUp(s);});
+    if(ov.length){
+      showToast(MONEY+" Reminder day! "+ov.length+" overdue students. Tap Fees > Send All Reminders.","warn");
+      localStorage.setItem("taika_sched_lastrun",tod());
+    }
+    if(sched.absences){
+      var ym=tod().slice(0,7);
+      var hd=getHolidays(ym);
+      var absList=students.filter(function(s){
+        if(s.inactive)return false;
+        return Object.keys((att[ym]&&att[ym][s.id])||{}).filter(function(k){
+          return !hd.has(parseInt(k))&&(att[ym][s.id]||{})[k]==="A";
+        }).length>=3;
+      });
+      if(absList.length) setTimeout(function(){showToast(BELL+" "+absList.length+" students with 3+ absences. Check Notifications.","warn");},2000);
+    }
+  },3000);
+}
+
+function broadcastAnnouncement(){
+  if(document.getElementById('bc-modal'))return document.getElementById('bc-modal').remove();
+  var active=students.filter(function(s){return !s.inactive;});
+  var m=document.createElement("div");
+  m.id="bc-modal";
+  m.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:999;display:flex;align-items:center;justify-content:center;padding:16px";
+  var opts=["<option value=''>-- No template --</option>",
+    "<option value='holiday'>🏫 Holiday Notice</option>",
+    "<option value='event'>🏆 Upcoming Event</option>",
+    "<option value='fee'>💰 Fee Reminder</option>",
+    "<option value='grading'>🥋 Belt Grading</option>"].join("");
+  m.innerHTML="<div style='background:#fff;border-radius:16px;padding:24px;width:100%;max-width:520px;box-shadow:0 20px 60px rgba(0,0,0,.3)'>"
+    +"<div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:16px'>"
+      +"<h3 style='margin:0;font-size:18px'>"+BELL+" Broadcast to All Parents</h3>"
+      +"<button onclick='document.getElementById('bc-modal').remove()' style='background:none;border:none;font-size:22px;cursor:pointer;color:#9ca3af'>&times;</button>"
+    +"</div>"
+    +"<div style='font-size:12px;color:#6b7280;margin-bottom:14px'>Message will be sent to <b>"+active.length+"</b> active students via WhatsApp — one by one.</div>"
+    +"<div style='margin-bottom:10px'>"
+      +"<label style='font-size:11px;font-weight:600;color:#374151;display:block;margin-bottom:4px'>Quick Template</label>"
+      +"<select onchange='document.getElementById('bc-txt').value=bcTpl(this.value)' style='width:100%;padding:8px;border:1px solid #e2e8f0;border-radius:8px;font-size:13px'>"+opts+"</select>"
+    +"</div>"
+    +"<div style='margin-bottom:14px'>"
+      +"<label style='font-size:11px;font-weight:600;color:#374151;display:block;margin-bottom:4px'>Message</label>"
+      +"<textarea id='bc-txt' rows='8' style='width:100%;box-sizing:border-box;padding:10px;border:1px solid #e2e8f0;border-radius:8px;font-size:13px;font-family:var(--fb);resize:vertical' placeholder='Type your announcement here...&#10;&#10;Use [STUDENT NAME] to personalise per student.'></textarea>"
+    +"</div>"
+    +"<div style='display:flex;gap:8px;justify-content:flex-end'>"
+      +"<button onclick='document.getElementById('bc-modal').remove()' style='padding:8px 18px;border:1px solid #e2e8f0;border-radius:8px;cursor:pointer;background:#fff;font-size:13px'>Cancel</button>"
+      +"<button onclick='startBroadcast()' style='padding:8px 18px;background:#dc2626;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600'>"+BELL+" Start Broadcast</button>"
+    +"</div>"
+  +"</div>";
+  document.body.appendChild(m);
+}
+
+function bcTpl(type){
+  var acad="Taika "+BELT+" Martial Arts Academy, Gokul Plots";
+  var regards="\n\nWarm regards,\n"+BELT+" Coach & Team\n"+acad;
+  if(type==="holiday")return BELL+" Important Notice\n"+LINE+"\n\nDear Parent,\n\nPlease note that the academy will be CLOSED on [DATE] due to [REASON].\n\nClasses will resume on [DATE]. We apologise for any inconvenience."+regards;
+  if(type==="event")return PARTY+" Exciting Announcement!\n"+LINE+"\n\nDear Parent,\n\nWe are delighted to invite you and [STUDENT NAME] to our upcoming [EVENT NAME] on [DATE] at [TIME].\n\n"+SPARK+" Venue: Taika Martial Arts Academy, Gokul Plots.\n\nAll students are requested to attend."+regards;
+  if(type==="fee")return MONEY+" Fee Reminder\n"+LINE+"\n\nDear Parent,\n\nThis is a friendly reminder that the membership fee is now due for [MONTH].\n\nKindly clear your dues at the earliest to ensure uninterrupted training for [STUDENT NAME]. "+MUSCLE+regards;
+  if(type==="grading")return MEDAL+" Belt Grading Announcement "+STAR+"\n"+LINE+"\n\nDear Parent,\n\nWe are excited to announce that the Belt Grading Examination will be held on [DATE] at [TIME].\n\nAll eligible students must be present in proper uniform.\n\n"+BELT+" A proud milestone — let us celebrate together! "+PARTY+regards;
+  return "";
+}
+
+function startBroadcast(){
+  var msg=document.getElementById('bc-txt').value.trim();
+  if(!msg){showToast("Please type a message first","error");return;}
+  var active=students.filter(function(s){return !s.inactive;});
+  if(!active.length){showToast("No active students","error");return;}
+  document.getElementById('bc-modal').remove();
+  showToast("Broadcasting to "+active.length+" parents...","ok");
+  var i=0;
+  function next(){
+    if(i>=active.length){showToast(CLAP+" Broadcast complete! Sent to "+active.length+" parents","ok");return;}
+    var s=active[i++];
+    var ph=String(s.phone||"").replace(/\D/g,"");
+    if(ph.length===10)ph="91"+ph;
+    if(!ph){setTimeout(next,100);return;}
+    var txt=msg.replace(/\[STUDENT NAME\]/g,s.name).replace(/\[PARENT NAME\]/g,String(s.parentName||s.name));
+    if(navigator.clipboard&&navigator.clipboard.writeText){
+      navigator.clipboard.writeText(txt).then(function(){
+        showToast(BELL+" "+i+"/"+active.length+": "+s.name,"ok");
+        setTimeout(function(){window.open("https://wa.me/"+ph,"_blank");},600);
+        setTimeout(next,2500);
+      });
+    } else {
+      var ta=document.createElement("textarea");ta.value=txt;ta.style.position="fixed";ta.style.opacity="0";
+      document.body.appendChild(ta);ta.select();try{document.execCommand("copy");}catch(e){}
+      document.body.removeChild(ta);window.open("https://wa.me/"+ph,"_blank");
+      setTimeout(next,2500);
+    }
+  }
+  next();
+}
+
 function rBdays(){
   var upcoming=getBirthdays(30);
   var todayB=upcoming.filter(function(b){return b.diff===0;});
@@ -2057,6 +2200,52 @@ function downloadBdayVoice(){
     st.textContent="Download failed. Play and record manually.";
   }
 }
+function sendAllBdayWishes(){
+  var todayB=getBirthdays(0).filter(function(b){return b.diff===0;});
+  if(!todayB.length){showToast("No birthdays today!","ok");return;}
+  showToast(CAKE+" Sending "+todayB.length+" birthday wish"+(todayB.length===1?"":"es")+"...","ok");
+  var i=0;
+  function next(){
+    if(i>=todayB.length){
+      showToast(CLAP+" Done! Sent "+todayB.length+" birthday wish"+(todayB.length===1?"":"es"),"ok");
+      return;
+    }
+    var b=todayB[i++];
+    var fn=b.s.name.split(" ")[0];
+    var pname=String(b.s.parentName||b.s.name);
+    var age=""; try{var yr=new Date().getFullYear()-new Date(String(b.s.dob||"").slice(0,10)+"T00:00:00").getFullYear();age=" Turning "+yr+"!";}catch(e){}
+    var ph=String(b.s.phone||"").replace(/\D/g,"");
+    if(ph.length===10)ph="91"+ph;
+    var msg=CAKE+" "+CAKE+" "+CAKE+" Happy Birthday, "+fn+"! "+CAKE+" "+CAKE+" "+CAKE
+      +"\n\nDear "+pname+","
+      +"\n\n"+age+" What a special day! "+PARTY
+      +"\n\nWe at Taika "+BELT+" Martial Arts Academy feel truly blessed to have "+fn+" as part of our family. "+HEART
+      +"\n\nOn this special day, we wish "+fn+":"
+      +"\n"+CHECK+" Boundless joy & laughter"
+      +"\n"+CHECK+" Good health & great strength"
+      +"\n"+CHECK+" New achievements & higher belts "+BELT
+      +"\n"+CHECK+" Wonderful memories with loved ones"
+      +"\n\n"+CAKE+" Keep training, keep smiling, keep shining! "+BELT
+      +"\n\nWith warm wishes & lots of love, "+HEART
+      +"\nCoach & the entire Taika "+BELT+" Family"
+      +"\nTaika Martial Arts Academy, Gokul Plots";
+    if(navigator.clipboard&&navigator.clipboard.writeText){
+      navigator.clipboard.writeText(msg).then(function(){
+        showToast(i+"/"+todayB.length+": "+b.s.name+" — WhatsApp opening...","ok");
+        setTimeout(function(){window.open("https://wa.me/"+ph,"_blank");},600);
+        setTimeout(next,2500);
+      });
+    } else {
+      var ta=document.createElement("textarea");ta.value=msg;ta.style.position="fixed";ta.style.opacity="0";
+      document.body.appendChild(ta);ta.select();try{document.execCommand("copy");}catch(e){}
+      document.body.removeChild(ta);
+      window.open("https://wa.me/"+ph,"_blank");
+      setTimeout(next,2500);
+    }
+  }
+  next();
+}
+
 function sendBdayWA(){
   stopBdayVoice();
   var ph=String(_bdayStu.phone||"").replace(/\D/g,"");
@@ -2084,7 +2273,7 @@ function sendBdayWA(){
   },800);
 }
 
-(async function(){var _hp=(location.hash||'').replace('#','');var _vp=['dashboard','students','fees','attendance','expenses','enquiries','birthdays'];if(_hp&&_vp.indexOf(_hp)!==-1)curPage=_hp;updBadges();render();try{var r=await apiGet("ping");if(r&&r.ok){document.getElementById("conn-status").innerHTML="&#9679; Connected &#10003;";document.getElementById("conn-status").style.color="#4ade80";showToast("Connected to Google Sheets!","ok");if(!localStorage.getItem("ts"))await doSyncSheets();}}catch(e){console.log("Auto-connect:",e.message);}})();
+(async function(){var _hp=(location.hash||'').replace('#','');var _vp=['dashboard','students','fees','attendance','expenses','enquiries','birthdays'];if(_hp&&_vp.indexOf(_hp)!==-1)curPage=_hp;updBadges();render();checkScheduledReminders();try{var r=await apiGet("ping");if(r&&r.ok){document.getElementById("conn-status").innerHTML="&#9679; Connected &#10003;";document.getElementById("conn-status").style.color="#4ade80";showToast("Connected to Google Sheets!","ok");if(!localStorage.getItem("ts"))await doSyncSheets();}}catch(e){console.log("Auto-connect:",e.message);}})();
 </script>
 </body>
 </html>
