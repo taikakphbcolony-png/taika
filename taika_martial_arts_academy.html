@@ -5,6 +5,7 @@
 <meta charset="UTF-8">
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+<link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#C0392B">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -966,16 +967,29 @@ function rDash(){
     var ePct=Math.round((m.expenses/maxVal)*100);
     var profit=m.collected-m.expenses;
     var profColor=profit>=0?"#16a34a":"#dc2626";
-    return "<tr>"
-      +"<td style='font-size:11px;color:var(--gray);white-space:nowrap;padding-right:8px;width:70px'>"+m.month+"</td>"
-      +"<td style='width:100%'>"
-        +"<div style='display:flex;flex-direction:column;gap:2px'>"
-          +"<div style='height:8px;background:#dcfce7;border-radius:2px;overflow:hidden'><div style='height:100%;width:"+cPct+"%;background:#16a34a;border-radius:2px'></div></div>"
-          +"<div style='height:8px;background:#fee2e2;border-radius:2px;overflow:hidden'><div style='height:100%;width:"+ePct+"%;background:#dc2626;border-radius:2px'></div></div>"
+    var profBg=profit>=0?"#f0fdf4":"#fef2f2";
+    return "<tr style='border-bottom:1px solid #f3f4f6'>"
+      +"<td style='font-size:11px;font-weight:600;color:#374151;white-space:nowrap;padding:8px 10px 8px 0;width:72px'>"+m.month+"</td>"
+      +"<td style='width:100%;padding:6px 8px'>"
+        +"<div style='margin-bottom:3px'>"
+          +"<div style='display:flex;justify-content:space-between;font-size:9px;color:var(--gray2);margin-bottom:2px'>"
+            +"<span style='color:#16a34a;font-weight:600'>"+MONEY+" "+fmt(m.collected)+"</span>"
+            +"<span style='color:#dc2626'>"+fmt(m.expenses)+"</span>"
+          +"</div>"
+          +"<div style='height:10px;background:#f1f5f9;border-radius:6px;overflow:hidden;position:relative'>"
+            +"<div style='position:absolute;left:0;top:0;height:100%;width:"+cPct+"%;background:linear-gradient(90deg,#16a34a,#22c55e);border-radius:6px'></div>"
+          +"</div>"
+          +"<div style='height:6px;background:#f1f5f9;border-radius:6px;overflow:hidden;margin-top:2px'>"
+            +"<div style='height:100%;width:"+ePct+"%;background:linear-gradient(90deg,#dc2626,#ef4444);border-radius:6px'></div>"
+          +"</div>"
         +"</div>"
       +"</td>"
-      +"<td style='font-size:11px;text-align:right;white-space:nowrap;padding-left:8px;width:80px'><span style='color:#16a34a'>"+fmt(m.collected)+"</span></td>"
-      +"<td style='font-size:11px;text-align:right;white-space:nowrap;padding-left:4px;width:80px'><span style='color:"+profColor+"'>"+(profit>=0?"+":"")+fmt(profit)+"</span></td>"
+      +"<td style='padding:6px 0 6px 8px;width:90px'>"
+        +"<div style='background:"+profBg+";border-radius:6px;padding:3px 8px;text-align:center'>"
+          +"<div style='font-size:10px;color:"+profColor+";font-weight:700'>"+(profit>=0?"+":"")+fmt(profit)+"</div>"
+          +"<div style='font-size:9px;color:var(--gray2)'>profit</div>"
+        +"</div>"
+      +"</td>"
     +"</tr>";
   }).join("");
 
@@ -994,16 +1008,29 @@ function rDash(){
     var dt=String(e.date||"").slice(0,10);
     try{var d=new Date(dt+"T00:00:00");return d.toLocaleString("en-IN",{month:"short"})+" "+d.getFullYear()===curMo;}catch(e){return false;}
   }).reduce(function(a,e){return a+Number(e.expense||e.amount||0);},0);
-  var pieSlices=[{label:"Collected",val:monthCol,col:"#16a34a"},{label:"Expenses",val:monthExp,col:"#dc2626"}];
-  var pieTotal=monthCol;
+  var pieTotal=monthCol+monthExp;
+  var pieSlices=pieTotal>0
+    ? [{label:"Collected",val:monthCol,col:"#16a34a"},{label:"Expenses",val:monthExp,col:"#dc2626"}]
+    : [{label:"No data yet",val:1,col:"#e2e8f0"}];
+  var pieDispTotal=pieTotal>0?pieTotal:1;
   var pieW=160,pieH=160,cx=80,cy=80,r=60;
-  var pieSVG=makePie(pieSlices,pieTotal,cx,cy,r);
-  var pieLegend=pieSlices.map(function(s){
-    return "<div style='display:flex;align-items:center;gap:6px;font-size:12px;margin-bottom:4px'>"
-      +"<span style='width:10px;height:10px;border-radius:50%;background:"+s.col+";display:inline-block'></span>"
-      +"<span>"+s.label+"</span><span style='margin-left:auto;font-weight:600'>"+fmt(s.val)+"</span>"
-    +"</div>";
-  }).join("");
+  var pieSVG=makePie(pieSlices,pieDispTotal,cx,cy,r);
+  var profit=monthCol-monthExp;
+  var pieLegend=pieTotal>0
+    ? pieSlices.map(function(s){
+        var pct=Math.round(s.val/pieDispTotal*100);
+        return "<div style='display:flex;align-items:center;gap:6px;font-size:12px;margin-bottom:6px'>"
+          +"<span style='width:12px;height:12px;border-radius:3px;background:"+s.col+";display:inline-block;flex-shrink:0'></span>"
+          +"<span style='color:#374151'>"+s.label+"</span>"
+          +"<span style='margin-left:auto;font-weight:700;color:"+s.col+"'>"+fmt(s.val)+"</span>"
+          +"<span style='color:var(--gray2);font-size:10px'>"+pct+"%</span>"
+        +"</div>";
+      }).join("")
+      +"<div style='margin-top:8px;padding-top:8px;border-top:1px solid #f3f4f6;display:flex;justify-content:space-between;font-size:12px'>"
+        +"<span style='color:var(--gray)'>Net Profit</span>"
+        +"<span style='font-weight:700;color:"+(profit>=0?"#16a34a":"#dc2626")+";font-size:14px'>"+(profit>=0?"+":"")+fmt(profit)+"</span>"
+      +"</div>"
+    : "<div style='font-size:12px;color:var(--gray);text-align:center;padding:8px'>No payments this month</div>";
 
   // ── Recently joined (existing) ───────────────────────────────────────────
   var recent=active.slice().sort(function(a,b){
@@ -1586,7 +1613,19 @@ function tAtt(sid,day,ym){
   if(!att[ym][sid])att[ym][sid]={};
   var c=att[ym][sid][day]||"";
   att[ym][sid][day]=c==="P"?"A":"P";
-  sv();render();updBadges();
+  sv();
+  // Save scroll position before re-render
+  var _attScroll=0;
+  var _attEl=document.querySelector(".att-tw");
+  if(_attEl)_attScroll=_attEl.scrollLeft;
+  render();
+  // Restore scroll position after re-render
+  setTimeout(function(){
+    var el=document.querySelector(".att-tw");
+    if(el)el.scrollLeft=_attScroll;
+    setTimeout(initAttSwipe,50);
+  },0);
+  updBadges();
   var st=students.find(function(x){return x.id===sid;});
   if(st&&att[ym][sid][day])apiCall("markAttendance",{records:[{studentId:sid,studentName:st.name,date:ds,month:ym,status:att[ym][sid][day]}]});
 }
