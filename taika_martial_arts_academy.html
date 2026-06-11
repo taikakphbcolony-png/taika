@@ -981,24 +981,84 @@ function rStud(){
   }
 }
 
+function feeCollectionReport(mo){
+  var now=new Date();
+  if(!mo) mo=now.toLocaleString("en-IN",{month:"short"})+" "+now.getFullYear();
+  var monthFees=fees.filter(function(p){
+    var dt=String(p.date||"").slice(0,10);
+    try{var d=new Date(dt+"T00:00:00");return !isNaN(d)&&d.toLocaleString("en-IN",{month:"short"})+" "+d.getFullYear()===mo;}catch(e){return false;}
+  }).sort(function(a,b){return String(a.date||"").localeCompare(String(b.date||""));});
+  var total=monthFees.reduce(function(a,p){return a+Number(p.amount||p.amt||0);},0);
+  var uniq=new Set(monthFees.map(function(p){return p.sid||p.studentId;})).size;
+  var allMonths=[];var cur=new Date(now.getFullYear(),now.getMonth(),1);
+  for(var m=0;m<12;m++){allMonths.push(cur.toLocaleString("en-IN",{month:"short"})+" "+cur.getFullYear());cur.setMonth(cur.getMonth()-1);}
+  var moOpts=allMonths.map(function(m){return "<option value='"+m+"'"+(m===mo?" selected":"")+">"+m+"</option>";}).join("");
+  var rows=monthFees.map(function(p,i){
+    var s=students.find(function(x){return x.id===(p.sid||p.studentId);});
+    var amt=Number(p.amount||p.amt||0);
+    return "<tr style='background:"+(i%2?"#f9fafb":"#fff")+"'>"
+      +"<td>"+(i+1)+"</td><td>"+String(p.date||"").slice(0,10)+"</td>"
+      +"<td><b>"+(s?s.name:"Unknown")+"</b></td>"
+      +"<td>"+(s?s.phone:"—")+"</td>"
+      +"<td>"+(p.plan||"—")+"</td>"
+      +"<td style='text-align:right;color:#16a34a;font-weight:700'>"+fmt(amt)+"</td>"
+    +"</tr>";
+  }).join("");
+  var html="<!DOCTYPE html><html><head><meta charset='UTF-8'><title>Fee Report — "+mo+"</title>"
+    +"<style>body{font-family:DM Sans,Arial,sans-serif;margin:0;padding:28px;color:#1c1c1e}"
+    +"@media print{.np{display:none!important}body{padding:14px}}"
+    +"h1{font-size:20px;font-weight:700;margin:0}h2{font-size:14px;color:#6b7280;margin:4px 0 0}"
+    +"table{width:100%;border-collapse:collapse;margin-top:20px;font-size:13px}"
+    +"th{background:#1c1c1e;color:#fff;padding:9px 12px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.5px}"
+    +"td{padding:8px 12px;border-bottom:1px solid #f3f4f6}"
+    +".card{background:#f8fafc;border-radius:8px;padding:14px;text-align:center}"
+    +"</style></head><body>"
+    +"<div style='display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:16px;border-bottom:2px solid #1c1c1e;margin-bottom:20px'>"
+      +"<div><h1>Taika Martial Arts Academy</h1><h2>Fee Collection — "+mo+"</h2></div>"
+      +"<div style='display:flex;gap:8px' class='np'>"
+        +"<select onchange='window.open(\"?\"+this.value,\"_self\")' style='padding:6px 10px;border-radius:6px;border:1px solid #e2e8f0'>"+moOpts+"</select>"
+        +"<button onclick='window.print()' style='padding:7px 16px;background:#dc2626;color:#fff;border:none;border-radius:6px;cursor:pointer'>&#128424; Print PDF</button>"
+      +"</div>"
+    +"</div>"
+    +"<div style='display:flex;gap:12px;margin-bottom:20px'>"
+      +"<div class='card' style='flex:1'><div style='font-size:10px;color:#9ca3af;text-transform:uppercase;letter-spacing:.5px'>Total Collected</div><div style='font-size:24px;font-weight:700;color:#16a34a;margin-top:4px'>"+fmt(total)+"</div></div>"
+      +"<div class='card' style='flex:1'><div style='font-size:10px;color:#9ca3af;text-transform:uppercase;letter-spacing:.5px'>Payments</div><div style='font-size:24px;font-weight:700;margin-top:4px'>"+monthFees.length+"</div></div>"
+      +"<div class='card' style='flex:1'><div style='font-size:10px;color:#9ca3af;text-transform:uppercase;letter-spacing:.5px'>Students</div><div style='font-size:24px;font-weight:700;margin-top:4px'>"+uniq+"</div></div>"
+      +"<div class='card' style='flex:1'><div style='font-size:10px;color:#9ca3af;text-transform:uppercase;letter-spacing:.5px'>Avg / Student</div><div style='font-size:24px;font-weight:700;margin-top:4px'>"+fmt(uniq?Math.round(total/uniq):0)+"</div></div>"
+    +"</div>"
+    +(monthFees.length
+      ?"<table><thead><tr><th>#</th><th>Date</th><th>Student</th><th>Phone</th><th>Plan</th><th style='text-align:right'>Amount</th></tr></thead><tbody>"+rows+"</tbody>"
+        +"<tfoot><tr><td colspan='5' style='padding:10px 12px;font-weight:700;background:#f0fdf4;border-top:2px solid #16a34a'>Total</td>"
+        +"<td style='padding:10px 12px;font-weight:700;color:#16a34a;font-size:15px;text-align:right;background:#f0fdf4;border-top:2px solid #16a34a'>"+fmt(total)+"</td></tr></tfoot></table>"
+      :"<div style='text-align:center;padding:60px;color:#9ca3af'>No payments for "+mo+"</div>")
+    +"</body></html>";
+  var w=window.open("","_blank");
+  if(w){w.document.write(html);w.document.close();}
+  else showToast("Pop-up blocked — please allow pop-ups","error");
+}
+
 function rFees(){
   var fsl=srch.toLowerCase();var ov=students.filter(function(s){return !s.inactive&&isUp(s)&&(!srch||s.name.toLowerCase().includes(fsl)||String(s.phone||'').includes(srch));});
   var ovR="";
-  for(var i=0;i<ov.length;i++){var s=ov[i];var d=Math.abs(dud(s));var msg=MONEY+" Fee Payment Reminder "+BELL+"\n"+LINE+"\n\nDear "+String(s.parentName||s.name)+",\n\nHope you and "+s.name+" are doing well! "+SMILE+"\n\nThis is a gentle reminder that the membership fee for "+s.name+" at Taika "+BELT+" Martial Arts Academy is currently due."+"\n\n"+NOTE+" Payment Details:"+"\n"+LINE+"\n"+BELT+"  Student  : "+s.name+"\n"+MONEY+"  Amount   : "+fmt(s.fee)+"\n"+CAL+"  Plan     : "+s.plan+"\n"+LINE+"\n\nKindly clear the dues at your earliest so that "+s.name+" can continue training without any interruption. "+MUSCLE+"\n\n"+PRAY+" If you have already made the payment, please ignore this message."+"\nWe truly value your trust and support. "+HEART+"\n\n"+LINE+"\n"+BELT+" Warm regards,\nCoach & Team\nTaika Martial Arts Academy, Gokul Plots";ovR+="<tr><td><b>"+s.name+"</b><br><span style='color:var(--gray);font-size:11px'>"+s.phone+"</span></td><td>"+fmt(s.fee)+"</td><td>"+String(s.validTill||"N/A").slice(0,10)+"</td><td><span class='bdg br2'>"+d+"d overdue</span></td><td><button class='btn btr' style='padding:4px 9px;font-size:12px' onclick='openFee(this.dataset.id)' data-id='"+s.id+"'>Record Pay</button> "+waLink(s.phone,msg,"Remind")+"</td></tr>";}
+  for(var i=0;i<ov.length;i++){var s=ov[i];var d=Math.abs(dud(s));var msg=MONEY+" Fee Payment Reminder "+BELL+"\n"+LINE+"\n\nDear "+String(s.parentName||s.name)+",\n\nHope you and "+s.name+" are doing well! "+SMILE+"\n\nThis is a gentle reminder that the membership fee for "+s.name+" at Taika "+BELT+" Martial Arts Academy is currently due."+"\n\n"+NOTE+" Payment Details:"+"\n"+LINE+"\n"+BELT+"  Student  : "+s.name+"\n"+MONEY+"  Amount   : "+fmt(s.fee)+"\n"+CAL+"  Plan     : "+s.plan+"\n"+LINE+"\n\nKindly clear the dues at your earliest so that "+s.name+" can continue training without any interruption. "+MUSCLE+"\n\n"+PRAY+" If you have already made the payment, please ignore this message."+"\nWe truly value your trust and support. "+HEART+"\n\n"+LINE+"\n"+BELT+" Warm regards,\nCoach & Team\nTaika Martial Arts Academy, Gokul Plots";ovR+="<tr><td><b>"+s.name+"</b><br><span style='color:var(--gray);font-size:11px'>"+s.phone+"</span></td><td>"+fmt(s.fee)+"</td><td>"+String(s.validTill||"N/A").slice(0,10)+"</td><td><span class='bdg' style='background:"+(d>=90?'#7c3aed':d>=60?'#dc2626':d>=30?'#d97706':'#ef4444')+";color:#fff'>"+d+"d overdue</span></td><td><button class='btn btr' style='padding:4px 9px;font-size:12px' onclick='openFee(this.dataset.id)' data-id='"+s.id+"'>Record Pay</button> "+waLink(s.phone,msg,"Remind")+"</td></tr>";}
 
   var fcFee="<div class='fc'>"
     +"<button class='chip"+(feeFilter==="all"?" on":"")+"' onclick='setFilter(\"fee\",\"all\")'><span>All Overdue</span></button>"
-    +"<button class='chip"+(feeFilter==="30plus"?" on":"")+"' onclick='setFilter(\"fee\",\"30plus\")'><span>30+ Days</span></button>"
     +"<button class='chip"+(feeFilter==="week"?" on":"")+"' onclick='setFilter(\"fee\",\"week\")'><span>Due This Week</span></button>"
+    +"<button class='chip"+(feeFilter==="30plus"?" on":"")+"' onclick='setFilter(\"fee\",\"30plus\")'><span style='color:#d97706'>30+ Days</span></button>"
+    +"<button class='chip"+(feeFilter==="60plus"?" on":"")+"' onclick='setFilter(\"fee\",\"60plus\")'><span style='color:#dc2626'>60+ Days</span></button>"
+    +"<button class='chip"+(feeFilter==="90plus"?" on":"")+"' onclick='setFilter(\"fee\",\"90plus\")'><span style='color:#7c3aed'>90+ Days</span></button>"
     +"</div>";
   if(feeFilter==="30plus")ov=ov.filter(function(s){return Math.abs(dud(s))>=30;});
+  if(feeFilter==="60plus")ov=ov.filter(function(s){return Math.abs(dud(s))>=60;});
+  if(feeFilter==="90plus")ov=ov.filter(function(s){return Math.abs(dud(s))>=90;});
   else if(feeFilter==="week")ov=students.filter(function(s){return !s.inactive&&!isUp(s)&&dud(s)>=0&&dud(s)<=7;});
   if(!ovR)ovR="<tr><td colspan='5' style='text-align:center;color:#16a34a;padding:20px'>All fees are up to date!</td></tr>";
   var hist=fees.slice().reverse().slice(0,25);
   var hR="";
   for(var j=0;j<hist.length;j++){var p=hist[j];var st=students.find(function(x){return x.id===p.sid||x.id===p.studentId;})||{name:"Unknown",phone:""};var amt=Number(p.amt||p.amount||0);var vt=String(p.valid||p.validTill||"").slice(0,10);var msg2=CHECK+" Payment Received! "+PARTY+" "+CONFETTI+"\n"+LINE+"\n\nDear "+String(st.parentName||st.name||"Parent")+","+"\n\n"+CLAP+" "+CLAP+" Thank you so much for your payment!"+"\nWe are pleased to confirm receipt for "+st.name+"'s membership at Taika "+BELT+" Martial Arts Academy. "+HEART+"\n\n"+NOTE+" Payment Receipt:"+"\n"+LINE+"\n"+CHECK+"  Student      : "+st.name+"\n"+MONEY+"  Amount Paid  : "+fmt(amt)+"\n"+CAL+"  Payment Date : "+String(p.date||"").slice(0,10)+"\n"+SPARK+"  Valid Till   : "+vt+"\n"+BELT+"  Plan         : "+p.plan+"\n"+LINE+"\n\n"+STAR+" "+st.name+" is all set for another great month of training! "+MUSCLE+"\n\n"+ROCKET+" Keep training, keep growing, keep shining!"+"\n\n"+LINE+"\n"+BELT+" Warm regards,\nCoach & Team\nTaika Martial Arts Academy, Gokul Plots";hR+="<tr><td><b>"+st.name+"</b></td><td style='color:#16a34a;font-weight:600'>"+fmt(amt)+"</td><td>"+String(p.date||"").slice(0,10)+"</td><td>"+vt+"</td><td>"+p.plan+"</td><td style='color:var(--gray);font-size:12px'>"+(String(p.recordedOn||"").slice(0,10)||String(p.date||"").slice(0,10))+"</td><td>"+waLink(st.phone,msg2,"Send Receipt")+"</td></tr>";}
   if(!hR)hR="<tr><td colspan='6' style='text-align:center;color:var(--gray);padding:20px'>No payments recorded yet</td></tr>";
-  return fcFee+"<div class='card' style='margin-bottom:18px'><div class='ch'><h3>Overdue Payments ("+ov.length+")</h3><button class='btn bto' style='font-size:12px' onclick='sendAllReminders()'>Send All Reminders</button></div><div style='overflow-x:auto'><table class='tbl'><thead><tr><th>Student</th><th>Fee</th><th>Was Valid Till</th><th>Status</th><th>Actions</th></tr></thead><tbody>"+ovR+"</tbody></table></div></div><div class='card'><div class='ch'><h3>Payment History</h3></div><div style='overflow-x:auto'><table class='tbl'><thead><tr><th>Student</th><th>Amount</th><th>Paid On</th><th>Valid Till</th><th>Plan</th><th>Recorded On</th><th>Receipt</th></tr></thead><tbody>"+hR+"</tbody></table></div>";
+  return fcFee+"<div class='card' style='margin-bottom:18px'><div class='ch'><h3>Overdue Payments ("+ov.length+")</h3><button class='btn bto' style='font-size:12px' onclick='sendAllReminders()'>Send All Reminders</button> <button class='btn bto' onclick='feeCollectionReport()' style='font-size:12px'>&#128196; Fee Report</button></div><div style='overflow-x:auto'><table class='tbl'><thead><tr><th>Student</th><th>Fee</th><th>Was Valid Till</th><th>Status</th><th>Actions</th></tr></thead><tbody>"+ovR+"</tbody></table></div></div><div class='card'><div class='ch'><h3>Payment History</h3></div><div style='overflow-x:auto'><table class='tbl'><thead><tr><th>Student</th><th>Amount</th><th>Paid On</th><th>Valid Till</th><th>Plan</th><th>Recorded On</th><th>Receipt</th></tr></thead><tbody>"+hR+"</tbody></table></div>";
 }
 function sendAllReminders(){var ov=students.filter(function(s){return !s.inactive && isUp(s);});if(!ov.length){showToast("No overdue students!","ok");return;}showToast("Opening WhatsApp for "+ov.length+" reminders...","warn");var i=0;function next(){if(i>=ov.length)return;var s=ov[i++];var msg=MONEY+" Fee Due - "+s.name+"\n"+LINE+"\n\nDear "+String(s.parentName||s.name)+",\n\nThe membership fee for "+s.name+" at Taika "+BELT+" Martial Arts Academy is overdue.\n\n"+NOTE+" Amount Due: "+fmt(s.fee)+"\n"+BELT+" Plan: "+s.plan+"\n\nKindly clear the dues at your earliest so "+s.name+" can continue training. "+MUSCLE+"\n\n"+PRAY+" If already paid, please ignore.\n\n"+BELT+" Warm regards,\nCoach & Team\nTaika Martial Arts Academy, Gokul Plots";window.open("https://wa.me/91"+String(s.phone).replace(/\D/g,"")+"?text="+encodeURIComponent(msg),"_blank");setTimeout(next,1500);}next();}
 function getHolidays(ym){
