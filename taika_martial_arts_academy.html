@@ -263,6 +263,8 @@ nav{flex:1;padding:14px 0;overflow-y:auto}
     <span id="conn-status">&#9679; Taika MA &middot; Gokul Plots</span>
     <button class="sbtn" id="btn-test" onclick="doTestConn()">&#9889; Test Connection</button>
     <button class="sbtn" id="btn-sync" onclick="doSyncSheets()">&#128260; Sync from Sheets</button>
+    <button class="sbtn" onclick="openSettings()" style="color:#7c3aed">&#9881;&#65039; Settings</button>
+    <button class="sbtn" onclick="exportData()" style="color:#16a34a">&#128229; Export CSV</button>
     <button class="sbtn" onclick="fixSheetHeaders()" style="font-size:10px;opacity:0.7">&#128295; Fix Sheet Headers</button>
     <button class="sbtn" onclick="cleanupAttDupes()" style="font-size:10px;opacity:.7;color:#fbbf24">&#129529; Clean Att Duplicates</button>
   </div>
@@ -1619,6 +1621,237 @@ function openFee(sid){var s=sid?students.find(function(x){return x.id===sid;}):n
 function calcVT(){var pl=document.getElementById("fpp").value,dt=document.getElementById("fpd").value;if(!dt)return;var mo={"1 Month":1,"3 Months":3,"6 Months":6,"12 Months":12}[pl]||1;var d=new Date(dt);d.setMonth(d.getMonth()+mo);document.getElementById("fpv").value=d.toISOString().slice(0,10);}
 document.getElementById("fpp").addEventListener("change",calcVT);
 document.getElementById("fpd").addEventListener("change",calcVT);
+function getProfile(){
+  return JSON.parse(localStorage.getItem("taika_profile")||"{}");
+}
+function profileVal(key,def){
+  var p=getProfile();
+  return p[key]||def;
+}
+
+function msgSignature(){
+  var p=getProfile();
+  var coach=p.coachName||profileVal("coachName","Coach & Team");
+  var acad=p.academyName||"Taika Martial Arts Academy";
+  var loc=p.location||"Gokul Plots";
+  return "\n\n"+LINE+"\n"+BELT+" "+coach+", "+acad+", "+loc;
+}
+
+function openSettings(){
+  if(document.getElementById('settings-modal'))return document.getElementById('settings-modal').remove();
+  var p=getProfile();
+  var m=document.createElement("div");
+  m.id="settings-modal";
+  m.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:999;display:flex;align-items:center;justify-content:center;padding:16px;overflow-y:auto";
+
+  // Fee plan rows
+  var plans=JSON.parse(localStorage.getItem("taika_plans")||"null")||[
+    {name:"1 Month",months:1,fee:2500},
+    {name:"3 Months",months:3,fee:7000},
+    {name:"6 Months",months:6,fee:13000},
+    {name:"12 Months",months:12,fee:24000}
+  ];
+  var planRows=plans.map(function(pl,i){
+    return "<tr>"
+      +"<td style='padding:6px 8px'><input value='"+pl.name+"' data-i='"+i+"' data-f='name' onchange='updatePlan(this)' style='width:100%;padding:4px 8px;border:1px solid #e2e8f0;border-radius:6px;font-size:13px'></td>"
+      +"<td style='padding:6px 8px'><input type='number' value='"+pl.months+"' data-i='"+i+"' data-f='months' onchange='updatePlan(this)' style='width:60px;padding:4px 8px;border:1px solid #e2e8f0;border-radius:6px;font-size:13px'></td>"
+      +"<td style='padding:6px 8px'><input type='number' value='"+pl.fee+"' data-i='"+i+"' data-f='fee' onchange='updatePlan(this)' style='width:90px;padding:4px 8px;border:1px solid #e2e8f0;border-radius:6px;font-size:13px'></td>"
+      +"<td style='padding:6px 4px'><button onclick='removePlan("+i+")' style='background:none;border:none;color:#dc2626;cursor:pointer;font-size:16px'>&#10005;</button></td>"
+    +"</tr>";
+  }).join("");
+
+  m.innerHTML="<div style='background:#fff;border-radius:16px;padding:24px;width:100%;max-width:560px;box-shadow:0 20px 60px rgba(0,0,0,.3);max-height:90vh;overflow-y:auto'>"
+    +"<div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:20px'>"
+      +"<h3 style='margin:0;font-size:18px'>"+String.fromCodePoint(0x2699)+String.fromCodePoint(0xFE0F)+" Settings</h3>"
+      +"<button onclick='document.getElementById('settings-modal').remove()' style='background:none;border:none;font-size:22px;cursor:pointer;color:#9ca3af'>&times;</button>"
+    +"</div>"
+
+    // ── Academy Profile ──
+    +"<div style='font-size:11px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px'>Academy Profile</div>"
+    +"<div style='display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px'>"
+      +"<div><label style='font-size:11px;font-weight:600;color:#374151;display:block;margin-bottom:4px'>Academy Name</label>"
+      +"<input id='sp-name' value='"+(p.academyName||"Taika Martial Arts Academy")+"' style='width:100%;box-sizing:border-box;padding:8px;border:1px solid #e2e8f0;border-radius:8px;font-size:13px'></div>"
+      +"<div><label style='font-size:11px;font-weight:600;color:#374151;display:block;margin-bottom:4px'>Location</label>"
+      +"<input id='sp-loc' value='"+(p.location||"Gokul Plots")+"' style='width:100%;box-sizing:border-box;padding:8px;border:1px solid #e2e8f0;border-radius:8px;font-size:13px'></div>"
+      +"<div><label style='font-size:11px;font-weight:600;color:#374151;display:block;margin-bottom:4px'>Coach Name</label>"
+      +"<input id='sp-coach' value='"+(p.coachName||profileVal("coachName","Coach & Team"))+"' style='width:100%;box-sizing:border-box;padding:8px;border:1px solid #e2e8f0;border-radius:8px;font-size:13px'></div>"
+      +"<div><label style='font-size:11px;font-weight:600;color:#374151;display:block;margin-bottom:4px'>Phone / Contact</label>"
+      +"<input id='sp-phone' value='"+(p.phone||"")+"' style='width:100%;box-sizing:border-box;padding:8px;border:1px solid #e2e8f0;border-radius:8px;font-size:13px'></div>"
+    +"</div>"
+
+    // ── Fee Plans ──
+    +"<div style='font-size:11px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px'>Fee Plan Templates</div>"
+    +"<div style='border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;margin-bottom:8px'>"
+      +"<table style='width:100%;border-collapse:collapse'>"
+        +"<thead><tr style='background:#f9fafb'>"
+          +"<th style='padding:8px;font-size:11px;text-align:left;color:#6b7280'>Plan Name</th>"
+          +"<th style='padding:8px;font-size:11px;text-align:left;color:#6b7280'>Months</th>"
+          +"<th style='padding:8px;font-size:11px;text-align:left;color:#6b7280'>Fee (Rs)</th>"
+          +"<th style='padding:8px;width:30px'></th>"
+        +"</tr></thead>"
+        +"<tbody id='plan-rows'>"+planRows+"</tbody>"
+      +"</table>"
+    +"</div>"
+    +"<button onclick='addPlan()' style='font-size:12px;padding:4px 12px;border:1px dashed #6b7280;border-radius:6px;cursor:pointer;background:#f9fafb;color:#6b7280;margin-bottom:20px'>+ Add Plan</button>"
+
+    // ── Holiday Calendar ──
+    +"<div style='font-size:11px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px'>Recurring Holidays</div>"
+    +"<div style='font-size:12px;color:#6b7280;margin-bottom:8px'>These days will always be marked as holidays in the attendance grid. Sat & Sun are already excluded automatically.</div>"
+    +"<textarea id='sp-hols' rows='3' style='width:100%;box-sizing:border-box;padding:8px;border:1px solid #e2e8f0;border-radius:8px;font-size:13px;font-family:var(--fb)' placeholder='e.g. Jan 26, Aug 15, Oct 2 (one per line or comma-separated)'>"+(p.holidays||"")+"</textarea>"
+    +"<div style='font-size:11px;color:#9ca3af;margin-bottom:20px;margin-top:4px'>Use format: Jan 26, Aug 15, Dec 25 — or leave blank</div>"
+
+    // ── Actions ──
+    +"<div style='display:flex;gap:8px;justify-content:flex-end'>"
+      +"<button onclick='document.getElementById('settings-modal').remove()' style='padding:8px 18px;border:1px solid #e2e8f0;border-radius:8px;cursor:pointer;background:#fff;font-size:13px'>Cancel</button>"
+      +"<button onclick='saveSettings()' style='padding:8px 18px;background:#dc2626;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600'>"+CHECK+" Save Settings</button>"
+    +"</div>"
+  +"</div>";
+  document.body.appendChild(m);
+}
+
+function updatePlan(el){
+  var plans=JSON.parse(localStorage.getItem("taika_plans")||"null")||[
+    {name:"1 Month",months:1,fee:2500},{name:"3 Months",months:3,fee:7000},
+    {name:"6 Months",months:6,fee:13000},{name:"12 Months",months:12,fee:24000}
+  ];
+  var i=parseInt(el.dataset.i),f=el.dataset.f;
+  plans[i][f]=f==="name"?el.value:parseInt(el.value)||0;
+  localStorage.setItem("taika_plans",JSON.stringify(plans));
+}
+
+function removePlan(i){
+  var plans=JSON.parse(localStorage.getItem("taika_plans")||"null")||[
+    {name:"1 Month",months:1,fee:2500},{name:"3 Months",months:3,fee:7000},
+    {name:"6 Months",months:6,fee:13000},{name:"12 Months",months:12,fee:24000}
+  ];
+  plans.splice(i,1);
+  localStorage.setItem("taika_plans",JSON.stringify(plans));
+  openSettings();
+}
+
+function addPlan(){
+  var plans=JSON.parse(localStorage.getItem("taika_plans")||"null")||[
+    {name:"1 Month",months:1,fee:2500},{name:"3 Months",months:3,fee:7000},
+    {name:"6 Months",months:6,fee:13000},{name:"12 Months",months:12,fee:24000}
+  ];
+  plans.push({name:"New Plan",months:1,fee:0});
+  localStorage.setItem("taika_plans",JSON.stringify(plans));
+  openSettings();
+}
+
+function saveSettings(){
+  var p={
+    academyName:document.getElementById('sp-name').value.trim()||"Taika Martial Arts Academy",
+    location:document.getElementById('sp-loc').value.trim()||"Gokul Plots",
+    coachName:document.getElementById('sp-coach').value.trim()||profileVal("coachName","Coach & Team"),
+    phone:document.getElementById('sp-phone').value.trim(),
+    holidays:document.getElementById('sp-hols').value.trim()
+  };
+  localStorage.setItem("taika_profile",JSON.stringify(p));
+  // Apply holiday calendar
+  applyRecurringHolidays(p.holidays);
+  document.getElementById('settings-modal').remove();
+  showToast(CHECK+" Settings saved! Messages will use your profile.","ok");
+}
+
+function applyRecurringHolidays(holStr){
+  if(!holStr)return;
+  // Parse dates like "Jan 26, Aug 15"
+  var months2={jan:1,feb:2,mar:3,apr:4,may:5,jun:6,jul:7,aug:8,sep:9,oct:10,nov:11,dec:12};
+  var entries=holStr.split(/[,\n]+/).map(function(s){return s.trim();}).filter(Boolean);
+  var parsed=[];
+  entries.forEach(function(e){
+    var parts=e.split(/\s+/);
+    if(parts.length>=2){
+      var mo=months2[parts[0].toLowerCase().slice(0,3)];
+      var day=parseInt(parts[1]);
+      if(mo&&day) parsed.push({mo:mo,day:day});
+    }
+  });
+  if(!parsed.length)return;
+  // Apply to current + next 12 months
+  var now=new Date();
+  for(var offset=-1;offset<=12;offset++){
+    var d=new Date(now.getFullYear(),now.getMonth()+offset,1);
+    var ym=d.getFullYear()+"-"+(d.getMonth()+1<10?"0":"")+(d.getMonth()+1);
+    var rec=att[ym]||{};
+    var existing=(rec.__holidays||[]).slice();
+    parsed.forEach(function(h2){
+      if(h2.mo===d.getMonth()+1&&existing.indexOf(h2.day)===-1) existing.push(h2.day);
+    });
+    if(existing.length){rec.__holidays=existing;att[ym]=rec;}
+  }
+  localStorage.setItem("ta",JSON.stringify(att));
+}
+
+function exportData(){
+  // Export students as CSV
+  var csv=["ID,Name,Phone,Parent,Belt,Plan,Fee,Joined,Valid Till,Status"];
+  students.forEach(function(s){
+    csv.push([
+      s.id,
+      '"'+(s.name||"").replace(/"/g,'""')+'"',
+      s.phone||"",
+      '"'+(s.parentName||"").replace(/"/g,'""')+'"',
+      s.belt||"",s.plan||"",s.fee||"",
+      String(s.joinedDate||"").slice(0,10),
+      String(s.validTill||"").slice(0,10),
+      s.inactive?"On Break":"Active"
+    ].join(","));
+  });
+  var csvStr=csv.join("\n");
+  var blob=new Blob([csvStr],{type:"text/csv"});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement("a");
+  a.href=url;a.download="taika_students_"+tod()+".csv";
+  document.body.appendChild(a);a.click();
+  document.body.removeChild(a);URL.revokeObjectURL(url);
+
+  // Export fees as CSV
+  setTimeout(function(){
+    var csv2=["Payment ID,Student ID,Student Name,Date,Amount,Plan,Valid Till"];
+    fees.forEach(function(p){
+      var s=students.find(function(x){return x.id===(p.sid||p.studentId);})||{};
+      csv2.push([
+        p.id||"",p.sid||p.studentId||"",
+        '"'+(s.name||"").replace(/"/g,'""')+'"',
+        String(p.date||"").slice(0,10),
+        p.amount||p.amt||"",p.plan||"",
+        String(p.validTill||p.valid||"").slice(0,10)
+      ].join(","));
+    });
+    var blob2=new Blob([csv2.join("\n")],{type:"text/csv"});
+    var url2=URL.createObjectURL(blob2);
+    var a2=document.createElement("a");
+    a2.href=url2;a2.download="taika_fees_"+tod()+".csv";
+    document.body.appendChild(a2);a2.click();
+    document.body.removeChild(a2);URL.revokeObjectURL(url2);
+    showToast(CHECK+" Exported students.csv and fees.csv","ok");
+  },500);
+}
+
+function getPlans(){
+  return JSON.parse(localStorage.getItem("taika_plans")||"null")||[
+    {name:"1 Month",months:1,fee:2500},
+    {name:"3 Months",months:3,fee:7000},
+    {name:"6 Months",months:6,fee:13000},
+    {name:"12 Months",months:12,fee:24000}
+  ];
+}
+function planOptions(selectedPlan){
+  return getPlans().map(function(p){
+    return "<option"+(p.name===selectedPlan?" selected":"")+">"+p.name+"</option>";
+  }).join("");
+}
+function getPlanMonths(planName){
+  var pl=getPlans().find(function(p){return p.name===planName;});
+  return pl?pl.months:1;
+}
+function getPlanFee(planName){
+  var pl=getPlans().find(function(p){return p.name===planName;});
+  return pl?pl.fee:0;
+}
+
 function saveF(){
   var amt=parseInt(document.getElementById("fpa").value);
   var dt=document.getElementById("fpd").value;
@@ -2003,7 +2236,7 @@ function openSP(sid){
   if(!s) return;
   // Header
   document.getElementById("sp-avatar").textContent = s.name.charAt(0).toUpperCase();
-  document.getElementById("sp-name").textContent = s.name;
+  document.getElementById('sp-name').textContent = s.name;
   document.getElementById("sp-sub").textContent = (s.belt||"White") + " Belt  \u00b7  " + (s.plan||"1 Month");
 
   var ym = attMo;
@@ -2148,7 +2381,7 @@ function saveSchedule(){
   var day=parseInt(document.getElementById("sched-day").value)||0;
   var abs=document.getElementById("sched-abs").checked;
   localStorage.setItem("taika_schedule",JSON.stringify({day:day,absences:abs}));
-  document.getElementById("sched-modal").remove();
+  document.getElementById('sched-modal').remove();
   showToast(day?CAL+" Reminder set for day "+day+" of each month":CAL+" Scheduled reminders disabled","ok");
 }
 
