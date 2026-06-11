@@ -937,7 +937,7 @@ function rStud(){
     var rows = "";
     for(var i=0;i<fil.length;i++){
       var s=fil[i];
-      rows += "<tr style='cursor:pointer' onclick='"+(srch?"toggleStudentDetail(this.dataset.sid)":"openSP(this.dataset.sid)")+"' data-sid='"+s.id+"'>"
+      rows += "<tr style='cursor:pointer' onclick=\""+(srch?"toggleStudentDetail('"+s.id+"')":"openSP('"+s.id+"')")+"\"  data-sid='"+s.id+"'>"
         +"<td style='cursor:pointer'><b>"+s.name+"</b><br><span style='color:var(--gray);font-size:11px'>"+s.phone+"</span></td>"
         +"<td>"+beltB(s.belt)+"</td><td>"+s.plan+"</td><td>"+fmt(s.fee)+"</td>"
         +"<td>"+String(s.validTill||"-").slice(0,10)+"</td>"
