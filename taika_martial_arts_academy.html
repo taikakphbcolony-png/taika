@@ -1637,6 +1637,11 @@ function msgSignature(){
   return "\n\n"+LINE+"\n"+BELT+" "+coach+", "+acad+", "+loc;
 }
 
+function closeModal(id){
+  var el=document.getElementById(id);
+  if(el)el.remove();
+}
+
 function openSettings(){
   if(document.getElementById('settings-modal'))return document.getElementById('settings-modal').remove();
   var p=getProfile();
@@ -1663,7 +1668,7 @@ function openSettings(){
   m.innerHTML="<div style='background:#fff;border-radius:16px;padding:24px;width:100%;max-width:560px;box-shadow:0 20px 60px rgba(0,0,0,.3);max-height:90vh;overflow-y:auto'>"
     +"<div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:20px'>"
       +"<h3 style='margin:0;font-size:18px'>"+String.fromCodePoint(0x2699)+String.fromCodePoint(0xFE0F)+" Settings</h3>"
-      +"<button onclick='document.getElementById('settings-modal').remove()' style='background:none;border:none;font-size:22px;cursor:pointer;color:#9ca3af'>&times;</button>"
+      +"<button onclick='closeModal(this.dataset.c)' data-c='settings-modal' style='background:none;border:none;font-size:22px;cursor:pointer;color:#9ca3af'>&times;</button>"
     +"</div>"
 
     // ── Academy Profile ──
@@ -1702,7 +1707,7 @@ function openSettings(){
 
     // ── Actions ──
     +"<div style='display:flex;gap:8px;justify-content:flex-end'>"
-      +"<button onclick='document.getElementById('settings-modal').remove()' style='padding:8px 18px;border:1px solid #e2e8f0;border-radius:8px;cursor:pointer;background:#fff;font-size:13px'>Cancel</button>"
+      +"<button onclick='closeModal(this.dataset.c)' data-c='settings-modal' style='padding:8px 18px;border:1px solid #e2e8f0;border-radius:8px;cursor:pointer;background:#fff;font-size:13px'>Cancel</button>"
       +"<button onclick='saveSettings()' style='padding:8px 18px;background:#dc2626;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600'>"+CHECK+" Save Settings</button>"
     +"</div>"
   +"</div>";
@@ -2344,7 +2349,7 @@ function saveEdit(){
 
 
 function openScheduler(){
-  if(document.getElementById('sched-modal'))return document.getElementById('sched-modal').remove();
+  if(document.getElementById('sched-modal'))return closeModal('sched-modal');
   var saved=JSON.parse(localStorage.getItem("taika_schedule")||"{}");
   var dayOpts=["<option value=''>-- Disabled --</option>"];
   for(var d=1;d<=28;d++) dayOpts.push("<option value='"+d+"'"+(saved.day===d?" selected":"")+">Day "+d+"</option>");
@@ -2354,7 +2359,7 @@ function openScheduler(){
   m.innerHTML="<div style='background:#fff;border-radius:16px;padding:24px;width:100%;max-width:400px;box-shadow:0 20px 60px rgba(0,0,0,.3)'>"
     +"<div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:16px'>"
       +"<h3 style='margin:0;font-size:18px'>"+CAL+" Monthly Reminders</h3>"
-      +"<button onclick='document.getElementById('sched-modal').remove()' style='background:none;border:none;font-size:22px;cursor:pointer;color:#9ca3af'>&times;</button>"
+      +"<button onclick='closeModal(this.dataset.c)' data-c='sched-modal' style='background:none;border:none;font-size:22px;cursor:pointer;color:#9ca3af'>&times;</button>"
     +"</div>"
     +"<div style='font-size:13px;color:#6b7280;margin-bottom:18px;line-height:1.6'>"
       +"On the selected day of each month, a reminder will appear on the dashboard to send fee reminders to all overdue parents."
@@ -2370,7 +2375,7 @@ function openScheduler(){
       +"</label>"
     +"</div>"
     +"<div style='display:flex;gap:8px;justify-content:flex-end'>"
-      +"<button onclick='document.getElementById('sched-modal').remove()' style='padding:8px 18px;border:1px solid #e2e8f0;border-radius:8px;cursor:pointer;background:#fff;font-size:13px'>Cancel</button>"
+      +"<button onclick='closeModal(this.dataset.c)' data-c='sched-modal' style='padding:8px 18px;border:1px solid #e2e8f0;border-radius:8px;cursor:pointer;background:#fff;font-size:13px'>Cancel</button>"
       +"<button onclick='saveSchedule()' style='padding:8px 18px;background:#7c3aed;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600'>"+CHECK+" Save</button>"
     +"</div>"
   +"</div>";
@@ -2381,7 +2386,7 @@ function saveSchedule(){
   var day=parseInt(document.getElementById("sched-day").value)||0;
   var abs=document.getElementById("sched-abs").checked;
   localStorage.setItem("taika_schedule",JSON.stringify({day:day,absences:abs}));
-  document.getElementById('sched-modal').remove();
+  closeModal('sched-modal');
   showToast(day?CAL+" Reminder set for day "+day+" of each month":CAL+" Scheduled reminders disabled","ok");
 }
 
@@ -2413,7 +2418,7 @@ function checkScheduledReminders(){
 }
 
 function broadcastAnnouncement(){
-  if(document.getElementById('bc-modal'))return document.getElementById('bc-modal').remove();
+  if(document.getElementById('bc-modal'))return closeModal('bc-modal');
   var active=students.filter(function(s){return !s.inactive;});
   var m=document.createElement("div");
   m.id="bc-modal";
@@ -2426,7 +2431,7 @@ function broadcastAnnouncement(){
   m.innerHTML="<div style='background:#fff;border-radius:16px;padding:24px;width:100%;max-width:520px;box-shadow:0 20px 60px rgba(0,0,0,.3)'>"
     +"<div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:16px'>"
       +"<h3 style='margin:0;font-size:18px'>"+BELL+" Broadcast to All Parents</h3>"
-      +"<button onclick='document.getElementById('bc-modal').remove()' style='background:none;border:none;font-size:22px;cursor:pointer;color:#9ca3af'>&times;</button>"
+      +"<button onclick='closeModal(this.dataset.c)' data-c='bc-modal' style='background:none;border:none;font-size:22px;cursor:pointer;color:#9ca3af'>&times;</button>"
     +"</div>"
     +"<div style='font-size:12px;color:#6b7280;margin-bottom:14px'>Message will be sent to <b>"+active.length+"</b> active students via WhatsApp — one by one.</div>"
     +"<div style='margin-bottom:10px'>"
@@ -2438,7 +2443,7 @@ function broadcastAnnouncement(){
       +"<textarea id='bc-txt' rows='8' style='width:100%;box-sizing:border-box;padding:10px;border:1px solid #e2e8f0;border-radius:8px;font-size:13px;font-family:var(--fb);resize:vertical' placeholder='Type your announcement here...&#10;&#10;Use [STUDENT NAME] to personalise per student.'></textarea>"
     +"</div>"
     +"<div style='display:flex;gap:8px;justify-content:flex-end'>"
-      +"<button onclick='document.getElementById('bc-modal').remove()' style='padding:8px 18px;border:1px solid #e2e8f0;border-radius:8px;cursor:pointer;background:#fff;font-size:13px'>Cancel</button>"
+      +"<button onclick='closeModal(this.dataset.c)' data-c='bc-modal' style='padding:8px 18px;border:1px solid #e2e8f0;border-radius:8px;cursor:pointer;background:#fff;font-size:13px'>Cancel</button>"
       +"<button onclick='startBroadcast()' style='padding:8px 18px;background:#dc2626;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600'>"+BELL+" Start Broadcast</button>"
     +"</div>"
   +"</div>";
@@ -2460,7 +2465,7 @@ function startBroadcast(){
   if(!msg){showToast("Please type a message first","error");return;}
   var active=students.filter(function(s){return !s.inactive;});
   if(!active.length){showToast("No active students","error");return;}
-  document.getElementById('bc-modal').remove();
+  closeModal('bc-modal');
   showToast("Broadcasting to "+active.length+" parents...","ok");
   var i=0;
   function next(){
