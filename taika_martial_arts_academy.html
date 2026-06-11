@@ -895,13 +895,13 @@ function rStud(){
     for(var i=0;i<fil.length;i++){
       var s=fil[i];
       rows += "<tr style='cursor:pointer' onclick='"+(srch?"toggleStudentDetail(this.dataset.sid)":"openSP(this.dataset.sid)")+"' data-sid='"+s.id+"'>"
-        +"<td style='cursor:pointer' onclick='openSP(this.parentElement.dataset.sid)'><b>"+s.name+"</b><br><span style='color:var(--gray);font-size:11px'>"+s.phone+"</span></td>"
+        +"<td style='cursor:pointer'><b>"+s.name+"</b><br><span style='color:var(--gray);font-size:11px'>"+s.phone+"</span></td>"
         +"<td>"+beltB(s.belt)+"</td><td>"+s.plan+"</td><td>"+fmt(s.fee)+"</td>"
         +"<td>"+String(s.validTill||"-").slice(0,10)+"</td>"
         +"<td>"+statB(s)+"</td>"
         +"<td style='white-space:nowrap'>"
-          +"<button class='btn btr' style='padding:4px 8px;font-size:11px' onclick='openFee(this.dataset.id)' data-id='"+s.id+"'>Pay</button> "
-          +"<button class='btn bto' style='padding:4px 8px;font-size:11px' onclick='toggleInactive(this.dataset.id,true)' data-id='"+s.id+"'>Pause</button> "+"<button class='btn bto' style='padding:4px 8px;font-size:11px;color:#7c3aed;border-color:#7c3aed' onclick='openEdit(this.dataset.id)' data-id='"+s.id+"'>&#9999;</button>"
+          +"<button onclick='event.stopPropagation();openFee(this.dataset.id)' class='btn btr' style='padding:4px 8px;font-size:11px' data-id='"+s.id+"'>Pay</button> "
+          +"<button class='btn bto' style='padding:4px 8px;font-size:11px' onclick='event.stopPropagation();toggleInactive(this.dataset.id,true)' data-id='"+s.id+"'>Pause</button> "+"<button class='btn bto' style='padding:4px 8px;font-size:11px;color:#7c3aed;border-color:#7c3aed' onclick='event.stopPropagation();openEdit(this.dataset.id)' data-id='"+s.id+"'>&#9999;</button>"
         +"</td>"
         +"</tr>";
     }
