@@ -479,7 +479,6 @@ async function doSyncSheets(){if(syncInProgress){showToast("Sync already in prog
         att[aYm][sid][day]=status;
       });
     }sv();updBadges();render();if(errors.length===0)showToast("Synced "+students.length+" students successfully!","ok");else showToast("Partial sync. Failed: "+errors.join(", "),"warn");}catch(e){showToast("Sync error: "+e.message,"error");}finally{syncInProgress=false;setBtnLoading("btn-sync",false,"&#128260; Sync from Sheets");}}
-async function seedToSheets(){showToast("Seeding "+students.length+" students...");var ok=0;for(var i=0;i<students.length;i++){var r=await apiCall("addStudent",students[i]);if(r&&r.ok)ok++;}showToast("Seeded "+ok+" of "+students.length+" students!","ok");}
 function fmt(n){return "Rs "+Number(n||0).toLocaleString("en-IN");}
 function tod(){return new Date().toISOString().slice(0,10);}
 function isUp(s){if(s.inactive)return false;if(!s.validTill)return true;return String(s.validTill).slice(0,10)<tod();}
@@ -497,6 +496,71 @@ function waLink(ph,msg,lbl){
     +"data-ph='"+safePh+"' data-msg='"+msg.replace(/'/g,"&#39;").replace(/\n/g,"&#10;").replace(/\r/g,"")+"' "
     +"class='wa'>&#128241; "+lbl+"</button>";
 }
+function toggleStudentDetail(sid){
+  var rows=document.querySelectorAll('.stud-detail-row');
+  var found=false;
+  rows.forEach(function(el){
+    if(el.dataset.sid===sid){
+      el.style.display=el.style.display==="none"?"table-row":"none";
+      found=true;
+    } else el.style.display="none";
+  });
+  if(found)return;
+  var s=students.find(function(x){return x.id===sid;});
+  if(!s)return;
+
+  // Last 3 payments
+  var sf=fees.filter(function(p){return (p.sid||p.studentId)===sid;}).slice(-3).reverse();
+  var payH=sf.length?sf.map(function(p){
+    var a=Number(p.amount||p.amt||0);
+    return "<div style='display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #f3f4f6;font-size:12px'>"
+      +"<span style='font-weight:600;color:#16a34a'>"+fmt(a)+"</span>"
+      +"<span style='color:#6b7280'>"+String(p.date||"").slice(0,10)+"</span>"
+      +"<span style='color:#9ca3af'>"+p.plan+"</span></div>";
+  }).join("") : "<div style='font-size:12px;color:#9ca3af;padding:4px 0'>No payments recorded</div>";
+
+  // Attendance dots
+  var ym=attMo,parts=ym.split("-"),yr=parseInt(parts[0]),mo=parseInt(parts[1]);
+  var dim=new Date(yr,mo,0).getDate(),hols=getHolidays(ym);
+  var sr=(att[ym]&&att[ym][sid])||{},todStr=tod();
+  var dots="",pC=0,aC=0;
+  for(var d=1;d<=dim;d++){
+    var ds=ym+"-"+(d<10?"0":"")+d,v=sr[d]||"";
+    var isH=hols.has(d),isFut=ds>todStr;
+    var bg=isH?"#fed7aa":v==="P"?"#16a34a":v==="A"?"#ef4444":isFut?"#f1f5f9":"#e2e8f0";
+    var lbl=isH?"H":v||"";
+    if(v==="P")pC++;
+    if(v==="A"&&!isH)aC++;
+    dots+="<span title='"+d+(isH?" Holiday":v?" "+v:" —")+"' style='display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:3px;background:"+bg+";color:"+(v||isH?"#fff":"#cbd5e1")+";font-size:8px;font-weight:700;margin:1px'>"+lbl+"</span>";
+  }
+
+  var ph=String(s.phone||"").replace(/\D/g,"");
+  if(ph.length===10)ph="91"+ph;
+
+  var det="<tr class='stud-detail-row' data-sid='"+sid+"' style='background:#f8fafc'>"
+    +"<td colspan='7' style='padding:14px 18px;border-bottom:2px solid #e2e8f0'>"
+    +"<div style='display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:12px'>"
+      +"<div><div style='font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px'>"+MONEY+" Last 3 Payments</div>"+payH+"</div>"
+      +"<div><div style='font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px'>"+BELL+" Attendance "+ym+"</div>"
+        +"<div style='line-height:1.8;margin-bottom:4px'>"+dots+"</div>"
+        +"<div style='font-size:11px;display:flex;gap:12px'>"
+          +"<span style='color:#16a34a;font-weight:600'>P: "+pC+"</span>"
+          +"<span style='color:#ef4444;font-weight:600'>A: "+aC+"</span>"
+        +"</div>"
+      +"</div>"
+    +"</div>"
+    +"<div style='display:flex;gap:8px;padding-top:10px;border-top:1px solid #e2e8f0'>"
+      +"<button class='btn btr' style='font-size:12px;padding:5px 12px' onclick='openFee(\""+sid+"\")'>"+MONEY+" Pay</button>"
+      +"<button class='btn bto' style='font-size:12px;padding:5px 12px' onclick='openEdit(\""+sid+"\")'>&#9999;&#65039; Edit</button>"
+      +"<button class='btn bto' style='font-size:12px;padding:5px 12px' onclick='openSP(\""+sid+"\")'>&#128065; Full Profile</button>"
+      +"<button onclick='window.open(\"https://wa.me/"+ph+"\",\"_blank\")' style='font-size:12px;padding:5px 12px;background:#25d366;color:#fff;border:none;border-radius:6px;cursor:pointer;font-family:var(--fb)'>&#128172; WhatsApp</button>"
+    +"</div>"
+    +"</td></tr>";
+
+  var cr=document.querySelector('tr[data-sid="'+sid+'"]');
+  if(cr)cr.insertAdjacentHTML("afterend",det);
+}
+
 function waCopy(btn){
   var msg=btn.getAttribute("data-msg").replace(/&#39;/g,"'").replace(/&#10;/g,"\n");
   var ph=btn.getAttribute("data-ph");
@@ -516,7 +580,7 @@ function waCopy(btn){
   }
 }
 function notKey(n){ return n.t+'-'+(n.s?n.s.id:'')+(n.diff!==undefined?'-'+n.diff:''); }
-function getNots(){var n=[],ym=tod().slice(0,7);students.filter(function(s){return !s.inactive;}).forEach(function(s){var ab=absCnt(s.id,ym);if(ab>=2&&ab<5)n.push({t:"a2",s:s,ab:ab});else if(ab>=5)n.push({t:"a5",s:s,ab:ab});var d=dud(s);if(d>=0&&d<=5)n.push({t:"due",s:s,d:d});});getBirthdays(3).forEach(function(b){n.push({t:"bday",s:b.s,diff:b.diff});});
+function getNots(){var n=[],ym=tod().slice(0,7);students.filter(function(s){return !s.inactive;}).forEach(function(s){var ab=absCnt(s.id,ym);if(ab>=2&&ab<5)n.push({t:"a2",s:s,ab:ab});else if(ab>=5)n.push({t:"a5",s:s,ab:ab});var d=dud(s);if(d>=0&&d<=5)n.push({t:"due",s:s,d:d});});// birthdays on dedicated page
   // Filter out dismissed (reset daily)
   var today=tod();
   return n.filter(function(x){var k=notKey(x)+'-'+today; return !dismissedNots[k];});
@@ -524,24 +588,6 @@ function getNots(){var n=[],ym=tod().slice(0,7);students.filter(function(s){retu
 
 
 // Emoji constants (fromCodePoint avoids file encoding issues)
-var _EM={
-  belt:  String.fromCodePoint(0x1F94B),
-  cake:  String.fromCodePoint(0x1F382),
-  star:  String.fromCodePoint(0x1F31F),
-  check: String.fromCodePoint(0x2705),
-  warn:  String.fromCodePoint(0x26A0)+String.fromCodePoint(0xFE0F),
-  money: String.fromCodePoint(0x1F4B0),
-  wave:  String.fromCodePoint(0x1F44B),
-  heart: String.fromCodePoint(0x2764),
-  bell:  String.fromCodePoint(0x1F514),
-  party: String.fromCodePoint(0x1F389),
-  trophy:String.fromCodePoint(0x1F3C6),
-  spark: String.fromCodePoint(0x2728),
-  pray:  String.fromCodePoint(0x1F64F),
-  fire:  String.fromCodePoint(0x1F525),
-  pin:   String.fromCodePoint(0x1F4CD),
-  smile: String.fromCodePoint(0x1F60A)
-};
 
 
 function dismissNot(key){
@@ -552,8 +598,6 @@ function dismissNot(key){
   toggleNP(); // refresh panel
 }
 
-function switchNotTabA(){switchNotTab("aa");}
-function switchNotTabB(){switchNotTab("bb");}
 function switchNotTab(tab){
   var isA=(tab==="aa");
   document.getElementById("nt-alerts").style.borderBottom=isA?"2px solid var(--red)":"none";
@@ -574,7 +618,7 @@ function showPage(p){curPage=p;try{history.replaceState(null,'','#'+p);}catch(e)
   // Update bottom nav
   document.querySelectorAll(".bni").forEach(function(el){el.classList.remove("active");});
   var bn=document.getElementById("bn-"+p);if(bn)bn.classList.add("active");document.querySelectorAll(".ni").forEach(function(el,i){el.classList.toggle("active",pages[i]===p);});var titles={dashboard:"Dashboard",students:"Students",fees:"Fee Management",attendance:"Attendance",expenses:"Expenses & P&L",enquiries:"Enquiries"};document.getElementById("pt").textContent=titles[p]||"";var acts={dashboard:"+ Add Student",students:"+ Add Student",fees:"+ Record Payment",attendance:"Mark Today",expenses:"+ Add Expense",enquiries:"+ Add Enquiry"};document.getElementById("ta").innerHTML=acts[p]||"";var fns={dashboard:openAS,students:openAS,fees:function(){openFee(null);},attendance:function(){markAll(attMo);},expenses:openAE,enquiries:openAQ};document.getElementById("ta").onclick=fns[p]||openAS;updBadges();render();closeSB();}
-function render(){var fns={dashboard:rDash,students:rStud,fees:rFees,attendance:rAtt,expenses:rExp,enquiries:rEnq,birthdays:rBdays};try{if(fns[curPage]){document.getElementById("ct").innerHTML=fns[curPage]();if(curPage==="attendance")fixAttSticky();}}catch(e){document.getElementById("ct").innerHTML="<div style='padding:40px;text-align:center;color:var(--gray)'>Error rendering. <button class='btn btr' onclick='doSyncSheets()'>Reload Data</button></div>";console.error("Render error:",e);}}
+function render(){var fns={dashboard:rDash,students:rStud,fees:rFees,attendance:rAtt,expenses:rExp,enquiries:rEnq,birthdays:rBdays};try{if(fns[curPage]){document.getElementById("ct").innerHTML=fns[curPage]();}}catch(e){document.getElementById("ct").innerHTML="<div style='padding:40px;text-align:center;color:var(--gray)'>Error rendering. <button class='btn btr' onclick='doSyncSheets()'>Reload Data</button></div>";console.error("Render error:",e);}}
 function onSrch(v){srch=v;render();}
 function rDash(){
   if(!students||students.length===0){return "<div style='padding:60px;text-align:center'><div style='font-size:48px;margin-bottom:16px'>&#129355;</div><div style='font-family:var(--fh);font-size:20px;margin-bottom:8px'>Welcome to Taika Martial Arts Academy</div><div style='font-size:13px;color:var(--gray);margin-bottom:24px'>Click below to load your data from Google Sheets</div><button class='btn btr' onclick='doSyncSheets()'>Load Data from Sheets</button></div>";}
@@ -850,7 +894,7 @@ function rStud(){
     var rows = "";
     for(var i=0;i<fil.length;i++){
       var s=fil[i];
-      rows += "<tr style='cursor:pointer' onclick='openSP(this.dataset.sid)' data-sid='"+s.id+"'>"
+      rows += "<tr style='cursor:pointer' onclick='"+(srch?"toggleStudentDetail(this.dataset.sid)":"openSP(this.dataset.sid)")+"' data-sid='"+s.id+"'>"
         +"<td style='cursor:pointer' onclick='openSP(this.parentElement.dataset.sid)'><b>"+s.name+"</b><br><span style='color:var(--gray);font-size:11px'>"+s.phone+"</span></td>"
         +"<td>"+beltB(s.belt)+"</td><td>"+s.plan+"</td><td>"+fmt(s.fee)+"</td>"
         +"<td>"+String(s.validTill||"-").slice(0,10)+"</td>"
@@ -1078,17 +1122,80 @@ function rEnq(){
   return "<div style='display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:18px'>"+cards+"</div><div class='card'><div class='ch'><h3>Enquiry Pipeline</h3></div><div style='overflow-x:auto'><table class='tbl'><thead><tr><th>Name</th><th>Phone</th><th>Date</th><th>Source</th><th>Status</th><th>Actions</th></tr></thead><tbody>"+rows+"</tbody></table></div>";
 }
 function updEnq(i,v){enqs[i].status=v;sv();render();apiCall("updateEnquiry",{id:enqs[i].id,status:v});}
+function sendAllAbsentAlerts(){
+  var ym=tod().slice(0,7);
+  var hd=getHolidays(ym);
+  var list=students.filter(function(s){
+    if(s.inactive)return false;
+    return Object.keys((att[ym]&&att[ym][s.id])||{}).filter(function(k){
+      return !hd.has(parseInt(k))&&(att[ym][s.id]||{})[k]==="A";
+    }).length>=5;
+  });
+  if(!list.length){showToast("No students with 5+ absences","ok");return;}
+  showToast("Sending alerts for "+list.length+" students...","warn");
+  var i=0;
+  function next(){
+    if(i>=list.length){showToast(CLAP+" Done! Sent "+list.length+" alerts","ok");return;}
+    var s=list[i++];
+    var ab=Object.keys((att[ym]&&att[ym][s.id])||{}).filter(function(k){
+      return !hd.has(parseInt(k))&&(att[ym][s.id]||{})[k]==="A";
+    }).length;
+    var ph=String(s.phone||"").replace(/\D/g,"");
+    if(ph.length===10)ph="91"+ph;
+    var msg=WARN+" Attendance Alert — "+s.name+"\n"+LINE+"\n\nDear "+String(s.parentName||s.name)+",\n\nWe are concerned as "+s.name+" has been absent "+ab+" days this month at Taika "+BELT+" Martial Arts Academy.\n\n"+PRAY+" Please get in touch at your earliest. "+MUSCLE+"\n\n"+LINE+"\n"+BELT+" Warm regards,\nCoach & Team\nTaika Martial Arts Academy, Gokul Plots";
+    var go=function(){
+      showToast(i+"/"+list.length+": "+s.name,"ok");
+      window.open("https://wa.me/"+ph,"_blank");
+      setTimeout(next,2200);
+    };
+    if(navigator.clipboard&&navigator.clipboard.writeText){
+      navigator.clipboard.writeText(msg).then(go);
+    } else {
+      var ta=document.createElement("textarea");ta.value=msg;ta.style.position="fixed";ta.style.opacity="0";
+      document.body.appendChild(ta);ta.select();try{document.execCommand("copy");}catch(e){}
+      document.body.removeChild(ta);go();
+    }
+  }
+  next();
+}
+
 function toggleNP(){
-  var nots=getNots(),h="";
-  if(!nots.length)h="<p style='color:var(--gray);font-size:13px;padding:12px'>No pending notifications</p>";
-  nots.forEach(function(n){var t="",m="",b="";
-    if(n.t==="a2"){t="Absent Alert - "+n.s.name;m=n.s.name+" absent "+n.ab+" days this month";b=waLink(n.s.phone,BELL+" Attendance Reminder "+HEART+"\n"+LINE+"\n\nDear "+String(n.s.parentName||n.s.name)+",\n\nHope you and "+n.s.name+" are doing well! "+SMILE+"\n\nWe wanted to reach out with a gentle reminder that "+n.s.name+" has been absent "+n.ab+" day"+(n.ab===1?"":"s")+" this month at Taika "+BELT+" Martial Arts Academy.\n\n"+STAR+" Regular attendance is key to "+n.s.name+"'s progress, skill development and overall growth.\n\n"+MUSCLE+" We miss "+n.s.name+" on the mat and truly look forward to seeing them back in class soon!\n\n"+PRAY+" Please feel free to reach out if there is anything we can help with. We are always here for you. "+HEART+"\n\n"+LINE+"\n"+BELT+" Warm regards,\nCoach & Team\nTaika Martial Arts Academy, Gokul Plots"+String(n.s.parentName||n.s.name)+",\n\nHope all is well! \uD83D\uDE0A\n\nWe noticed that "+n.s.name+" has been absent "+n.ab+" days this month at Taika \uD83E\uDD4B Martial Arts Academy.\n\nRegular training is key to progress and growth. \uD83C\uDFC6 We miss "+n.s.name+" on the mat and look forward to seeing them back soon!\n\n\uD83D\uDE4F Please let us know if there is anything we can help with.\n\n\u2764 Warm regards,\n\uD83E\uDD4B Coach & Team\nTaika Martial Arts Academy\nGokul Plots","Send Alert");}
-    else if(n.t==="a5"){t="High Absence - "+n.s.name;m=n.s.name+" absent "+n.ab+" days";b=waLink(n.s.phone,WARN+" Important - Attendance Alert "+BELL+"\n"+LINE+"\n\nDear "+String(n.s.parentName||n.s.name)+",\n\nWe hope "+n.s.name+" is keeping well. "+HEART+"\n\nWe are genuinely concerned as "+n.s.name+" has been absent "+n.ab+" day"+(n.ab===1?"":"s")+" this month at Taika "+BELT+" Martial Arts Academy.\n\n"+STAR+" Consistent training is very important for "+n.s.name+"'s progress, confidence, and overall development.\n\n"+PRAY+" We kindly request you to please get in touch with us at your earliest so we can understand the situation and support "+n.s.name+" better.\n\n"+MUSCLE+" Every student's journey matters deeply to us. We are fully committed to "+n.s.name+"'s growth and well-being.\n\n"+LINE+"\n"+BELT+" Warm regards,\nCoach & Team\nTaika Martial Arts Academy, Gokul Plots"+String(n.s.parentName||n.s.name)+",\n\nWe hope "+n.s.name+" is doing well. \u2764\n\nWe are concerned as "+n.s.name+" has been absent "+n.ab+" days this month at Taika \uD83E\uDD4B Martial Arts Academy.\n\nConsistent training is very important for "+n.s.name+"'s progress and development. \uD83C\uDF1F\n\nWe kindly request you to please get in touch with us so we can understand the situation and support "+n.s.name+" better.\n\n\uD83D\uDE4F We truly care about every student's journey.\n\n\u2764 Warm regards,\n\uD83E\uDD4B Coach & Team\nTaika Martial Arts Academy\nGokul Plots","Send Alert");}
-    else if(n.t==="bday"){t="Birthday "+(n.diff===0?"Today!":"Tomorrow");m=n.s.name+"'s birthday is "+(n.diff===0?"today!":"tomorrow!");b=waLink(n.s.phone,"Dear "+String(n.s.parentName||n.s.name)+",\n\nWarm birthday wishes to "+n.s.name+" from all of us at Taika Martial Arts Academy!\n\nWith warm regards,\nCoach & Team\nTaika Martial Arts Academy\nGokul Plots","Send Wish");}
-    else if(n.t==="due"){t="Fee Due - "+n.s.name;m="Expires in "+n.d+" day(s). Valid till "+String(n.s.validTill||"").slice(0,10);b=waLink(n.s.phone,MONEY+" Membership Renewal Reminder "+BELL+"\n"+LINE+"\n\nDear "+String(n.s.parentName||n.s.name)+",\n\nHope you and "+n.s.name+" are doing great! "+SMILE+"\n\nThis is a friendly reminder that "+n.s.name+"'s membership at Taika "+BELT+" Martial Arts Academy is due for renewal in "+n.d+" day"+(n.d===1?"":"s")+".\n\n"+NOTE+" Renewal Details:\n"+LINE+"\n"+BELT+"  Student  : "+n.s.name+"\n"+MONEY+"  Fee      : "+fmt(n.s.fee)+"\n"+SPARK+"  Plan     : "+n.s.plan+"\n"+CAL+"  Due By   : "+String(n.s.validTill).slice(0,10)+"\n"+LINE+"\n\n"+PRAY+" Kindly renew at your earliest to ensure uninterrupted training for "+n.s.name+". "+MUSCLE+"\n\n"+CLAP+" Thank you for your continued trust and support! It means the world to us. "+HEART+"\n\n"+LINE+"\n"+BELT+" Warm regards,\nCoach & Team\nTaika Martial Arts Academy, Gokul Plots"+String(n.s.parentName||n.s.name)+",\n\nHope you are doing well! \uD83D\uDE0A\n\nThis is a gentle reminder that "+n.s.name+"'s membership at Taika \uD83E\uDD4B Martial Arts Academy is due in "+n.d+" day"+(n.d===1?"":"s")+".\n\n\uD83D\uDCCB Details:\nStudent  : "+n.s.name+"\nFee      : "+fmt(n.s.fee)+"\nPlan     : "+n.s.plan+"\nDue By   : "+String(n.s.validTill).slice(0,10)+"\n\nKindly renew at your earliest to ensure uninterrupted training. \uD83C\uDFC6\n\nThank you for your continued support! \u2764\n\n\uD83E\uDD4B Warm regards,\nCoach & Team\nTaika Martial Arts Academy\nGokul Plots","Send Reminder");}
-    h+="<div class='nit'><div class='nt'>"+t+"</div><div class='nm'>"+m+"</div>"+b+"</div>";});
-  document.getElementById("npl").innerHTML=h;
-  document.getElementById("np").classList.toggle("open");
+  var np=document.getElementById("np");
+  if(np.classList.contains("open")){np.classList.remove("open");return;}
+  var nots=getNots().filter(function(n){return n.t!=="bday";});
+  function makeNotItem(n){
+    var t="",m="",msg="",icon="",col="",key=notKey(n);
+    if(n.t==="a2"){
+      icon=BELL;col="#d97706";t="Absent "+n.ab+"d: "+n.s.name;
+      m=n.s.name+" absent "+n.ab+" day"+(n.ab===1?"":"s")+" this month.";
+      msg=BELL+" Attendance Reminder "+HEART+"\n"+LINE+"\n\nDear "+String(n.s.parentName||n.s.name)+",\n\nHope you and "+n.s.name+" are doing well! "+SMILE+"\n\n"+STAR+" Regular attendance is key to "+n.s.name+"'s progress. We noticed they have been absent "+n.ab+" day"+(n.ab===1?"":"s")+" this month at Taika "+BELT+" Martial Arts Academy.\n\n"+MUSCLE+" We miss "+n.s.name+" on the mat and look forward to seeing them back soon!\n\n"+PRAY+" Please reach out if we can help. "+HEART+"\n\n"+LINE+"\n"+BELT+" Warm regards,\nCoach & Team\nTaika Martial Arts Academy, Gokul Plots";
+    } else if(n.t==="a5"){
+      icon=WARN;col="#dc2626";t="High Absence ("+n.ab+"d): "+n.s.name;
+      m=n.s.name+" absent "+n.ab+" days — urgent!";
+      msg=WARN+" Important — Attendance Alert "+BELL+"\n"+LINE+"\n\nDear "+String(n.s.parentName||n.s.name)+",\n\nWe hope "+n.s.name+" is keeping well. "+HEART+"\n\nWe are genuinely concerned as "+n.s.name+" has been absent "+n.ab+" day"+(n.ab===1?"":"s")+" this month at Taika "+BELT+" Martial Arts Academy.\n\n"+STAR+" Consistent training is very important for "+n.s.name+"'s progress and development.\n\n"+PRAY+" We kindly request you to get in touch at your earliest so we can support "+n.s.name+" better.\n\n"+LINE+"\n"+BELT+" Warm regards,\nCoach & Team\nTaika Martial Arts Academy, Gokul Plots";
+    } else if(n.t==="due"){
+      icon=MONEY;col="#d97706";t="Fee Due in "+n.d+"d: "+n.s.name;
+      m="Expires in "+n.d+" day"+(n.d===1?"":"s")+". Valid till "+String(n.s.validTill||"").slice(0,10);
+      msg=MONEY+" Membership Renewal Reminder "+BELL+"\n"+LINE+"\n\nDear "+String(n.s.parentName||n.s.name)+",\n\nHope you and "+n.s.name+" are doing great! "+SMILE+"\n\nThis is a friendly reminder that "+n.s.name+"'s membership at Taika "+BELT+" Martial Arts Academy is due for renewal in "+n.d+" day"+(n.d===1?"":"s")+".\n\n"+NOTE+" Details: Fee: "+fmt(n.s.fee)+" | Plan: "+n.s.plan+" | Due: "+String(n.s.validTill).slice(0,10)+"\n\n"+PRAY+" Kindly renew at your earliest. "+MUSCLE+"\n\n"+LINE+"\n"+BELT+" Warm regards,\nCoach & Team\nTaika Martial Arts Academy, Gokul Plots";
+    }
+    return "<div class='nit' style='border-left:3px solid "+col+"'>"
+      +"<div class='nt'>"+icon+" "+t+"</div><div class='nm'>"+m+"</div>"
+      +"<div style='display:flex;gap:8px;align-items:center'>"
+        +waLink(n.s.phone,msg,n.t==="a5"?"Send Urgent Alert":"Send Alert")
+        +"<button onclick='dismissNot(this.dataset.k)' data-k='"+key+"' style='font-size:11px;color:var(--gray2);background:none;border:none;cursor:pointer;padding:2px 6px'>&#10005; Dismiss</button>"
+      +"</div></div>";
+  }
+  var highAbs=nots.filter(function(n){return n.t==="a5";});
+  var bulkBtn=highAbs.length>1
+    ? "<div style='padding:10px 12px;background:#fef2f2;border-bottom:1px solid #fee2e2;display:flex;justify-content:space-between;align-items:center'>"
+        +"<span style='font-size:12px;color:#dc2626;font-weight:600'>"+WARN+" "+highAbs.length+" students with 5+ absences</span>"
+        +"<button onclick='sendAllAbsentAlerts()' style='font-size:11px;padding:4px 10px;background:#dc2626;color:#fff;border:none;border-radius:6px;cursor:pointer;font-family:var(--fb)'>Send All Alerts</button>"
+      +"</div>"
+    : "";
+  document.getElementById("npl").innerHTML=nots.length
+    ? bulkBtn+nots.map(makeNotItem).join("")
+    : "<p style='color:var(--gray);font-size:13px;padding:16px'>"+CLAP+" All caught up! No pending alerts.</p>";
+  np.classList.add("open");
 }
 function openAS(){document.getElementById("ms").classList.add("open");}
 function closeM(id){document.getElementById(id).classList.remove("open");}
@@ -1278,17 +1385,6 @@ async function fetchMonthAtt(ym){
 }
 
 // Force sticky on attendance name column after DOM render
-function fixAttSticky(){
-  setTimeout(function(){
-    var cells = document.querySelectorAll('.att-nt');
-    cells.forEach(function(c){
-      c.style.position = '-webkit-sticky';
-      c.style.position = 'sticky';
-      c.style.left = '0';
-      c.style.zIndex = '20';
-    });
-  }, 50);
-}
 
 
 
