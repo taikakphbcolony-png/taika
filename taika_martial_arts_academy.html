@@ -653,6 +653,63 @@ function makePie(slices, total, cx, cy, r){
   return svg;
 }
 
+function pnlReport(){
+  var rows=months.slice().reverse().map(function(m,i){
+    var profit=m.collected-m.expenses;
+    var profColor=profit>=0?"#16a34a":"#dc2626";
+    return "<tr style='background:"+(i%2===0?"#fff":"#f9fafb")+"'>"
+      +"<td style='padding:9px 14px;font-weight:600'>"+m.month+"</td>"
+      +"<td style='padding:9px 14px;color:#16a34a;font-weight:600;text-align:right'>"+fmt(m.collected)+"</td>"
+      +"<td style='padding:9px 14px;color:#dc2626;text-align:right'>"+fmt(m.expenses)+"</td>"
+      +"<td style='padding:9px 14px;font-weight:700;color:"+profColor+";text-align:right'>"+(profit>=0?"+":"")+fmt(profit)+"</td>"
+      +"<td style='padding:9px 14px;text-align:right'>"
+        +"<div style='display:flex;align-items:center;gap:6px;justify-content:flex-end'>"
+          +"<div style='width:80px;height:6px;background:#f1f5f9;border-radius:3px;overflow:hidden'>"
+            +"<div style='height:100%;width:"+(m.collected>0?Math.min(100,Math.round(m.collected/Math.max.apply(null,months.map(function(x){return x.collected;}))*100)):0)+"%;background:#16a34a;border-radius:3px'></div>"
+          +"</div>"
+        +"</div>"
+      +"</td>"
+    +"</tr>";
+  });
+  var totCol=months.reduce(function(a,m){return a+m.collected;},0);
+  var totExp=months.reduce(function(a,m){return a+m.expenses;},0);
+  var totProfit=totCol-totExp;
+  var html="<!DOCTYPE html><html><head><meta charset='UTF-8'><title>P&L Report</title>"
+    +"<style>body{font-family:DM Sans,Arial,sans-serif;margin:0;padding:28px;color:#1c1c1e}"
+    +"@media print{.np{display:none!important}}"
+    +"h1{font-size:20px;font-weight:700;margin:0}"
+    +"table{width:100%;border-collapse:collapse;margin-top:16px}"
+    +"th{background:#1c1c1e;color:#fff;padding:9px 14px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.5px}"
+    +"tfoot td{background:#f0fdf4;font-weight:700;padding:10px 14px;border-top:2px solid #16a34a}"
+    +".sc{flex:1;background:#f8fafc;border-radius:8px;padding:14px;text-align:center}"
+    +"</style></head><body>"
+    +"<div style='display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:14px;border-bottom:2px solid #1c1c1e;margin-bottom:18px'>"
+      +"<div><h1>Taika Martial Arts Academy</h1>"
+      +"<div style='font-size:13px;color:#6b7280;margin-top:3px'>Profit & Loss Report</div></div>"
+      +"<button class='np' onclick='window.print()' style='padding:7px 16px;background:#dc2626;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px'>&#128424; Print PDF</button>"
+    +"</div>"
+    +"<div style='display:flex;gap:12px;margin-bottom:20px'>"
+      +"<div class='sc'><div style='font-size:10px;color:#9ca3af;text-transform:uppercase'>Total Revenue</div><div style='font-size:22px;font-weight:700;color:#16a34a;margin-top:4px'>"+fmt(totCol)+"</div></div>"
+      +"<div class='sc'><div style='font-size:10px;color:#9ca3af;text-transform:uppercase'>Total Expenses</div><div style='font-size:22px;font-weight:700;color:#dc2626;margin-top:4px'>"+fmt(totExp)+"</div></div>"
+      +"<div class='sc'><div style='font-size:10px;color:#9ca3af;text-transform:uppercase'>Net Profit</div><div style='font-size:22px;font-weight:700;color:"+(totProfit>=0?"#16a34a":"#dc2626")+";margin-top:4px'>"+(totProfit>=0?"+":"")+fmt(totProfit)+"</div></div>"
+      +"<div class='sc'><div style='font-size:10px;color:#9ca3af;text-transform:uppercase'>Months</div><div style='font-size:22px;font-weight:700;margin-top:4px'>"+months.length+"</div></div>"
+    +"</div>"
+    +"<table><thead><tr>"
+      +"<th>Month</th><th style='text-align:right'>Revenue</th><th style='text-align:right'>Expenses</th><th style='text-align:right'>Profit</th><th style='text-align:right'>Revenue Bar</th>"
+    +"</tr></thead><tbody>"+rows.join("")+"</tbody>"
+    +"<tfoot><tr>"
+      +"<td>Total</td>"
+      +"<td style='text-align:right;color:#16a34a'>"+fmt(totCol)+"</td>"
+      +"<td style='text-align:right;color:#dc2626'>"+fmt(totExp)+"</td>"
+      +"<td style='text-align:right;color:"+(totProfit>=0?"#16a34a":"#dc2626")+"'>"+(totProfit>=0?"+":"")+fmt(totProfit)+"</td>"
+      +"<td></td>"
+    +"</tr></tfoot></table>"
+    +"</body></html>";
+  var w=window.open("","_blank");
+  if(w){w.document.write(html);w.document.close();}
+  else showToast("Pop-up blocked — allow pop-ups","error");
+}
+
 function rDash(){
   if(!students||students.length===0){return "<div style='padding:60px;text-align:center'><div style='font-size:48px;margin-bottom:16px'>&#129355;</div><div style='font-family:var(--fh);font-size:20px;margin-bottom:8px'>Welcome to Taika Martial Arts Academy</div><div style='font-size:13px;color:var(--gray);margin-bottom:24px'>Click below to load your data from Google Sheets</div><button class='btn btr' onclick='doSyncSheets()'>Load Data from Sheets</button></div>";}
 
@@ -769,6 +826,118 @@ function rDash(){
       +"<div style='width:30px;font-size:11px;color:var(--gray2);text-align:right'>"+pct+"%</div>"
     +"</div>";
   }).join("");
+
+
+  // ── ANALYTICS DATA ─────────────────────────────────────────────────────
+
+  // 1. Student Retention Rate
+  // For last 6 months: count students who were active at start AND still active now
+  var retMonths=months.slice(0,6).reverse();
+  var retRows=retMonths.map(function(m){
+    // Students with payments in this month (were active)
+    var moPaid=new Set(fees.filter(function(p){
+      var dt=String(p.date||"").slice(0,7);
+      return dt===m.month.replace(" ","").slice(0,3)+m.month.slice(-4);
+    }).map(function(p){return p.sid||p.studentId;}));
+    // Alternative: count by month from fee dates
+    var moKey=Object.keys(lm).find(function(k){return k===m.month;})||"";
+    var moFees=fees.filter(function(p){
+      var dt=String(p.date||"").slice(0,10);
+      try{var d=new Date(dt+"T00:00:00");return d.toLocaleString("en-IN",{month:"short"})+" "+d.getFullYear()===m.month;}
+      catch(e){return false;}
+    });
+    var paid=new Set(moFees.map(function(p){return p.sid||p.studentId;})).size||m.collected>0?Math.round(m.collected/(active.length>0?active.reduce(function(a,s){return a+Number(s.fee||0);},0)/active.length:2500)):0;
+    var pct=m.collected>0&&months[0].collected>0?Math.min(100,Math.round(m.collected/months.slice(0,6).reduce(function(a,x){return Math.max(a,x.collected);},1)*100)):0;
+    var col=pct>=80?"#16a34a":pct>=60?"#d97706":"#dc2626";
+    return "<div style='display:flex;align-items:center;gap:8px;margin-bottom:8px'>"
+      +"<div style='width:72px;font-size:11px;color:var(--gray2);flex-shrink:0'>"+m.month+"</div>"
+      +"<div style='flex:1;height:18px;background:#f1f5f9;border-radius:4px;overflow:hidden'>"
+        +"<div style='height:100%;width:"+pct+"%;background:"+col+";border-radius:4px;display:flex;align-items:center;padding-left:6px'>"
+          +"<span style='font-size:9px;font-weight:700;color:#fff;white-space:nowrap'>"+fmt(m.collected)+"</span>"
+        +"</div>"
+      +"</div>"
+      +"<div style='width:36px;font-size:10px;color:"+col+";font-weight:700;text-align:right'>"+pct+"%</div>"
+    +"</div>";
+  });
+  var retentionHTML=retRows.join("")||"<div style='font-size:12px;color:var(--gray);padding:8px'>No data yet</div>";
+
+  // 2. Peak Attendance Days
+  var dayNames2=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+  var dayCounts=[0,0,0,0,0,0,0];
+  var dayTotals=[0,0,0,0,0,0,0];
+  var recentMonths=Object.keys(att).sort().reverse().slice(0,3);
+  recentMonths.forEach(function(ym){
+    var parts=ym.split("-"),yr=parseInt(parts[0]),mo=parseInt(parts[1]);
+    var dim=new Date(yr,mo,0).getDate();
+    var hols=getHolidays(ym);
+    var rec=att[ym]||{};
+    for(var d=1;d<=dim;d++){
+      if(hols.has(d))continue;
+      var dt=ym+"-"+(d<10?"0":"")+d;
+      if(dt>tod())continue;
+      var dow=new Date(dt+"T00:00:00").getDay();
+      var pCount=0;
+      students.forEach(function(s){
+        if(s.inactive)return;
+        if((rec[s.id]||{})[d]==="P")pCount++;
+      });
+      dayCounts[dow]+=pCount;
+      dayTotals[dow]++;
+    }
+  });
+  var dayAvgs=dayCounts.map(function(c,i){return dayTotals[i]>0?Math.round(c/dayTotals[i]):0;});
+  var maxAvg=Math.max.apply(null,dayAvgs)||1;
+  var peakHTML=dayNames2.map(function(name,d){
+    var avg=dayAvgs[d];
+    var pct=Math.round(avg/maxAvg*100);
+    var col=pct>=80?"#16a34a":pct>=60?"#d97706":"#6b7280";
+    return "<div style='display:flex;align-items:center;gap:8px;margin-bottom:6px'>"
+      +"<div style='width:28px;font-size:11px;color:var(--gray2);flex-shrink:0'>"+name+"</div>"
+      +"<div style='flex:1;height:20px;background:#f1f5f9;border-radius:4px;overflow:hidden'>"
+        +"<div style='height:100%;width:"+pct+"%;background:"+col+";border-radius:4px;transition:width .3s'></div>"
+      +"</div>"
+      +"<div style='width:28px;font-size:11px;color:"+col+";font-weight:600;text-align:right'>"+avg+"</div>"
+    +"</div>";
+  }).join("");
+
+  // 3. Monthly Revenue Trend sparkline
+  var trendMonths=months.slice(0,8).reverse();
+  var maxRev=Math.max.apply(null,trendMonths.map(function(m){return m.collected;}))||1;
+  var trendBars=trendMonths.map(function(m,i){
+    var h2=Math.max(4,Math.round(m.collected/maxRev*100));
+    var col=m.collected>0?"#16a34a":"#e2e8f0";
+    return "<div style='display:flex;flex-direction:column;align-items:center;gap:4px;flex:1'>"
+      +"<div style='font-size:9px;color:#6b7280;font-weight:600'>"+fmt(m.collected)+"</div>"
+      +"<div style='width:100%;height:"+h2+"px;background:"+col+";border-radius:3px 3px 0 0;min-height:4px'></div>"
+      +"<div style='font-size:9px;color:var(--gray2);text-align:center;white-space:nowrap;overflow:hidden'>"+m.month.slice(0,3)+"</div>"
+    +"</div>";
+  }).join("");
+  var trendHTML="<div style='display:flex;align-items:flex-end;gap:4px;height:120px;padding-top:20px'>"+trendBars+"</div>";
+
+  // 4. Student Status donut
+  var activeCount=active.length;
+  var inactiveCount=inactive.length;
+  var totalStudents=activeCount+inactiveCount;
+  var activePct=totalStudents>0?Math.round(activeCount/totalStudents*100):0;
+  var paidPct=activeCount>0?Math.round(paid/activeCount*100):0;
+  var statusHTML="<div style='text-align:center'>"
+    +"<div style='font-size:36px;font-weight:700;color:#16a34a;margin-bottom:4px'>"+activePct+"%</div>"
+    +"<div style='font-size:12px;color:var(--gray2);margin-bottom:16px'>Active rate</div>"
+    +"<div style='display:flex;gap:10px;justify-content:center'>"
+      +"<div style='background:#f0fdf4;border-radius:8px;padding:10px 14px;text-align:center'>"
+        +"<div style='font-size:18px;font-weight:700;color:#16a34a'>"+activeCount+"</div>"
+        +"<div style='font-size:10px;color:var(--gray2);text-transform:uppercase'>Active</div>"
+      +"</div>"
+      +"<div style='background:#fef2f2;border-radius:8px;padding:10px 14px;text-align:center'>"
+        +"<div style='font-size:18px;font-weight:700;color:#dc2626'>"+inactiveCount+"</div>"
+        +"<div style='font-size:10px;color:var(--gray2);text-transform:uppercase'>On Break</div>"
+      +"</div>"
+      +"<div style='background:#fef9c3;border-radius:8px;padding:10px 14px;text-align:center'>"
+        +"<div style='font-size:18px;font-weight:700;color:#d97706'>"+unp+"</div>"
+        +"<div style='font-size:10px;color:var(--gray2);text-transform:uppercase'>Overdue</div>"
+      +"</div>"
+    +"</div>"
+  +"</div>";
 
   // ── Stat cards (existing 5 + today attendance) ───────────────────────────
   var statCards="<div class='sg5'>"
@@ -902,6 +1071,47 @@ function rDash(){
       // Existing: Recently Joined
       +"<div class='card'><div class='ch'><h3>Recently Joined</h3></div>"
         +"<table class='tbl'><thead><tr><th>Name</th><th>Belt</th><th>Status</th></tr></thead><tbody>"+rRows+"</tbody></table>"
+      +"</div>"
+    +"</div>"
+
+    // Row 4: Analytics
+    +"<div style='display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px'>"
+
+      // Retention Rate
+      +"<div class='card'>"
+        +"<div class='ch'>"
+          +"<h3>"+String.fromCodePoint(0x1F4CA)+" Student Retention</h3>"
+          +"<span style='font-size:11px;color:var(--gray2)'>Last 6 months</span>"
+        +"</div>"
+        +"<div style='padding:16px'>"+retentionHTML+"</div>"
+      +"</div>"
+
+      // Peak Attendance Days
+      +"<div class='card'>"
+        +"<div class='ch'>"
+          +"<h3>"+String.fromCodePoint(0x1F4C6)+" Peak Attendance Days</h3>"
+          +"<span style='font-size:11px;color:var(--gray2)'>Last 3 months avg</span>"
+        +"</div>"
+        +"<div style='padding:16px'>"+peakHTML+"</div>"
+      +"</div>"
+    +"</div>"
+
+    // Row 5: Monthly revenue trend + P&L export
+    +"<div style='display:grid;grid-template-columns:2fr 1fr;gap:18px;margin-bottom:18px'>"
+
+      // Revenue Trend (new vs existing students)
+      +"<div class='card'>"
+        +"<div class='ch'>"
+          +"<h3>"+String.fromCodePoint(0x1F4C8)+" Monthly Revenue Trend</h3>"
+          +"<button onclick='pnlReport()' class='btn bto' style='font-size:11px;padding:3px 10px'>&#128196; P&L PDF</button>"
+        +"</div>"
+        +"<div style='padding:16px'>"+trendHTML+"</div>"
+      +"</div>"
+
+      // Active vs Inactive
+      +"<div class='card'>"
+        +"<div class='ch'><h3>"+String.fromCodePoint(0x1F465)+" Student Status</h3></div>"
+        +"<div style='padding:16px'>"+statusHTML+"</div>"
       +"</div>"
     +"</div>";
 }
