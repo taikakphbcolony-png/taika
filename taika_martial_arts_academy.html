@@ -1038,13 +1038,11 @@ function feeCollectionReport(mo){
 }
 
 function rFees(){
-  var fsl=srch.toLowerCase();var ov=students.filter(function(s){return !s.inactive&&isUp(s)&&(!srch||s.name.toLowerCase().includes(fsl)||String(s.phone||'').includes(srch));
-  // Apply aging/week filter early so ovR loop uses correct subset
+  var fsl=srch.toLowerCase();var ov=students.filter(function(s){return !s.inactive&&isUp(s)&&(!srch||s.name.toLowerCase().includes(fsl)||String(s.phone||'').includes(srch));});
   if(feeFilter==="week")ov=students.filter(function(s){return !s.inactive&&!isUp(s)&&dud(s)>=0&&dud(s)<=7;});
   if(feeFilter==="30plus")ov=ov.filter(function(s){return Math.abs(dud(s))>=30;});
   if(feeFilter==="60plus")ov=ov.filter(function(s){return Math.abs(dud(s))>=60;});
   if(feeFilter==="90plus")ov=ov.filter(function(s){return Math.abs(dud(s))>=90;});
-});
   var ovR="";
   for(var i=0;i<ov.length;i++){var s=ov[i];var d=Math.abs(dud(s));var msg=MONEY+" Fee Payment Reminder "+BELL+"\n"+LINE+"\n\nDear "+String(s.parentName||s.name)+",\n\nHope you and "+s.name+" are doing well! "+SMILE+"\n\nThis is a gentle reminder that the membership fee for "+s.name+" at Taika "+BELT+" Martial Arts Academy is currently due."+"\n\n"+NOTE+" Payment Details:"+"\n"+LINE+"\n"+BELT+"  Student  : "+s.name+"\n"+MONEY+"  Amount   : "+fmt(s.fee)+"\n"+CAL+"  Plan     : "+s.plan+"\n"+LINE+"\n\nKindly clear the dues at your earliest so that "+s.name+" can continue training without any interruption. "+MUSCLE+"\n\n"+PRAY+" If you have already made the payment, please ignore this message."+"\nWe truly value your trust and support. "+HEART+"\n\n"+LINE+"\n"+BELT+" Warm regards,\nCoach & Team\nTaika Martial Arts Academy, Gokul Plots";ovR+="<tr><td><b>"+s.name+"</b><br><span style='color:var(--gray);font-size:11px'>"+s.phone+"</span></td><td>"+fmt(s.fee)+"</td><td>"+String(s.validTill||"N/A").slice(0,10)+"</td><td><span class='bdg' style='background:"+(d>=90?'#7c3aed':d>=60?'#dc2626':d>=30?'#d97706':'#ef4444')+";color:#fff'>"+d+"d overdue</span></td><td><button class='btn btr' style='padding:4px 9px;font-size:12px' onclick='openFee(this.dataset.id)' data-id='"+s.id+"'>Record Pay</button> "+waLink(s.phone,msg,"Remind")+"</td></tr>";}
 
