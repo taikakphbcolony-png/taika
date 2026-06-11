@@ -1077,6 +1077,75 @@ function getHolidays(ym){
   return hols;
 }
 
+function attendanceReport(sid){
+  var s=students.find(function(x){return x.id===sid;});
+  if(!s)return;
+  var months=Object.keys(att).sort().reverse();
+  if(!months.length){showToast("No attendance data","error");return;}
+  var totalP=0,totalA=0,totalW=0;
+  var monthRows=months.map(function(ym){
+    var parts=ym.split("-"),yr=parseInt(parts[0]),mo=parseInt(parts[1]);
+    var dim=new Date(yr,mo,0).getDate(),hols=getHolidays(ym),sr=(att[ym]&&att[ym][sid])||{};
+    var pC=0,aC=0,wD=0;
+    for(var d=1;d<=dim;d++){
+      if(hols.has(d))continue;
+      var dt=ym+"-"+(d<10?"0":"")+d;
+      if(dt>tod())continue;
+      wD++;totalW++;
+      var v=sr[d]||"";
+      if(v==="P"){pC++;totalP++;}else if(v==="A"){aC++;totalA++;}
+    }
+    var pct=wD>0?Math.round(pC/wD*100):0,pCol=pct>=80?"#16a34a":pct>=60?"#d97706":"#dc2626";
+    var dots="";
+    for(var d=1;d<=dim;d++){
+      var v=sr[d]||"",isH=hols.has(d),isFut=(ym+"-"+(d<10?"0":"")+d)>tod();
+      var bg=isH?"#fed7aa":v==="P"?"#16a34a":v==="A"?"#ef4444":isFut?"#f1f5f9":"#e2e8f0";
+      dots+="<span title='"+d+(isH?" H":v?" "+v:"")+"' style='display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:3px;background:"+bg+";color:"+(v||isH?"#fff":"#94a3b8")+";font-size:8px;font-weight:700;margin:1px'>"+(isH?"H":v||"")+"</span>";
+    }
+    return "<tr><td style='padding:9px 14px;font-weight:600;white-space:nowrap'>"+ym+"</td>"
+      +"<td style='padding:9px 14px'><b style='color:#16a34a'>"+pC+"</b> / "+wD+"</td>"
+      +"<td style='padding:9px 14px;color:#ef4444'>"+aC+"</td>"
+      +"<td style='padding:9px 14px;min-width:140px'><div style='display:flex;align-items:center;gap:8px'>"
+        +"<div style='flex:1;height:8px;background:#f1f5f9;border-radius:4px;overflow:hidden'>"
+          +"<div style='height:100%;width:"+pct+"%;background:"+pCol+";border-radius:4px'></div>"
+        +"</div><b style='color:"+pCol+";min-width:34px'>"+pct+"%</b></div></td>"
+      +"<td style='padding:9px 14px'><div style='line-height:1.8'>"+dots+"</div></td></tr>";
+  });
+  var oPct=totalW>0?Math.round(totalP/totalW*100):0,oCol=oPct>=80?"#16a34a":oPct>=60?"#d97706":"#dc2626";
+  var bCols={"White":"#f1f5f9","Yellow":"#fef08a","Orange":"#fed7aa","Green":"#bbf7d0","Blue":"#bfdbfe","Brown-1":"#d97706","Brown-2":"#b45309","Brown-3":"#92400e","Black-1":"#1e293b","Maroon":"#9f1239","KB":"#7c3aed","":" #e2e8f0"};
+  var html="<!DOCTYPE html><html><head><meta charset='UTF-8'><title>Attendance - "+s.name+"</title>"
+    +"<style>body{font-family:DM Sans,Arial,sans-serif;margin:0;padding:28px;color:#1c1c1e}"
+    +"@media print{.np{display:none!important}}"
+    +"h1{font-size:20px;font-weight:700;margin:0}"
+    +"table{width:100%;border-collapse:collapse;margin-top:16px}"
+    +"th{background:#1c1c1e;color:#fff;padding:9px 14px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.5px}"
+    +"tr:nth-child(even) td{background:#f9fafb}"
+    +".sc{flex:1;background:#f8fafc;border-radius:8px;padding:14px;text-align:center}"
+    +"</style></head><body>"
+    +"<div style='display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:14px;border-bottom:2px solid #1c1c1e;margin-bottom:18px'>"
+      +"<div><h1>Taika Martial Arts Academy</h1>"
+      +"<div style='font-size:13px;color:#6b7280;margin-top:3px'>Attendance Report - "+s.name+"</div></div>"
+      +"<button class='np' onclick='window.print()' style='padding:7px 16px;background:#dc2626;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px'>&#128424; Print PDF</button>"
+    +"</div>"
+    +"<div style='display:flex;gap:14px;align-items:center;background:#f8fafc;border-radius:10px;padding:14px;margin-bottom:16px'>"
+      +"<div style='width:48px;height:48px;border-radius:50%;background:#dc2626;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;color:#fff;flex-shrink:0'>"+s.name.charAt(0).toUpperCase()+"</div>"
+      +"<div style='flex:1'><div style='font-size:17px;font-weight:700'>"+s.name+"</div><div style='font-size:12px;color:#6b7280'>"+s.phone+"</div></div>"
+      +"<span style='padding:4px 12px;border-radius:20px;background:"+(bCols[s.belt||""]||"#e2e8f0")+";font-size:12px;font-weight:700'>"+(s.belt||"White")+" Belt</span>"
+    +"</div>"
+    +"<div style='display:flex;gap:12px;margin-bottom:16px'>"
+      +"<div class='sc'><div style='font-size:10px;color:#9ca3af;text-transform:uppercase'>Overall</div><div style='font-size:22px;font-weight:700;color:"+oCol+";margin-top:4px'>"+oPct+"%</div></div>"
+      +"<div class='sc'><div style='font-size:10px;color:#9ca3af;text-transform:uppercase'>Present</div><div style='font-size:22px;font-weight:700;color:#16a34a;margin-top:4px'>"+totalP+"</div></div>"
+      +"<div class='sc'><div style='font-size:10px;color:#9ca3af;text-transform:uppercase'>Absent</div><div style='font-size:22px;font-weight:700;color:#ef4444;margin-top:4px'>"+totalA+"</div></div>"
+      +"<div class='sc'><div style='font-size:10px;color:#9ca3af;text-transform:uppercase'>Working Days</div><div style='font-size:22px;font-weight:700;margin-top:4px'>"+totalW+"</div></div>"
+    +"</div>"
+    +"<table><thead><tr><th>Month</th><th>Present</th><th>Absent</th><th>Attendance %</th><th>Calendar</th></tr></thead>"
+    +"<tbody>"+monthRows.join("")+"</tbody></table>"
+    +"</body></html>";
+  var w=window.open("","_blank");
+  if(w){w.document.write(html);w.document.close();}
+  else showToast("Pop-up blocked","error");
+}
+
 function rAtt(){
   var ym=attMo,parts=ym.split("-"),yr=parseInt(parts[0]),mo=parseInt(parts[1]);
   var dim=new Date(yr,mo,0).getDate();
@@ -1105,7 +1174,7 @@ function rAtt(){
       +"background:"+(isH?"#fff7ed":"#f9fafb")+";color:"+(isH?"#c2410c":"#6b7280")+"'>"
       +"<div>"+dn[dw]+"</div><div style='font-weight:700;font-size:10px'>"+d+"</div></th>";
   }
-  thead+="<th style='text-align:center;font-size:10px;padding:2px;min-width:30px;background:#f9fafb'>Abs</th></tr></thead>";
+  thead+="<th style='text-align:center;font-size:10px;padding:2px;min-width:30px;background:#f9fafb'>Abs</th><th style='text-align:center;font-size:10px;padding:2px;min-width:34px;background:#f9fafb;position:sticky;right:0;border-left:1px solid #e2e8f0'>%</th></tr></thead>";
 
   // TBODY
   var tbody="<tbody>";
@@ -1131,7 +1200,7 @@ function rAtt(){
         +";cursor:"+(isH||isFut?"default":"pointer")+";padding:0;height:28px;min-width:26px;max-width:26px;-webkit-tap-highlight-color:transparent'>"+txt+"</td>";
     }
     var hdays=getHolidays(ym); var ac=Object.keys(sr).filter(function(k){return k!=="__holidays"&&sr[k]==="A"&&!hdays.has(parseInt(k));}).length; var absBg=ac>5?"#fee2e2":ac>2?"#fef9c3":"transparent", absCol=ac>5?"#dc2626":ac>2?"#b45309":"#6b7280";
-    tbody+="<td style='text-align:center;font-size:12px;font-weight:700;color:"+absCol+";background:"+absBg+";padding:2px'>"+ac+"</td></tr>";
+    tbody+="<td style='text-align:center;font-size:12px;font-weight:700;color:"+absCol+";background:"+absBg+";padding:2px'>"+ac+"</td>"+"<td style='text-align:center;font-size:11px;font-weight:700;background:#f8fafc;padding:2px;position:sticky;right:0;border-left:1px solid #e2e8f0;color:"+(function(){var prC=Object.keys(sr).filter(function(k){return k!=='__holidays'&&sr[k]==='P';}).length;var wkC=0;for(var wd=1;wd<=dim;wd++){if(!hols.has(wd)&&(ym+'-'+(wd<10?'0':'')+wd)<=todStr)wkC++;}var sp=wkC>0?Math.round(prC/wkC*100):0;return (sp>=80?'#16a34a':sp>=60?'#d97706':'#dc2626')+'\'>'+sp+'%';})()+"</td></tr>";
   }
   tbody+="</tbody>";
 
@@ -1144,7 +1213,7 @@ function rAtt(){
     var bg=pct>=80?"#dcfce7":pct>=60?"#fef9c3":"#fff";
     tfoot+="<td style='text-align:center;font-size:9px;font-weight:600;background:"+bg+";padding:1px'>"+cnt+"</td>";
   }
-  tfoot+="<td></td></tr></tfoot>";
+  tfoot+="<td></td><td style='position:sticky;right:0;background:#f9fafb;border-left:1px solid #e2e8f0'></td></tr></tfoot>";
 
   // TOP ABSENTEES
   var topAbs=attS.map(function(s){
@@ -1781,7 +1850,7 @@ function openSP(sid){
     +"<span style='color:#16a34a;font-weight:600'>&#10003; Present: "+presnt+"</span>"
     +"<span style='color:#dc2626;font-weight:600'>&#10007; Absent: "+absnt+"</span>"
     +"</div></div>"
-    +"<div style='padding:16px 18px;display:flex;gap:8px;flex-wrap:wrap'>"+"<button class='btn btr' style='flex:1;min-width:80px' onclick=\"openFee('"+ s.id +"');closeSP()\">"+ MONEY +" Pay</button>"+"<button class='btn bto' style='flex:1;min-width:80px' onclick=\"toggleInactive('"+ s.id +"',"+ (!s.inactive) +")\">"+ ( s.inactive?"Reactivate":"Pause") +"</button>"+"<button class='btn bto' style='flex:1;min-width:80px' onclick=\"openEdit('"+ s.id +"')\">&#9999; Edit</button>"+"</div>"+"<div style='padding:0 18px 16px;display:flex;gap:8px'>"+"<button class='btn bto' style='flex:1;font-size:12px' onclick=\"exportStudentFees('"+ s.id +"')\">&#128196; Fee Statement</button>"+"<button class='btn bto' style='flex:1;font-size:12px' onclick=\"generateIDCard('"+ s.id +"')\">&#128196; ID Card</button>"+"</div>";
+    +"<div style='padding:16px 18px;display:flex;gap:8px;flex-wrap:wrap'>"+"<button class='btn btr' style='flex:1;min-width:80px' onclick=\"openFee('"+ s.id +"');closeSP()\">"+ MONEY +" Pay</button>"+"<button class='btn bto' style='flex:1;min-width:80px' onclick=\"toggleInactive('"+ s.id +"',"+ (!s.inactive) +")\">"+ ( s.inactive?"Reactivate":"Pause") +"</button>"+"<button class='btn bto' style='flex:1;min-width:80px' onclick=\"openEdit('"+ s.id +"')\">&#9999; Edit</button>"+"</div>"+"<div style='padding:0 18px 16px;display:flex;gap:8px'>"+"<button class='btn bto' style='flex:1;font-size:12px' onclick=\"exportStudentFees('"+ s.id +"')\">&#128196; Fee Statement</button>"+"<button class='btn bto' style='flex:1;font-size:12px' onclick=\"generateIDCard('"+ s.id +"')\">&#128196; ID Card</button>"+"<button class='btn bto' style='flex:1;font-size:12px' onclick=\"attendanceReport('"+s.id+"')\">&#128202; Att Report</button>"+"</div>";
 
   document.getElementById("sp").classList.add("open");
   document.getElementById("ov").classList.add("show");
