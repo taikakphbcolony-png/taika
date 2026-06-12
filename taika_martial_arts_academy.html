@@ -637,8 +637,41 @@ function showPage(p){curPage=p;try{history.replaceState(null,'','#'+p);}catch(e)
   // Update bottom nav
   document.querySelectorAll(".bni").forEach(function(el){el.classList.remove("active");});
   var bn=document.getElementById("bn-"+p);if(bn)bn.classList.add("active");document.querySelectorAll(".ni").forEach(function(el,i){el.classList.toggle("active",pages[i]===p);});var titles={dashboard:"Dashboard",students:"Students",fees:"Fee Management",attendance:"Attendance",expenses:"Expenses & P&L",enquiries:"Enquiries"};document.getElementById("pt").textContent=titles[p]||"";var acts={dashboard:"+ Add Student",students:"+ Add Student",fees:"+ Record Payment",attendance:"Mark Today",expenses:"+ Add Expense",enquiries:"+ Add Enquiry"};document.getElementById("ta").innerHTML=acts[p]||"";var fns={dashboard:openAS,students:openAS,fees:function(){openFee(null);},attendance:function(){markAll(attMo);},expenses:openAE,enquiries:openAQ};document.getElementById("ta").onclick=fns[p]||openAS;updBadges();render();closeSB();}
-function render(){var fns={dashboard:rDash,students:rStud,fees:rFees,attendance:rAtt,expenses:rExp,enquiries:rEnq,birthdays:rBdays};try{if(fns[curPage]){document.getElementById("ct").innerHTML=fns[curPage]();}}catch(e){document.getElementById("ct").innerHTML="<div style='padding:40px;text-align:center;color:var(--gray)'>Error rendering. <button class='btn btr' onclick='doSyncSheets()'>Reload Data</button></div>";console.error("Render error:",e);}}
-function onSrch(v){srch=v;render();}
+function render(){
+  var fns={dashboard:rDash,students:rStud,fees:rFees,attendance:rAtt,expenses:rExp,enquiries:rEnq,birthdays:rBdays};
+  // Save focused element info before re-render
+  var _focused=document.activeElement;
+  var _focusedId=_focused?_focused.id:"";
+  var _focusedVal=_focused?_focused.value:"";
+  var _caretPos=(_focused&&_focused.selectionStart!==undefined)?_focused.selectionStart:-1;
+  try{if(fns[curPage]){document.getElementById("ct").innerHTML=fns[curPage]();}}catch(e){document.getElementById("ct").innerHTML="<div style='padding:40px;text-align:center;color:var(--gray)'>Error rendering. <button class='btn btr' onclick='doSyncSheets()'>Reload Data</button></div>";console.error("Render error:",e);}
+  // Restore focus after re-render (keeps keyboard open on mobile)
+  if(_focusedId){
+    var _el=document.getElementById(_focusedId);
+    if(_el&&_el!==document.activeElement){
+      _el.focus();
+      if(_caretPos>=0&&_el.setSelectionRange){
+        try{_el.setSelectionRange(_caretPos,_caretPos);}catch(e2){}
+      }
+    }
+  }
+}
+function onSrch(v){
+  srch=v;
+  // Save which search input is focused and cursor position
+  var _act=document.activeElement;
+  var _aid=_act?_act.id:"";
+  var _asel=(_act&&_act.selectionStart!==undefined)?_act.selectionStart:v.length;
+  render();
+  // Restore focus immediately so keyboard stays open on mobile
+  var _el=document.getElementById(_aid)||document.getElementById("mob-srch")||document.getElementById("gs");
+  if(_el){
+    _el.focus();
+    if(_el.setSelectionRange){
+      try{_el.setSelectionRange(_asel,_asel);}catch(e){}
+    }
+  }
+}
 function makePie(slices, total, cx, cy, r){
   if(!slices||slices.length===0) return "";
   var svg="", angle=0;
@@ -1155,7 +1188,7 @@ function rStud(){
   var sl  = srch.toLowerCase();
   var actS = students.filter(function(s){return !s.inactive;});
   var inactS = students.filter(function(s){return !!s.inactive;});
-  var mobSearch = "<div style='margin-bottom:12px'><input type='text' placeholder='Search...' oninput='onSrch(this.value)' value='"+srch+"' style='width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:8px;font-size:14px;font-family:var(--fb);outline:none;box-sizing:border-box'></div>";
+  var mobSearch = "<div style='margin-bottom:12px'><input type='text' id='mob-srch' placeholder='Search...' oninput='onSrch(this.value)' value='"+srch+"' style='width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:8px;font-size:14px;font-family:var(--fb);outline:none;box-sizing:border-box'></div>";
 
   var aStyle = tab==="active" ? "background:var(--red);color:#fff" : "background:#fff;color:var(--gray)";
   var iStyle = tab==="inactive" ? "background:var(--red);color:#fff" : "background:#fff;color:var(--gray)";
