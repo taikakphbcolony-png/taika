@@ -129,6 +129,7 @@ nav{flex:1;padding:14px 0;overflow-y:auto}
 
   /* Stat cards - 2 col on mobile */
   .sg5{grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+  .dash-row2,.dash-row3,.dash-row4,.dash-row5{grid-template-columns:1fr!important}
   .sc{padding:14px 12px}
   .sc .vl{font-size:22px}
   .sc .lb{font-size:10px}
@@ -645,8 +646,8 @@ function render(){
   var _focusedVal=_focused?_focused.value:"";
   var _caretPos=(_focused&&_focused.selectionStart!==undefined)?_focused.selectionStart:-1;
   try{if(fns[curPage]){document.getElementById("ct").innerHTML=fns[curPage]();}}catch(e){document.getElementById("ct").innerHTML="<div style='padding:40px;text-align:center;color:var(--gray)'>Error rendering. <button class='btn btr' onclick='doSyncSheets()'>Reload Data</button></div>";console.error("Render error:",e);}
-  // Restore focus after re-render (keeps keyboard open on mobile)
-  if(_focusedId){
+  // Only restore focus if a text INPUT was active (prevents keyboard on other taps)
+  if(_focusedId&&_focused&&(_focused.tagName==="INPUT"||_focused.tagName==="TEXTAREA")){
     var _el=document.getElementById(_focusedId);
     if(_el&&_el!==document.activeElement){
       _el.focus();
@@ -1085,7 +1086,7 @@ function rDash(){
     + statCards
 
     // Row 2: P&L + This Month Pie (existing)
-    +"<div style='display:grid;grid-template-columns:1fr 280px;gap:18px;margin-bottom:18px'>"
+    +"<div class='dash-row2' style='display:grid;grid-template-columns:1fr 280px;gap:18px;margin-bottom:18px'>"
       // P&L table
       +"<div class='card'><div class='ch'><h3>Monthly P&amp;L</h3>"
         +"<div style='display:flex;gap:16px;font-size:11px'>"
@@ -1105,7 +1106,7 @@ function rDash(){
     +"</div>"
 
     // Row 3: Revenue Forecast + Belt Distribution + Recently Joined
-    +"<div style='display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px;margin-bottom:18px'>"
+    +"<div class='dash-row3' style='display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px;margin-bottom:18px'>"
 
       // NEW: Revenue Forecast card
       +"<div class='card'><div class='ch'><h3>"+String.fromCodePoint(0x1F4C8)+" Revenue Forecast</h3></div>"
@@ -1143,7 +1144,7 @@ function rDash(){
     +"</div>"
 
     // Row 4: Analytics
-    +"<div style='display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px'>"
+    +"<div class='dash-row4' style='display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px'>"
 
       // Retention Rate
       +"<div class='card'>"
@@ -1165,7 +1166,7 @@ function rDash(){
     +"</div>"
 
     // Row 5: Monthly revenue trend + P&L export
-    +"<div style='display:grid;grid-template-columns:2fr 1fr;gap:18px;margin-bottom:18px'>"
+    +"<div class='dash-row5' style='display:grid;grid-template-columns:2fr 1fr;gap:18px;margin-bottom:18px'>"
 
       // Revenue Trend (new vs existing students)
       +"<div class='card'>"
