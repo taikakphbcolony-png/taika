@@ -307,7 +307,7 @@ nav{flex:1;padding:14px 0;overflow-y:auto}
       <div class="fgi"><label>Fee Plan</label><select id="fpl"><option>1 Month</option><option>3 Months</option><option>6 Months</option><option>12 Months</option></select></div>
       <div class="fgi"><label>Monthly Fee (Rs)</label><input id="ff2" type="number" placeholder="e.g. 3000"></div>
       <div class="fgi"><label>Date of Birth</label><input id="fd" type="date"></div>
-      <div class="fgi"><label>Date Joined</label><input id="fj" type="date" value="2026-05-08"></div>
+      <div class="fgi"><label>Date Joined</label><input id="fj" type="date"></div>
       <div class="fgi ff"><label>School / Organisation</label><input id="fsc" placeholder="School or college name"></div>
       <div class="fgi ff"><label>Area / Address</label><input id="fa" placeholder="Locality or area"></div>
     </div>
@@ -320,7 +320,7 @@ nav{flex:1;padding:14px 0;overflow-y:auto}
     <div class="fg">
       <div class="fgi ff"><label>Student</label><input id="fpn" readonly style="background:#f9fafb;font-weight:600"></div>
       <div class="fgi"><label>Amount Paid (Rs) *</label><input id="fpa" type="number" placeholder="Enter amount"></div>
-      <div class="fgi"><label>Payment Date *</label><input id="fpd" type="date" value="2026-05-08"></div>
+      <div class="fgi"><label>Payment Date *</label><input id="fpd" type="date"></div>
       <div class="fgi"><label>Fee Plan</label><select id="fpp"><option>1 Month</option><option>3 Months</option><option>6 Months</option><option>12 Months</option></select></div>
       <div class="fgi"><label>Valid Till (auto)</label><input id="fpv" readonly style="background:#f9fafb;color:var(--gray)"></div>
       <div class="fgi ff"><label>Remarks</label><input id="fpnotes" placeholder="Optional notes"></div>
@@ -459,7 +459,7 @@ var monthly=SEED.monthly;
 var studFilter="all",feeFilter="all",attFilter="all";
 var dismissedNots=JSON.parse(localStorage.getItem("dn")||"{}"); // {key: true}
 var curEditId=null;
-var curPage="dashboard",curFS=null,srch="",attMo="2026-05",syncInProgress=false;
+var curPage="dashboard",curFS=null,srch="",attMo=new Date().getFullYear()+"-"+String(new Date().getMonth()+1).padStart(2,"0"),syncInProgress=false;
 function sv(){try{localStorage.setItem("ts",JSON.stringify(students));localStorage.setItem("tf",JSON.stringify(fees));localStorage.setItem("ta",JSON.stringify(att));localStorage.setItem("te",JSON.stringify(exps));localStorage.setItem("tq",JSON.stringify(enqs));}catch(e){console.warn("save failed:",e);}}
 function showToast(msg,type){var t=document.getElementById("toast");t.innerHTML=msg;t.style.background=type==="error"?"#C0392B":type==="warn"?"#d97706":"#16a34a";t.style.color="#fff";t.style.opacity="1";clearTimeout(t._timer);t._timer=setTimeout(function(){t.style.opacity="0";},3500);}
 function setBtnLoading(id,loading,txt){var b=document.getElementById(id);if(!b)return;b.disabled=loading;b.innerHTML=loading?"<span class='spin'></span>"+txt:txt;}
@@ -590,7 +590,7 @@ function waCopy(btn){
   }
 }
 function notKey(n){ return n.t+'-'+(n.s?n.s.id:'')+(n.diff!==undefined?'-'+n.diff:''); }
-function getNots(){var n=[],ym=tod().slice(0,7);students.filter(function(s){return !s.inactive;}).forEach(function(s){var ab=absCnt(s.id,ym);if(ab>=2&&ab<5)n.push({t:"a2",s:s,ab:ab});else if(ab>=5)n.push({t:"a5",s:s,ab:ab});var d=dud(s);if(d>=0&&d<=5)n.push({t:"due",s:s,d:d});});// birthdays on dedicated page
+function getNots(){var n=[],ym=tod().slice(0,7);students.filter(function(s){return !s.inactive&&!s.left&&!s.left;}).forEach(function(s){var ab=absCnt(s.id,ym);if(ab>=2&&ab<5)n.push({t:"a2",s:s,ab:ab});else if(ab>=5)n.push({t:"a5",s:s,ab:ab});var d=dud(s);if(d>=0&&d<=5)n.push({t:"due",s:s,d:d});});// birthdays on dedicated page
   // Inactive 30+ day alert
   var thirtyAgo=new Date(new Date().getTime()-30*24*60*60*1000).toISOString().slice(0,10);
   students.filter(function(s){return s.inactive;}).forEach(function(s){
@@ -756,7 +756,7 @@ function pnlReport(){
 function rDash(){
   if(!students||students.length===0){return "<div style='padding:60px;text-align:center'><div style='font-size:48px;margin-bottom:16px'>&#129355;</div><div style='font-family:var(--fh);font-size:20px;margin-bottom:8px'>Welcome to Taika Martial Arts Academy</div><div style='font-size:13px;color:var(--gray);margin-bottom:24px'>Click below to load your data from Google Sheets</div><button class='btn btr' onclick='doSyncSheets()'>Load Data from Sheets</button></div>";}
 
-  var active=students.filter(function(s){return !s.inactive;});
+  var active=students.filter(function(s){return !s.inactive&&!s.left&&!s.left;});
   var inactive=students.filter(function(s){return !!s.inactive;});
   var paid=active.filter(function(s){return !isUp(s);}).length;
   var unp=active.filter(function(s){return isUp(s);}).length;
@@ -1187,8 +1187,9 @@ function rDash(){
 function rStud(){
   var tab = window._studTab || "active";
   var sl  = srch.toLowerCase();
-  var actS = students.filter(function(s){return !s.inactive;});
-  var inactS = students.filter(function(s){return !!s.inactive;});
+  var actS = students.filter(function(s){return !s.inactive&&!s.left;});
+  var inactS = students.filter(function(s){return !!s.inactive&&!s.left;});
+  var leftS = students.filter(function(s){return !!s.left;});
   var mobSearch = "<div style='margin-bottom:12px'><input type='text' id='mob-srch' placeholder='Search...' oninput='onSrch(this.value)' value='"+srch+"' style='width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:8px;font-size:14px;font-family:var(--fb);outline:none;box-sizing:border-box'></div>";
 
   var aStyle = tab==="active" ? "background:var(--red);color:#fff" : "background:#fff;color:var(--gray)";
@@ -1196,6 +1197,7 @@ function rStud(){
   var tabs = "<div style='display:flex;gap:0;margin-bottom:16px;border:1px solid var(--border);border-radius:8px;overflow:hidden;width:fit-content'>"
     +"<button data-tab='active' onclick='setStudTab(this)' style='padding:8px 20px;border:none;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--fb);"+aStyle+";transition:all .2s'>Active ("+actS.length+")</button>"
     +"<button data-tab='inactive' onclick='setStudTab(this)' style='padding:8px 20px;border:none;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--fb);"+iStyle+";border-left:1px solid var(--border);transition:all .2s'>On Break ("+inactS.length+")</button>"
+    +(leftS.length>0?"<button data-tab='left' onclick='setStudTab(this)' style='padding:8px 20px;border:none;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--fb);"+(tab==="left"?"background:#dc2626;color:#fff":"background:#fff;color:#dc2626")+";border-left:1px solid var(--border);transition:all .2s'>Left ("+leftS.length+")</button>":"")
     +"</div>";
 
   if(tab === "active"){
@@ -1236,6 +1238,23 @@ function rStud(){
         +"</div></div>"
       +"<div style='overflow-x:auto'><table class='tbl'><thead><tr><th>Student</th><th>Belt</th><th>Plan</th><th>Fee</th><th>Valid Till</th><th>Status</th><th>Actions</th></tr></thead>"
       +"<tbody>"+rows+"</tbody></table></div></div>";
+  } else if(tab==="left"){
+    var fil3 = leftS.filter(function(s){return !srch||s.name.toLowerCase().includes(sl)||String(s.phone||"").includes(srch);});
+    var rows3 = "";
+    for(var k=0;k<fil3.length;k++){
+      var s=fil3[k];
+      rows3 += "<tr style='cursor:pointer' onclick=\"openSP('"+s.id+"')\">"
+        +"<td><b>"+s.name+"</b><br><span style='color:var(--gray);font-size:11px'>"+s.phone+"</span></td>"
+        +"<td>"+beltB(s.belt)+"</td><td>"+s.plan+"</td><td>"+fmt(s.fee)+"</td>"
+        +"<td>"+String(s.validTill||"-").slice(0,10)+"</td>"
+        +"<td><button onclick='event.stopPropagation();restoreStudent(this.dataset.id)' data-id='"+s.id+"' class='btn bto' style='font-size:11px;padding:3px 8px;color:#16a34a;border-color:#16a34a'>Restore</button></td>"
+      +"</tr>";
+    }
+    return "<div id='mob-search' style='display:none'>"+mobSearch+"</div>"+tabs
+      +"<div class='card'><div class='ch'><h3>Left Students ("+leftS.length+")</h3>"
+        +"<span style='font-size:12px;color:var(--gray)'>Hidden from fees, attendance, notifications &amp; dashboard</span></div>"
+      +"<div style='overflow-x:auto'><table class='tbl'><thead><tr><th>Student</th><th>Belt</th><th>Plan</th><th>Fee</th><th>Valid Till</th><th>Action</th></tr></thead>"
+      +"<tbody>"+(rows3||"<tr><td colspan='6' style='text-align:center;color:var(--gray);padding:24px'>No left students</td></tr>")+"</tbody></table></div></div>";
   } else {
     var fil2 = inactS.filter(function(s){return !srch||s.name.toLowerCase().includes(sl)||String(s.phone||"").includes(srch);});
     var rows2 = "";
@@ -1317,8 +1336,8 @@ function feeCollectionReport(mo){
 }
 
 function rFees(){
-  var fsl=srch.toLowerCase();var ov=students.filter(function(s){return !s.inactive&&isUp(s)&&(!srch||s.name.toLowerCase().includes(fsl)||String(s.phone||'').includes(srch));});
-  if(feeFilter==="week")ov=students.filter(function(s){return !s.inactive&&!isUp(s)&&dud(s)>=0&&dud(s)<=7;});
+  var fsl=srch.toLowerCase();var ov=students.filter(function(s){return !s.inactive&&!s.left&&!s.left&&isUp(s)&&(!srch||s.name.toLowerCase().includes(fsl)||String(s.phone||'').includes(srch));});
+  if(feeFilter==="week")ov=students.filter(function(s){return !s.inactive&&!s.left&&!isUp(s)&&dud(s)>=0&&dud(s)<=7;});
   if(feeFilter==="30plus")ov=ov.filter(function(s){return Math.abs(dud(s))>=30;});
   if(feeFilter==="60plus")ov=ov.filter(function(s){return Math.abs(dud(s))>=60;});
   if(feeFilter==="90plus")ov=ov.filter(function(s){return Math.abs(dud(s))>=90;});
@@ -1540,7 +1559,7 @@ function rAtt(){
   var dim=new Date(yr,mo,0).getDate();
   var rec=att[ym]||{}, todStr=tod();
   var hols=getHolidays(ym);
-  var attS=students.filter(function(x){return !x.inactive;});
+  var attS=students.filter(function(x){return !x.inactive&&!x.left;});
   if(attFilter==="absent") attS=attS.filter(function(s){var hd3=getHolidays(ym); return Object.keys((rec[s.id]||{})).filter(function(k){return !hd3.has(parseInt(k))&&(rec[s.id]||{})[k]==="A";}).length>=5;});
   else if(attFilter==="perfect") attS=attS.filter(function(s){var hd2=getHolidays(ym); return Object.keys((rec[s.id]||{})).filter(function(k){return !hd2.has(parseInt(k))&&(rec[s.id]||{})[k]==="A";}).length===0;});
 
@@ -1779,7 +1798,7 @@ function toggleNP(){
     : "<p style='color:var(--gray);font-size:13px;padding:16px'>"+CLAP+" All caught up! No pending alerts.</p>";
   np.classList.add("open");
 }
-function openAS(){document.getElementById("ms").classList.add("open");}
+function openAS(){document.getElementById("fj").value=tod();document.getElementById("ms").classList.add("open");}
 function closeM(id){document.getElementById(id).classList.remove("open");}
 function saveS(){
   var name=document.getElementById("fn").value.trim();
@@ -2093,7 +2112,7 @@ function printAtt(){
   var dim=new Date(yr,mo,0).getDate();
   var rec=att[ym]||{};
   var hols=getHolidays(ym);
-  var attS=students.filter(function(x){return !x.inactive;});
+  var attS=students.filter(function(x){return !x.inactive&&!x.left;});
   var dayNames=["Su","Mo","Tu","We","Th","Fr","Sa"];
 
   var rows="";
@@ -2487,10 +2506,35 @@ function openSP(sid){
     +"<span style='color:#16a34a;font-weight:600'>&#10003; Present: "+presnt+"</span>"
     +"<span style='color:#dc2626;font-weight:600'>&#10007; Absent: "+absnt+"</span>"
     +"</div></div>"
-    +"<div style='padding:16px 18px;display:flex;gap:8px;flex-wrap:wrap'>"+"<button class='btn btr' style='flex:1;min-width:80px' onclick=\"openFee('"+ s.id +"');closeSP()\">"+ MONEY +" Pay</button>"+"<button class='btn bto' style='flex:1;min-width:80px' onclick=\"toggleInactive('"+ s.id +"',"+ (!s.inactive) +")\">"+ ( s.inactive?"Reactivate":"Pause") +"</button>"+"<button class='btn bto' style='flex:1;min-width:80px' onclick=\"openEdit('"+ s.id +"')\">&#9999; Edit</button>"+"</div>"+"<div style='padding:0 18px 16px;display:flex;gap:8px'>"+"<button class='btn bto' style='flex:1;font-size:12px' onclick=\"exportStudentFees('"+ s.id +"')\">&#128196; Fee Statement</button>"+"<button class='btn bto' style='flex:1;font-size:12px' onclick=\"generateIDCard('"+ s.id +"')\">&#128196; ID Card</button>"+"<button class='btn bto' style='flex:1;font-size:12px' onclick=\"attendanceReport('"+s.id+"')\">&#128202; Att Report</button>"+"</div>";
+    +"<div style='padding:16px 18px;display:flex;gap:8px;flex-wrap:wrap'>"+"<button class='btn btr' style='flex:1;min-width:80px' onclick=\"openFee('"+ s.id +"');closeSP()\">"+ MONEY +" Pay</button>"+"<button class='btn bto' style='flex:1;min-width:80px' onclick=\"toggleInactive('"+ s.id +"',"+ (!s.inactive) +")\">"+ ( s.inactive?"Reactivate":"Pause") +"</button>"+"<button class='btn bto' style='flex:1;min-width:80px' onclick=\"openEdit('"+ s.id +"')\">&#9999; Edit</button>"+"<button class='btn bto' style='flex:1;min-width:80px;color:#dc2626;border-color:#dc2626' onclick=\"markLeft('"+ s.id +"')\">&#128683; Left</button>"+"</div>"+"<div style='padding:0 18px 16px;display:flex;gap:8px'>"+"<button class='btn bto' style='flex:1;font-size:12px' onclick=\"exportStudentFees('"+ s.id +"')\">&#128196; Fee Statement</button>"+"<button class='btn bto' style='flex:1;font-size:12px' onclick=\"generateIDCard('"+ s.id +"')\">&#128196; ID Card</button>"+"<button class='btn bto' style='flex:1;font-size:12px' onclick=\"attendanceReport('"+s.id+"')\">&#128202; Att Report</button>"+"</div>";
 
   document.getElementById("sp").classList.add("open");
   document.getElementById("ov").classList.add("show");
+}
+
+function markLeft(sid){
+  var s=students.find(function(x){return x.id===sid;});
+  if(!s)return;
+  if(!confirm(s.name+" will be marked as Left and hidden from all pages.\n\nYou can restore them from the Left Students tab.\n\nProceed?"))return;
+  s.left=true;
+  sv();
+  apiCall("updateStudent",{id:s.id,name:s.name,phone:s.phone,
+    parentName:s.parentName||"",plan:s.plan,fee:s.fee,belt:s.belt||"",
+    dob:s.dob||"",school:s.school||"",inactive:s.inactive?1:0,left:1});
+  closeSP();render();updBadges();
+  showToast(s.name+" marked as Left","ok");
+}
+
+function restoreStudent(sid){
+  var s=students.find(function(x){return x.id===sid;});
+  if(!s)return;
+  s.left=false;
+  sv();
+  apiCall("updateStudent",{id:s.id,name:s.name,phone:s.phone,
+    parentName:s.parentName||"",plan:s.plan,fee:s.fee,belt:s.belt||"",
+    dob:s.dob||"",school:s.school||"",inactive:s.inactive?1:0,left:0});
+  closeSP();render();updBadges();
+  showToast(s.name+" restored to active","ok");
 }
 
 function closeSP(){
@@ -2587,7 +2631,7 @@ function checkScheduledReminders(){
   var lastRun=localStorage.getItem("taika_sched_lastrun")||"";
   if(lastRun===tod())return;
   setTimeout(function(){
-    var ov=students.filter(function(s){return !s.inactive&&isUp(s);});
+    var ov=students.filter(function(s){return !s.inactive&&!s.left&&isUp(s);});
     if(ov.length){
       showToast(MONEY+" Reminder day! "+ov.length+" overdue students. Tap Fees > Send All Reminders.","warn");
       localStorage.setItem("taika_sched_lastrun",tod());
@@ -2608,7 +2652,7 @@ function checkScheduledReminders(){
 
 function broadcastAnnouncement(){
   if(document.getElementById('bc-modal'))return closeModal('bc-modal');
-  var active=students.filter(function(s){return !s.inactive;});
+  var active=students.filter(function(s){return !s.inactive&&!s.left&&!s.left;});
   var m=document.createElement("div");
   m.id="bc-modal";
   m.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:999;display:flex;align-items:center;justify-content:center;padding:16px";
@@ -2652,7 +2696,7 @@ function bcTpl(type){
 function startBroadcast(){
   var msg=document.getElementById('bc-txt').value.trim();
   if(!msg){showToast("Please type a message first","error");return;}
-  var active=students.filter(function(s){return !s.inactive;});
+  var active=students.filter(function(s){return !s.inactive&&!s.left&&!s.left;});
   if(!active.length){showToast("No active students","error");return;}
   closeModal('bc-modal');
   showToast("Broadcasting to "+active.length+" parents...","ok");
@@ -2685,7 +2729,7 @@ function rBdays(){
   var todayB=upcoming.filter(function(b){return b.diff===0;});
   var soonB=upcoming.filter(function(b){return b.diff>0&&b.diff<=7;});
   var laterB=upcoming.filter(function(b){return b.diff>7;});
-  var missingDOB=students.filter(function(s){return !s.inactive&&!String(s.dob||s.dateOfBirth||"").trim();});
+  var missingDOB=students.filter(function(s){return !s.inactive&&!s.left&&!String(s.dob||s.dateOfBirth||"").trim();});
 
   function bdayCard(b){
     var when=b.diff===0?"Today!":b.diff===1?"Tomorrow":"In "+b.diff+" days";
