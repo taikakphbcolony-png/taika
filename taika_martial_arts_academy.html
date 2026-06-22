@@ -459,7 +459,7 @@ var monthly=SEED.monthly;
 var studFilter="all",feeFilter="all",attFilter="all";
 var dismissedNots=JSON.parse(localStorage.getItem("dn")||"{}"); // {key: true}
 var curEditId=null;
-var curPage="dashboard",curFS=null,srch="",attMo=new Date().getFullYear()+"-"+String(new Date().getMonth()+1).padStart(2,"0"),syncInProgress=false;
+var curPage="dashboard",curFS=null,srch="",studSortCol="name",studSortDir=1,feeOvSortCol="validTill",feeOvSortDir=1,feeHistSortCol="date",feeHistSortDir=-1,attMo=new Date().getFullYear()+"-"+String(new Date().getMonth()+1).padStart(2,"0"),syncInProgress=false;
 function sv(){try{localStorage.setItem("ts",JSON.stringify(students));localStorage.setItem("tf",JSON.stringify(fees));localStorage.setItem("ta",JSON.stringify(att));localStorage.setItem("te",JSON.stringify(exps));localStorage.setItem("tq",JSON.stringify(enqs));}catch(e){console.warn("save failed:",e);}}
 function showToast(msg,type){var t=document.getElementById("toast");t.innerHTML=msg;t.style.background=type==="error"?"#C0392B":type==="warn"?"#d97706":"#16a34a";t.style.color="#fff";t.style.opacity="1";clearTimeout(t._timer);t._timer=setTimeout(function(){t.style.opacity="0";},3500);}
 function setBtnLoading(id,loading,txt){var b=document.getElementById(id);if(!b)return;b.disabled=loading;b.innerHTML=loading?"<span class='spin'></span>"+txt:txt;}
@@ -472,7 +472,7 @@ async function fixSheetHeaders(){
   else showToast("Fix failed - redeploy Apps Script first", "error");
 }
 async function doTestConn(){setBtnLoading("btn-test",true,"Testing...");var r=await apiGet("ping");setBtnLoading("btn-test",false,"&#9889; Test Connection");if(r&&r.ok){document.getElementById("conn-status").innerHTML="&#9679; Connected &#10003;";document.getElementById("conn-status").style.color="#4ade80";showToast("Connected to Google Sheets!","ok");}else{document.getElementById("conn-status").innerHTML="&#9679; Not connected";document.getElementById("conn-status").style.color="#f87171";showToast("Connection failed - check Apps Script","error");}}
-async function doSyncSheets(){if(syncInProgress){showToast("Sync already in progress...","warn");return;}syncInProgress=true;setBtnLoading("btn-sync",true,"Syncing...");showToast("<span class='spin'></span> Loading from Google Sheets...","ok");var errors=[];try{localStorage.removeItem("ts");localStorage.removeItem("tf");localStorage.removeItem("te");localStorage.removeItem("tq");students=JSON.parse(JSON.stringify(SEED.students));fees=[];exps=JSON.parse(JSON.stringify(SEED.expenses));enqs=[];var ss=await apiGet("getStudents");if(ss&&Array.isArray(ss)&&ss.length>0){students=ss.map(function(s){s.fee=Number(s.fee)||0;s.due=Number(s.due)||0;s.phone=String(s.phone||"");s.inactive=(s.inactive==="true"||s.inactive===true);s.left=(s.left==="true"||s.left===true);return s;});}else errors.push("students");var ff=await apiGet("getFees");if(ff&&Array.isArray(ff))fees=ff;else errors.push("fees");var ee=await apiGet("getExpenses");if(ee&&Array.isArray(ee)){var historical=SEED.expenses;exps=historical.concat(ee);}else errors.push("expenses");var qq=await apiGet("getEnquiries");if(qq&&Array.isArray(qq))enqs=qq;else errors.push("enquiries");
+async function doSyncSheets(){if(syncInProgress){showToast("Sync already in progress...","warn");return;}syncInProgress=true;setBtnLoading("btn-sync",true,"Syncing...");showToast("<span class='spin'></span> Loading from Google Sheets...","ok");var errors=[];try{localStorage.removeItem("ts");localStorage.removeItem("tf");localStorage.removeItem("te");localStorage.removeItem("tq");students=JSON.parse(JSON.stringify(SEED.students));fees=[];exps=JSON.parse(JSON.stringify(SEED.expenses));enqs=[];var ss=await apiGet("getStudents");if(ss&&Array.isArray(ss)&&ss.length>0){students=ss.map(function(s){s.fee=Number(s.fee)||0;s.due=Number(s.due)||0;s.phone=String(s.phone||"");s.inactive=(String(s.inactive).toLowerCase()==="true"||s.inactive===true);s.left=(String(s.left||s.Left||"").toLowerCase()==="true"||s.left===true||s.Left===true);return s;});}else errors.push("students");var ff=await apiGet("getFees");if(ff&&Array.isArray(ff))fees=ff;else errors.push("fees");var ee=await apiGet("getExpenses");if(ee&&Array.isArray(ee)){var historical=SEED.expenses;exps=historical.concat(ee);}else errors.push("expenses");var qq=await apiGet("getEnquiries");if(qq&&Array.isArray(qq))enqs=qq;else errors.push("enquiries");
     // Sync attendance from Sheets
     var aa=await apiGet("getAttendance");
     if(aa&&Array.isArray(aa)){
@@ -590,7 +590,7 @@ function waCopy(btn){
   }
 }
 function notKey(n){ return n.t+'-'+(n.s?n.s.id:'')+(n.diff!==undefined?'-'+n.diff:''); }
-function getNots(){var n=[],ym=tod().slice(0,7);students.filter(function(s){return !s.inactive&&!s.left&&!s.left;}).forEach(function(s){var ab=absCnt(s.id,ym);if(ab>=2&&ab<5)n.push({t:"a2",s:s,ab:ab});else if(ab>=5)n.push({t:"a5",s:s,ab:ab});var d=dud(s);if(d>=0&&d<=5)n.push({t:"due",s:s,d:d});});// birthdays on dedicated page
+function getNots(){var n=[],ym=tod().slice(0,7);students.filter(function(s){return !s.inactive&&!s.left;}).forEach(function(s){var ab=absCnt(s.id,ym);if(ab>=2&&ab<5)n.push({t:"a2",s:s,ab:ab});else if(ab>=5)n.push({t:"a5",s:s,ab:ab});var d=dud(s);if(d>=0&&d<=5)n.push({t:"due",s:s,d:d});});// birthdays on dedicated page
   // Inactive 30+ day alert
   var thirtyAgo=new Date(new Date().getTime()-30*24*60*60*1000).toISOString().slice(0,10);
   students.filter(function(s){return s.inactive;}).forEach(function(s){
@@ -1184,6 +1184,35 @@ function rDash(){
       +"</div>"
     +"</div>";
 }
+function sortStud(col){
+  if(studSortCol===col){studSortDir=-studSortDir;}
+  else{studSortCol=col;studSortDir=1;}
+  render();
+}
+function applySort(arr,col,dir){
+  var sorted=arr.slice();
+  sorted.sort(function(a,b){
+    var av,bv;
+    if(col==="name"){av=String(a.name||"").toLowerCase();bv=String(b.name||"").toLowerCase();}
+    else if(col==="belt"){av=String(a.belt||"");bv=String(b.belt||"");}
+    else if(col==="plan"){av=String(a.plan||"");bv=String(b.plan||"");}
+    else if(col==="fee"){av=Number(a.fee)||0;bv=Number(b.fee)||0;}
+    else if(col==="validTill"){av=String(a.validTill||"");bv=String(b.validTill||"");}
+    else if(col==="status"){av=isUp(a)?1:0;bv=isUp(b)?1:0;}
+    else{av=String(a.name||"").toLowerCase();bv=String(b.name||"").toLowerCase();}
+    if(av<bv)return -1*dir;
+    if(av>bv)return 1*dir;
+    return 0;
+  });
+  return sorted;
+}
+function sortArrow(col){
+  if(studSortCol!==col)return "<span style=\'opacity:.25;font-size:9px\'>&#8645;</span>";
+  return studSortDir===1
+    ? "<span style=\'color:var(--red);font-size:10px\'>&#9650;</span>"
+    : "<span style=\'color:var(--red);font-size:10px\'>&#9660;</span>";
+}
+
 function rStud(){
   var tab = window._studTab || "active";
   var sl  = srch.toLowerCase();
@@ -1208,6 +1237,7 @@ function rStud(){
     else if(studFilter==="week")baseS=actS.filter(function(s){var d=dud(s);return d>=0&&d<=7;});
     else if(studFilter==="nodob")baseS=actS.filter(function(s){return !String(s.dob||s.dateOfBirth||"").trim();});
     var fil=baseS.filter(function(s){return !srch||s.name.toLowerCase().includes(sl)||String(s.phone||"").includes(srch)||String(s.parentName||"").toLowerCase().includes(sl)||String(s.belt||"").toLowerCase().includes(sl);});
+    fil=applySort(fil,studSortCol,studSortDir);
     var chips="<div class='fc'>"
       +"<button class='chip"+(studFilter==="all"?" on":"")+"' onclick='setFilter(\"stud\",\"all\")'><span>All</span><span class='chip-count'>"+actS.length+"</span></button>"
       +"<button class='chip"+(studFilter==="overdue"?" on":"")+"' onclick='setFilter(\"stud\",\"overdue\")' style='"+(studFilter==="overdue"?"":"")+"'><span>Overdue</span><span class='chip-count'>"+actS.filter(function(s){return isUp(s);}).length+"</span></button>"
@@ -1236,7 +1266,7 @@ function rStud(){
           +"<span class='bdg bg'>"+actS.filter(function(s){return !isUp(s);}).length+" Paid</span>"
           +"<span class='bdg br2'>"+actS.filter(function(s){return isUp(s);}).length+" Overdue</span>"
         +"</div></div>"
-      +"<div style='overflow-x:auto'><table class='tbl'><thead><tr><th>Student</th><th>Belt</th><th>Plan</th><th>Fee</th><th>Valid Till</th><th>Status</th><th>Actions</th></tr></thead>"
+      +"<div style='overflow-x:auto'><table class='tbl'><thead><tr><th style='cursor:pointer;user-select:none;white-space:nowrap' onclick='sortStud(\"name\")'>Student "+sortArrow("name")+"</th><th style='cursor:pointer;user-select:none;white-space:nowrap' onclick='sortStud(\"belt\")'>Belt "+sortArrow("belt")+"</th><th style='cursor:pointer;user-select:none;white-space:nowrap' onclick='sortStud(\"plan\")'>Plan "+sortArrow("plan")+"</th><th style='cursor:pointer;user-select:none;white-space:nowrap' onclick='sortStud(\"fee\")'>Fee "+sortArrow("fee")+"</th><th style='cursor:pointer;user-select:none;white-space:nowrap' onclick='sortStud(\"validTill\")'>Valid Till "+sortArrow("validTill")+"</th><th style='cursor:pointer;user-select:none;white-space:nowrap' onclick='sortStud(\"status\")'>Status "+sortArrow("status")+"</th><th>Actions</th></tr></thead>"
       +"<tbody>"+rows+"</tbody></table></div></div>";
   } else if(tab==="left"){
     var fil3 = leftS.filter(function(s){return !srch||s.name.toLowerCase().includes(sl)||String(s.phone||"").includes(srch);});
@@ -1335,13 +1365,62 @@ function feeCollectionReport(mo){
   else showToast("Pop-up blocked — please allow pop-ups","error");
 }
 
+function sortFeeOv(col){
+  if(feeOvSortCol===col){feeOvSortDir=-feeOvSortDir;}
+  else{feeOvSortCol=col;feeOvSortDir=1;}
+  render();
+}
+function sortFeeHist(col){
+  if(feeHistSortCol===col){feeHistSortDir=-feeHistSortDir;}
+  else{feeHistSortCol=col;feeHistSortDir=1;}
+  render();
+}
+function applyFeeOvSort(arr,col,dir){
+  var sorted=arr.slice();
+  sorted.sort(function(a,b){
+    var av,bv;
+    if(col==="name"){av=String(a.name||"").toLowerCase();bv=String(b.name||"").toLowerCase();}
+    else if(col==="fee"){av=Number(a.fee)||0;bv=Number(b.fee)||0;}
+    else if(col==="validTill"){av=String(a.validTill||"");bv=String(b.validTill||"");}
+    else if(col==="days"){av=Math.abs(dud(a));bv=Math.abs(dud(b));}
+    else{av=String(a.name||"");bv=String(b.name||"");}
+    if(av<bv)return -1*dir; if(av>bv)return 1*dir; return 0;
+  });
+  return sorted;
+}
+function applyFeeHistSort(arr,col,dir){
+  var sorted=arr.slice();
+  sorted.sort(function(a,b){
+    var av,bv;
+    if(col==="name"){
+      var sa=students.find(function(x){return x.id===a.sid||x.id===a.studentId;})||{};
+      var sb=students.find(function(x){return x.id===b.sid||x.id===b.studentId;})||{};
+      av=String(sa.name||"").toLowerCase();bv=String(sb.name||"").toLowerCase();
+    }
+    else if(col==="amount"){av=Number(a.amt||a.amount||0);bv=Number(b.amt||b.amount||0);}
+    else if(col==="date"){av=String(a.date||a.paidOn||"");bv=String(b.date||b.paidOn||"");}
+    else if(col==="validTill"){av=String(a.valid||a.validTill||"");bv=String(b.valid||b.validTill||"");}
+    else if(col==="plan"){av=String(a.plan||"");bv=String(b.plan||"");}
+    else{av=String(a.date||"");bv=String(b.date||"");}
+    if(av<bv)return -1*dir; if(av>bv)return 1*dir; return 0;
+  });
+  return sorted;
+}
+function feeSortArrow(currentCol,col,dir){
+  if(currentCol!==col)return "<span style=\'opacity:.25;font-size:9px\'>&#8645;</span>";
+  return dir===1
+    ? "<span style=\'color:var(--red);font-size:10px\'>&#9650;</span>"
+    : "<span style=\'color:var(--red);font-size:10px\'>&#9660;</span>";
+}
+
 function rFees(){
-  var fsl=srch.toLowerCase();var ov=students.filter(function(s){return !s.inactive&&!s.left&&!s.left&&isUp(s)&&(!srch||s.name.toLowerCase().includes(fsl)||String(s.phone||'').includes(srch));});
+  var fsl=srch.toLowerCase();var ov=students.filter(function(s){return !s.inactive&&!s.left&&isUp(s)&&(!srch||s.name.toLowerCase().includes(fsl)||String(s.phone||'').includes(srch));});
   if(feeFilter==="week")ov=students.filter(function(s){return !s.inactive&&!s.left&&!isUp(s)&&dud(s)>=0&&dud(s)<=7;});
   if(feeFilter==="30plus")ov=ov.filter(function(s){return Math.abs(dud(s))>=30;});
   if(feeFilter==="60plus")ov=ov.filter(function(s){return Math.abs(dud(s))>=60;});
   if(feeFilter==="90plus")ov=ov.filter(function(s){return Math.abs(dud(s))>=90;});
   var ovR="";
+  ov=applyFeeOvSort(ov,feeOvSortCol,feeOvSortDir);
   for(var i=0;i<ov.length;i++){var s=ov[i];var d=Math.abs(dud(s));var msg=MONEY+" Fee Payment Reminder "+BELL+"\n"+LINE+"\n\nDear "+String(s.parentName||s.name)+",\n\nHope you and "+s.name+" are doing well! "+SMILE+"\n\nThis is a gentle reminder that the membership fee for "+s.name+" at Taika "+BELT+" Martial Arts Academy is currently due."+"\n\n"+NOTE+" Payment Details:"+"\n"+LINE+"\n"+BELT+"  Student  : "+s.name+"\n"+MONEY+"  Amount   : "+fmt(s.fee)+"\n"+CAL+"  Plan     : "+s.plan+"\n"+LINE+"\n\nKindly clear the dues at your earliest so that "+s.name+" can continue training without any interruption. "+MUSCLE+"\n\n"+PRAY+" If you have already made the payment, please ignore this message."+"\nWe truly value your trust and support. "+HEART+"\n\n"+LINE+"\n"+BELT+" Warm regards,\nCoach & Team\nTaika Martial Arts Academy, Gokul Plots";ovR+="<tr><td><b>"+s.name+"</b><br><span style='color:var(--gray);font-size:11px'>"+s.phone+"</span></td><td>"+fmt(s.fee)+"</td><td>"+String(s.validTill||"N/A").slice(0,10)+"</td><td><span class='bdg' style='background:"+(d>=90?'#7c3aed':d>=60?'#dc2626':d>=30?'#d97706':'#ef4444')+";color:#fff'>"+d+"d overdue</span></td><td><button class='btn btr' style='padding:4px 9px;font-size:12px' onclick='openFee(this.dataset.id)' data-id='"+s.id+"'>Record Pay</button> "+waLink(s.phone,msg,"Remind")+"</td></tr>";}
 
   var fcFee="<div class='fc'>"
@@ -1353,11 +1432,11 @@ function rFees(){
     +"</div>";
 
   if(!ovR)ovR="<tr><td colspan='5' style='text-align:center;color:#16a34a;padding:20px'>All fees are up to date!</td></tr>";
-  var hist=fees.slice().reverse().slice(0,25);
+  var hist=applyFeeHistSort(fees.slice(),feeHistSortCol,feeHistSortDir).slice(0,25);
   var hR="";
   for(var j=0;j<hist.length;j++){var p=hist[j];var st=students.find(function(x){return x.id===p.sid||x.id===p.studentId;})||{name:"Unknown",phone:""};var amt=Number(p.amt||p.amount||0);var vt=String(p.valid||p.validTill||"").slice(0,10);var msg2=CHECK+" Payment Received! "+PARTY+" "+CONFETTI+"\n"+LINE+"\n\nDear "+String(st.parentName||st.name||"Parent")+","+"\n\n"+CLAP+" "+CLAP+" Thank you so much for your payment!"+"\nWe are pleased to confirm receipt for "+st.name+"'s membership at Taika "+BELT+" Martial Arts Academy. "+HEART+"\n\n"+NOTE+" Payment Receipt:"+"\n"+LINE+"\n"+CHECK+"  Student      : "+st.name+"\n"+MONEY+"  Amount Paid  : "+fmt(amt)+"\n"+CAL+"  Payment Date : "+String(p.date||"").slice(0,10)+"\n"+SPARK+"  Valid Till   : "+vt+"\n"+BELT+"  Plan         : "+p.plan+"\n"+LINE+"\n\n"+STAR+" "+st.name+" is all set for another great month of training! "+MUSCLE+"\n\n"+ROCKET+" Keep training, keep growing, keep shining!"+"\n\n"+LINE+"\n"+BELT+" Warm regards,\nCoach & Team\nTaika Martial Arts Academy, Gokul Plots";hR+="<tr><td><b>"+st.name+"</b></td><td style='color:#16a34a;font-weight:600'>"+fmt(amt)+"</td><td>"+String(p.date||"").slice(0,10)+"</td><td>"+vt+"</td><td>"+p.plan+"</td><td style='color:var(--gray);font-size:12px'>"+(String(p.recordedOn||"").slice(0,10)||String(p.date||"").slice(0,10))+"</td><td>"+waLink(st.phone,msg2,"Send Receipt")+"</td></tr>";}
   if(!hR)hR="<tr><td colspan='6' style='text-align:center;color:var(--gray);padding:20px'>No payments recorded yet</td></tr>";
-  return fcFee+"<div class='card' style='margin-bottom:18px'><div class='ch'><h3>Overdue Payments ("+ov.length+")</h3><button class='btn bto' style='font-size:12px' onclick='sendAllReminders()'>Send All Reminders</button> <button class='btn bto' onclick='feeCollectionReport()' style='font-size:12px'>&#128196; Fee Report</button></div><div style='overflow-x:auto'><table class='tbl'><thead><tr><th>Student</th><th>Fee</th><th>Was Valid Till</th><th>Status</th><th>Actions</th></tr></thead><tbody>"+ovR+"</tbody></table></div></div><div class='card'><div class='ch'><h3>Payment History</h3></div><div style='overflow-x:auto'><table class='tbl'><thead><tr><th>Student</th><th>Amount</th><th>Paid On</th><th>Valid Till</th><th>Plan</th><th>Recorded On</th><th>Receipt</th></tr></thead><tbody>"+hR+"</tbody></table></div>";
+  return fcFee+"<div class='card' style='margin-bottom:18px'><div class='ch'><h3>Overdue Payments ("+ov.length+")</h3><button class='btn bto' style='font-size:12px' onclick='sendAllReminders()'>Send All Reminders</button> <button class='btn bto' onclick='feeCollectionReport()' style='font-size:12px'>&#128196; Fee Report</button></div><div style='overflow-x:auto'><table class='tbl'><thead><tr><th style='cursor:pointer;user-select:none' onclick='sortFeeOv(\"name\")'>Student "+feeSortArrow(feeOvSortCol,"name",feeOvSortDir)+"</th><th style='cursor:pointer;user-select:none' onclick='sortFeeOv(\"fee\")'>Fee "+feeSortArrow(feeOvSortCol,"fee",feeOvSortDir)+"</th><th style='cursor:pointer;user-select:none' onclick='sortFeeOv(\"validTill\")'>Was Valid Till "+feeSortArrow(feeOvSortCol,"validTill",feeOvSortDir)+"</th><th style='cursor:pointer;user-select:none' onclick='sortFeeOv(\"days\")'>Status "+feeSortArrow(feeOvSortCol,"days",feeOvSortDir)+"</th><th>Actions</th></tr></thead><tbody>"+ovR+"</tbody></table></div></div><div class='card'><div class='ch'><h3>Payment History</h3></div><div style='overflow-x:auto'><table class='tbl'><thead><tr><th style='cursor:pointer;user-select:none' onclick='sortFeeHist(\"name\")'>Student "+feeSortArrow(feeHistSortCol,"name",feeHistSortDir)+"</th><th style='cursor:pointer;user-select:none' onclick='sortFeeHist(\"amount\")'>Amount "+feeSortArrow(feeHistSortCol,"amount",feeHistSortDir)+"</th><th style='cursor:pointer;user-select:none' onclick='sortFeeHist(\"date\")'>Paid On "+feeSortArrow(feeHistSortCol,"date",feeHistSortDir)+"</th><th style='cursor:pointer;user-select:none' onclick='sortFeeHist(\"validTill\")'>Valid Till "+feeSortArrow(feeHistSortCol,"validTill",feeHistSortDir)+"</th><th style='cursor:pointer;user-select:none' onclick='sortFeeHist(\"plan\")'>Plan "+feeSortArrow(feeHistSortCol,"plan",feeHistSortDir)+"</th><th>Recorded On</th><th>Receipt</th></tr></thead><tbody>"+hR+"</tbody></table></div>";
 }
 function sendAllReminders(){var ov=students.filter(function(s){return !s.inactive && isUp(s);});if(!ov.length){showToast("No overdue students!","ok");return;}showToast("Opening WhatsApp for "+ov.length+" reminders...","warn");var i=0;function next(){if(i>=ov.length)return;var s=ov[i++];var msg=MONEY+" Fee Due - "+s.name+"\n"+LINE+"\n\nDear "+String(s.parentName||s.name)+",\n\nThe membership fee for "+s.name+" at Taika "+BELT+" Martial Arts Academy is overdue.\n\n"+NOTE+" Amount Due: "+fmt(s.fee)+"\n"+BELT+" Plan: "+s.plan+"\n\nKindly clear the dues at your earliest so "+s.name+" can continue training. "+MUSCLE+"\n\n"+PRAY+" If already paid, please ignore.\n\n"+BELT+" Warm regards,\nCoach & Team\nTaika Martial Arts Academy, Gokul Plots";window.open("https://wa.me/91"+String(s.phone).replace(/\D/g,"")+"?text="+encodeURIComponent(msg),"_blank");setTimeout(next,1500);}next();}
 function getHolidays(ym){
