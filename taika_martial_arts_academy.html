@@ -615,7 +615,21 @@ function dismissNot(key){
   dismissedNots[key+'-'+today]=true;
   localStorage.setItem("dn",JSON.stringify(dismissedNots));
   updBadges();
-  toggleNP(); // refresh panel
+  // Rebuild the notification list without closing the panel
+  var npl=document.getElementById("npl");
+  if(npl){
+    var nots=getNots().filter(function(n){return n.t!=="bday";});
+    if(!nots.length){
+      npl.innerHTML="<p style='color:var(--gray);font-size:13px;padding:16px'>"+CLAP+" All caught up! No pending alerts.</p>";
+    } else {
+      // Re-render just the dismissed item with fade out
+      var el=document.querySelector("[data-k='"+key+"']");
+      if(el){
+        var row=el.closest(".nit");
+        if(row){row.style.transition="opacity .3s";row.style.opacity="0";setTimeout(function(){if(row.parentNode)row.parentNode.removeChild(row);},300);}
+      }
+    }
+  }
 }
 
 function switchNotTab(tab){
@@ -982,6 +996,17 @@ function rDash(){
     +"</div>"
   +"</div>";
 
+  // ── New students this month ────────────────────────────────────────────
+  var curMoKey=curMo; // "Jun 2026" format
+  var newThisMonth=active.filter(function(s){
+    var jd=String(s.joinedDate||"").slice(0,10);
+    if(!jd)return false;
+    try{
+      var d=new Date(jd+"T00:00:00");
+      return d.toLocaleString("en-IN",{month:"short"})+" "+d.getFullYear()===curMoKey;
+    }catch(e){return false;}
+  }).sort(function(a,b){return String(b.joinedDate||"").localeCompare(String(a.joinedDate||""));});
+
   // ── Stat cards (existing 5 + today attendance) ───────────────────────────
   var statCards="<div class='sg5'>"
     +"<div class='sc'><div class='lb'>Total Students</div><div class='vl'>"+active.length+"</div><div class='sb2'>"+(inactive.length>0?inactive.length+" on break":"All active")+"</div></div>"
@@ -1137,9 +1162,22 @@ function rDash(){
         +"<div style='padding:16px'>"+beltBars+"</div>"
       +"</div>"
 
-      // Existing: Recently Joined
-      +"<div class='card'><div class='ch'><h3>Recently Joined</h3></div>"
-        +"<table class='tbl'><thead><tr><th>Name</th><th>Belt</th><th>Status</th></tr></thead><tbody>"+rRows+"</tbody></table>"
+      // New This Month + Recently Joined
+      +"<div class='card'><div class='ch'><h3>"+String.fromCodePoint(0x1F195)+" This Month</h3>"
+        +"<span style='font-size:12px;color:var(--gray2);'>"+curMo+" · "+newThisMonth.length+" joined</span></div>"
+        +"<div style='padding:12px 16px'>"
+          +(newThisMonth.length
+            ? "<div style='font-size:24px;font-weight:700;color:#16a34a;margin-bottom:4px'>"+newThisMonth.length+"</div>"
+              +"<div style='font-size:12px;color:var(--gray2);margin-bottom:10px'>new student"+(newThisMonth.length===1?"":"s")+" joined</div>"
+              +newThisMonth.map(function(s){
+                return "<div style='display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #f3f4f6'>"
+                  +"<div style='width:28px;height:28px;border-radius:50%;background:#dc2626;display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:700;flex-shrink:0'>"+s.name.charAt(0).toUpperCase()+"</div>"
+                  +"<div><div style='font-size:12px;font-weight:600'>"+s.name+"</div>"
+                  +"<div style='font-size:10px;color:var(--gray2)'>"+beltB(s.belt)+" · "+s.plan+"</div></div>"
+                +"</div>";
+              }).join("")
+            : "<div style='text-align:center;padding:16px;color:var(--gray);font-size:12px'>No new students this month</div>")
+        +"</div>"
       +"</div>"
     +"</div>"
 
@@ -1962,13 +2000,13 @@ function openSettings(){
     +"<div style='font-size:11px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px'>Academy Profile</div>"
     +"<div style='display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px'>"
       +"<div><label style='font-size:11px;font-weight:600;color:#374151;display:block;margin-bottom:4px'>Academy Name</label>"
-      +"<input id='sp-name' value='"+(p.academyName||"Taika Martial Arts Academy")+"' style='width:100%;box-sizing:border-box;padding:8px;border:1px solid #e2e8f0;border-radius:8px;font-size:13px'></div>"
+      +"<input id='sp-name' value='"+(p.academyName||"Taika Martial Arts Academy").replace(/'/g,"&#39;")+"' style='width:100%;box-sizing:border-box;padding:8px;border:1px solid #e2e8f0;border-radius:8px;font-size:13px'></div>"
       +"<div><label style='font-size:11px;font-weight:600;color:#374151;display:block;margin-bottom:4px'>Location</label>"
-      +"<input id='sp-loc' value='"+(p.location||"Gokul Plots")+"' style='width:100%;box-sizing:border-box;padding:8px;border:1px solid #e2e8f0;border-radius:8px;font-size:13px'></div>"
+      +"<input id='sp-loc' value='"+(p.location||"Gokul Plots").replace(/'/g,"&#39;")+"' style='width:100%;box-sizing:border-box;padding:8px;border:1px solid #e2e8f0;border-radius:8px;font-size:13px'></div>"
       +"<div><label style='font-size:11px;font-weight:600;color:#374151;display:block;margin-bottom:4px'>Coach Name</label>"
-      +"<input id='sp-coach' value='"+(p.coachName||profileVal("coachName","Coach & Team"))+"' style='width:100%;box-sizing:border-box;padding:8px;border:1px solid #e2e8f0;border-radius:8px;font-size:13px'></div>"
+      +"<input id='sp-coach' value='"+(p.coachName||profileVal("coachName","Coach & Team")).replace(/'/g,"&#39;")+"' style='width:100%;box-sizing:border-box;padding:8px;border:1px solid #e2e8f0;border-radius:8px;font-size:13px'></div>"
       +"<div><label style='font-size:11px;font-weight:600;color:#374151;display:block;margin-bottom:4px'>Phone / Contact</label>"
-      +"<input id='sp-phone' value='"+(p.phone||"")+"' style='width:100%;box-sizing:border-box;padding:8px;border:1px solid #e2e8f0;border-radius:8px;font-size:13px'></div>"
+      +"<input id='sp-phone' value='"+(p.phone||"").replace(/'/g,"&#39;")+"' style='width:100%;box-sizing:border-box;padding:8px;border:1px solid #e2e8f0;border-radius:8px;font-size:13px'></div>"
     +"</div>"
 
     // ── Fee Plans ──
@@ -2032,18 +2070,25 @@ function addPlan(){
 }
 
 function saveSettings(){
-  var p={
-    academyName:document.getElementById('sp-name').value.trim()||"Taika Martial Arts Academy",
-    location:document.getElementById('sp-loc').value.trim()||"Gokul Plots",
-    coachName:document.getElementById('sp-coach').value.trim()||profileVal("coachName","Coach & Team"),
-    phone:document.getElementById('sp-phone').value.trim(),
-    holidays:document.getElementById('sp-hols').value.trim()
+  var fields={
+    "sp-name":"academyName","sp-loc":"location",
+    "sp-coach":"coachName","sp-phone":"phone","sp-hols":"holidays"
   };
+  var defaults={
+    academyName:"Taika Martial Arts Academy",location:"Gokul Plots",
+    coachName:"Coach & Team",phone:"",holidays:""
+  };
+  var p={};
+  Object.keys(fields).forEach(function(id){
+    var el=document.getElementById(id);
+    var key=fields[id];
+    p[key]=(el?el.value.trim():"")||defaults[key]||"";
+  });
   localStorage.setItem("taika_profile",JSON.stringify(p));
-  // Apply holiday calendar
   applyRecurringHolidays(p.holidays);
-  document.getElementById('settings-modal').remove();
-  showToast(CHECK+" Settings saved! Messages will use your profile.","ok");
+  closeModal("settings-modal");
+  showToast(CHECK+" Settings saved!","ok");
+  render();
 }
 
 function applyRecurringHolidays(holStr){
