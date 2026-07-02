@@ -997,7 +997,7 @@ function rDash(){
   +"</div>";
 
   // ── New students this month ────────────────────────────────────────────
-  var curMoKey=curMo; // "Jun 2026" format
+  var curMoKey=new Date().toLocaleString("en-IN",{month:"short"})+" "+new Date().getFullYear();
   var newThisMonth=active.filter(function(s){
     var jd=String(s.joinedDate||"").slice(0,10);
     if(!jd)return false;
