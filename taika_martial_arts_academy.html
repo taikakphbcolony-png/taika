@@ -1573,7 +1573,7 @@ function rFees(){
   if(feeFilter==="90plus")ov=ov.filter(function(s){return Math.abs(dud(s))>=90;});
   var ovR="";
   ov=applyFeeOvSort(ov,feeOvSortCol,feeOvSortDir);
-  for(var i=0;i<ov.length;i++){var s=ov[i];var d=Math.abs(dud(s));var msg=safeApply("feeReminder",{name:s.name,parentName:String(s.parentName||s.name),amount:fmt(s.fee),validTill:String(s.validTill||"").slice(0,10),plan:s.plan||""})||MONEY+" Fee Payment Reminder "+BELL+"\n"+LINE+"\n\nDear "+String(s.parentName||s.name)+","+"\n\nThis is a gentle reminder that the membership fee for "+s.name+" is currently due."+"\n\n"+NOTE+" Details:\n"+LINE+"\n"+BELT+"  Student  : "+s.name+"\n"+MONEY+"  Amount   : "+fmt(s.fee)+"\n"+CAL+"  Due Date : "+String(s.validTill||"").slice(0,10)+"\n"+LINE+"\n\nKindly make the payment at your earliest. "+PRAY+"\n\n"+LINE+"\n"+BELT+" "+(getProfile().coachName||"Coach & Team")+"\n"+(getProfile().academyName||"Taika Martial Arts Academy")+", "+(getProfile().location||"Gokul Plots");ovR+="<tr><td><b>"+s.name+"</b><br><span style='color:var(--gray);font-size:11px'>"+s.phone+"</span></td><td>"+fmt(s.fee)+"</td><td>"+String(s.validTill||"N/A").slice(0,10)+"</td><td><span class='bdg' style='background:"+(d>=90?'#7c3aed':d>=60?'#dc2626':d>=30?'#d97706':'#ef4444')+";color:#fff'>"+d+"d overdue</span></td><td><button class='btn btr' style='padding:4px 9px;font-size:12px' onclick='openFee(this.dataset.id)' data-id='"+s.id+"'>Record Pay</button> "+waLink(s.phone,msg,"Remind")+"</td></tr>";}
+  for(var i=0;i<ov.length;i++){var s=ov[i];var d=Math.abs(dud(s));var msg=MONEY+" Fee Payment Reminder "+BELL+"\n"+LINE+"\n\nDear "+String(s.parentName||s.name)+","+"\n\nHope you and "+s.name+" are doing well! "+SMILE+"\n\nThis is a gentle reminder that the membership fee for "+s.name+" at Taika "+BELT+" Martial Arts Academy is currently due."+"\n\n"+NOTE+" Payment Details:\n"+LINE+"\n"+BELT+"  Student  : "+s.name+"\n"+MONEY+"  Amount   : "+fmt(s.fee)+"\n"+CAL+"  Plan     : "+s.plan+"\n"+LINE+"\n\nKindly clear the dues at your earliest so that "+s.name+" can continue training without any interruption. "+MUSCLE+"\n\n"+PRAY+" If you have already made the payment, please ignore this message."+"\n\nWe truly value your trust and support. "+HEART+"\n\n"+LINE+"\n"+BELT+" Warm regards,\nCoach & Team\nTaika Martial Arts Academy, Gokul Plots";ovR+="<tr><td><b>"+s.name+"</b><br><span style='color:var(--gray);font-size:11px'>"+s.phone+"</span></td><td>"+fmt(s.fee)+"</td><td>"+String(s.validTill||"N/A").slice(0,10)+"</td><td><span class='bdg' style='background:"+(d>=90?'#7c3aed':d>=60?'#dc2626':d>=30?'#d97706':'#ef4444')+";color:#fff'>"+d+"d overdue</span></td><td><button class='btn btr' style='padding:4px 9px;font-size:12px' onclick='openFee(this.dataset.id)' data-id='"+s.id+"'>Record Pay</button> "+waLink(s.phone,msg,"Remind")+"</td></tr>";}
 
   var fcFee="<div class='fc'>"
     +"<button class='chip"+(feeFilter==="all"?" on":"")+"' onclick='setFilter(\"fee\",\"all\")'><span>All Overdue</span></button>"
@@ -2079,44 +2079,14 @@ function calcVT(){var pl=document.getElementById("fpp").value,dt=document.getEle
 document.getElementById("fpp").addEventListener("change",calcVT);
 document.getElementById("fpd").addEventListener("change",calcVT);
 
-function safeApply(tplKey,vars){
-  try{
-    var tpls=getTemplates();
-    if(tpls&&tpls[tplKey]) return applyTemplate(tpls[tplKey],vars);
-  }catch(e){console.warn("Template error:",e);}
-  return null; // signal to use fallback
-}
 
 function getProfile(){
   return JSON.parse(localStorage.getItem("taika_profile")||"{}");
 }
 
-function getTemplates(){
-  if(localStorage.getItem("taika_templates")) return JSON.parse(localStorage.getItem("taika_templates"));
-  var sig="\n\n"+LINE+"\n"+BELT+" "+(getProfile().coachName||"Coach & Team")+"\n"+(getProfile().academyName||"Taika Martial Arts Academy")+", "+(getProfile().location||"Gokul Plots");
-  return {
-    feeReminder:MONEY+" Fee Payment Reminder "+BELL+"\n"+LINE+"\n\nDear {parentName},\n\nHope you and {name} are doing well! "+SMILE+"\n\nThis is a gentle reminder that the membership fee for {name} is currently due.\n\n"+NOTE+" Details:\n"+LINE+"\n"+BELT+"  Student  : {name}\n"+MONEY+"  Amount   : {amount}\n"+CAL+"  Due Date : {validTill}\n"+SPARK+"  Plan     : {plan}\n"+LINE+"\n\nKindly make the payment at your earliest. "+PRAY+sig,
-    paymentReceived:CHECK+" Payment Received! "+PARTY+" "+CONFETTI+"\n"+LINE+"\n\nDear {parentName},\n\n"+CLAP+" "+CLAP+" Thank you for your payment!\n\n"+NOTE+" Receipt:\n"+LINE+"\n"+String.fromCodePoint(0x1F4CB)+"  Receipt No  : {receiptNo}\n"+CHECK+"  Student    : {name}\n"+MONEY+"  Amount     : {amount}\n"+CAL+"  Paid On    : {date}\n"+SPARK+"  Valid Till : {validTill}\n"+BELT+"  Plan       : {plan}\n"+LINE+"\n\n"+STAR+" {name} is all set! Keep training! "+MUSCLE+sig,
-    welcome:PARTY+" "+CONFETTI+" Welcome to Taika! "+CONFETTI+" "+PARTY+"\n"+LINE+"\n\nDear {parentName},\n\n"+CLAP+" "+CLAP+" We are thrilled to welcome {name} to our Taika "+BELT+" Martial Arts Academy family! "+HEART+"\n\n"+NOTE+" Details:\n"+LINE+"\n"+BELT+"  Student : {name}\n"+SPARK+"  Plan    : {plan}\n"+MONEY+"  Fee     : {amount}\n"+CAL+"  Joined  : {date}\n"+LINE+"\n\n"+MUSCLE+" Let the journey begin!"+sig,
-    absentAlert:WARN+" Attendance Alert — {name}\n"+LINE+"\n\nDear {parentName},\n\nWe are concerned as {name} has been absent {absentDays} days this month at Taika "+BELT+" Martial Arts Academy.\n\n"+PRAY+" Please get in touch at your earliest. "+MUSCLE+sig
-  };
-}
 
-function saveTemplates(t){localStorage.setItem("taika_templates",JSON.stringify(t));}
 
-function applyTemplate(tpl,vars){
-  var prof=getProfile();
-  var out=tpl.split("{coachName}").join(prof.coachName||"Coach & Team").split("{academyName}").join(prof.academyName||"Taika Martial Arts Academy").split("{location}").join(prof.location||"Gokul Plots");
-  Object.keys(vars).forEach(function(k){out=out.split("{"+k+"}").join(vars[k]!=null?String(vars[k]):"");});
-  return out;
-}
 
-function resetTemplates(){
-  if(!confirm("Reset all WhatsApp templates to default?"))return;
-  localStorage.removeItem("taika_templates");
-  closeModal("settings-modal");
-  showToast("Templates reset to default","ok");
-}
 
 function profileVal(key,def){
   var p=getProfile();
@@ -2267,7 +2237,6 @@ function saveSettings(){
   });
   localStorage.setItem("taika_profile",JSON.stringify(p));
   applyRecurringHolidays(p.holidays);
-  if(isAdmin()){var _tfe=document.getElementById("sp-tpl-fee"),_tpa=document.getElementById("sp-tpl-pay"),_twe=document.getElementById("sp-tpl-welcome"),_tab=document.getElementById("sp-tpl-absent");if(_tfe||_tpa){var _ts=getTemplates();if(_tfe&&_tfe.value.trim())_ts.feeReminder=_tfe.value;if(_tpa&&_tpa.value.trim())_ts.paymentReceived=_tpa.value;if(_twe&&_twe.value.trim())_ts.welcome=_twe.value;if(_tab&&_tab.value.trim())_ts.absentAlert=_tab.value;saveTemplates(_ts);}}
     // Save passwords if changed (admin only)
   if(isAdmin()){
     var _users=getUsers();
