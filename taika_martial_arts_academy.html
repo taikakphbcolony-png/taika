@@ -294,6 +294,7 @@ nav{flex:1;padding:14px 0;overflow-y:auto}
   <div id="ct"></div>
 </main>
 </div>
+<div id="toast" style="position:fixed;bottom:24px;left:50%;transform:translateX(-50%);padding:10px 20px;border-radius:8px;font-size:13px;font-weight:500;z-index:9999;transition:opacity .4s;opacity:0;pointer-events:none;max-width:90vw;text-align:center;box-shadow:0 4px 12px rgba(0,0,0,.2)"></div>
 <div id="np">
   <div class="nph"><h3>&#128276; Pending Notifications</h3><button class="btn btg" onclick="toggleNP()">&#10005;</button></div>
   <div class="npl" id="npl"></div>
@@ -3505,5 +3506,6 @@ function sendBdayWA(){
   }try{var r=await apiGet("ping");if(r&&r.ok){document.getElementById("conn-status").innerHTML="&#9679; Connected &#10003;";document.getElementById("conn-status").style.color="#4ade80";showToast("Connected to Google Sheets!","ok");if(!localStorage.getItem("ts"))await doSyncSheets();}}catch(e){console.log("Auto-connect:",e.message);}})();
 
 </script>
+<div id="toast" style="position:fixed;bottom:24px;left:50%;transform:translateX(-50%);padding:10px 20px;border-radius:8px;font-size:13px;font-weight:500;z-index:9999;transition:opacity .4s;opacity:0;pointer-events:none;max-width:90vw;text-align:center;box-shadow:0 4px 12px rgba(0,0,0,.2)"></div>
 </body>
 </html>
