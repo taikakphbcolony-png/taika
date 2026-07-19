@@ -1573,7 +1573,7 @@ function rFees(){
   if(feeFilter==="90plus")ov=ov.filter(function(s){return Math.abs(dud(s))>=90;});
   var ovR="";
   ov=applyFeeOvSort(ov,feeOvSortCol,feeOvSortDir);
-  for(var i=0;i<ov.length;i++){var s=ov[i];var d=Math.abs(dud(s));var msg=applyTemplate(getTemplates().feeReminder,{name:s.name,parentName:String(s.parentName||s.name),amount:fmt(s.fee),validTill:String(s.validTill||"").slice(0,10),plan:s.plan||""});ovR+="<tr><td><b>"+s.name+"</b><br><span style='color:var(--gray);font-size:11px'>"+s.phone+"</span></td><td>"+fmt(s.fee)+"</td><td>"+String(s.validTill||"N/A").slice(0,10)+"</td><td><span class='bdg' style='background:"+(d>=90?'#7c3aed':d>=60?'#dc2626':d>=30?'#d97706':'#ef4444')+";color:#fff'>"+d+"d overdue</span></td><td><button class='btn btr' style='padding:4px 9px;font-size:12px' onclick='openFee(this.dataset.id)' data-id='"+s.id+"'>Record Pay</button> "+waLink(s.phone,msg,"Remind")+"</td></tr>";}
+  for(var i=0;i<ov.length;i++){var s=ov[i];var d=Math.abs(dud(s));var msg=safeApply("feeReminder",{name:s.name,parentName:String(s.parentName||s.name),amount:fmt(s.fee),validTill:String(s.validTill||"").slice(0,10),plan:s.plan||""})||MONEY+" Fee Payment Reminder "+BELL+"\n"+LINE+"\n\nDear "+String(s.parentName||s.name)+","+"\n\nThis is a gentle reminder that the membership fee for "+s.name+" is currently due."+"\n\n"+NOTE+" Details:\n"+LINE+"\n"+BELT+"  Student  : "+s.name+"\n"+MONEY+"  Amount   : "+fmt(s.fee)+"\n"+CAL+"  Due Date : "+String(s.validTill||"").slice(0,10)+"\n"+LINE+"\n\nKindly make the payment at your earliest. "+PRAY+"\n\n"+LINE+"\n"+BELT+" "+(getProfile().coachName||"Coach & Team")+"\n"+(getProfile().academyName||"Taika Martial Arts Academy")+", "+(getProfile().location||"Gokul Plots");ovR+="<tr><td><b>"+s.name+"</b><br><span style='color:var(--gray);font-size:11px'>"+s.phone+"</span></td><td>"+fmt(s.fee)+"</td><td>"+String(s.validTill||"N/A").slice(0,10)+"</td><td><span class='bdg' style='background:"+(d>=90?'#7c3aed':d>=60?'#dc2626':d>=30?'#d97706':'#ef4444')+";color:#fff'>"+d+"d overdue</span></td><td><button class='btn btr' style='padding:4px 9px;font-size:12px' onclick='openFee(this.dataset.id)' data-id='"+s.id+"'>Record Pay</button> "+waLink(s.phone,msg,"Remind")+"</td></tr>";}
 
   var fcFee="<div class='fc'>"
     +"<button class='chip"+(feeFilter==="all"?" on":"")+"' onclick='setFilter(\"fee\",\"all\")'><span>All Overdue</span></button>"
@@ -1984,7 +1984,7 @@ function sendAllAbsentAlerts(){
     }).length;
     var ph=String(s.phone||"").replace(/\D/g,"");
     if(ph.length===10)ph="91"+ph;
-    var msg=applyTemplate(getTemplates().absentAlert,{name:s.name,parentName:String(s.parentName||s.name),absentDays:String(ab)})
+    var msg=safeApply("absentAlert",{name:s.name,parentName:String(s.parentName||s.name),absentDays:String(ab)})||WARN+" Attendance Alert — "+s.name+"\n"+LINE+"\n\nDear "+String(s.parentName||s.name)+","+"\n\nWe are concerned as "+s.name+" has been absent "+ab+" days this month at Taika "+BELT+" Martial Arts Academy."+"\n\n"+PRAY+" Please get in touch at your earliest. "+MUSCLE+"\n\n"+LINE+"\n"+BELT+" "+(getProfile().coachName||"Coach & Team")
     var go=function(){
       showToast(i+"/"+list.length+": "+s.name,"ok");
       window.open("https://wa.me/"+ph,"_blank");
@@ -2059,7 +2059,7 @@ function saveS(){
   students.push(s);sv();closeM("ms");updBadges();render();
   apiCall("addStudent",s).then(function(r){if(r&&r.ok)showToast(name+" added to Google Sheets!","ok");});
   var pname=parent||name;
-  var msg=applyTemplate(getTemplates().welcome,{name:name,parentName:pname,amount:fmt(Number(s.fee||0)),plan:s.plan||"",date:tod()})
+  var msg=safeApply("welcome",{name:name,parentName:pname,amount:fmt(Number(s.fee||0)),plan:s.plan||"",date:tod()})||PARTY+" "+CONFETTI+" Welcome to Taika Martial Arts Academy! "+CONFETTI+" "+PARTY+"\n"+LINE+"\n\nDear "+pname+","+"\n\n"+CLAP+" "+CLAP+" We are thrilled to welcome "+name+" into our Taika "+BELT+" Martial Arts Academy family! "+HEART+"\n\n"+MUSCLE+" Let the journey begin!"+"\n\n"+LINE+"\n"+BELT+" "+(getProfile().coachName||"Coach & Team")
   if(confirm("Student added! Send WhatsApp welcome message to "+phone+"?")){
     if(navigator.clipboard&&navigator.clipboard.writeText){
       navigator.clipboard.writeText(msg).then(function(){
@@ -2078,6 +2078,14 @@ function openFee(sid){var s=sid?students.find(function(x){return x.id===sid;}):n
 function calcVT(){var pl=document.getElementById("fpp").value,dt=document.getElementById("fpd").value;if(!dt)return;var mo={"1 Month":1,"3 Months":3,"6 Months":6,"12 Months":12}[pl]||1;var d=new Date(dt);d.setMonth(d.getMonth()+mo);document.getElementById("fpv").value=d.toISOString().slice(0,10);}
 document.getElementById("fpp").addEventListener("change",calcVT);
 document.getElementById("fpd").addEventListener("change",calcVT);
+
+function safeApply(tplKey,vars){
+  try{
+    var tpls=getTemplates();
+    if(tpls&&tpls[tplKey]) return applyTemplate(tpls[tplKey],vars);
+  }catch(e){console.warn("Template error:",e);}
+  return null; // signal to use fallback
+}
 
 function getProfile(){
   return JSON.parse(localStorage.getItem("taika_profile")||"{}");
@@ -2542,7 +2550,7 @@ function saveF(){
     var _prof=getProfile();
     var _ph=String(_newStu.phone||"").replace(/\D/g,"");
     if(_ph.length===10)_ph="91"+_ph;
-    var _waMsg=applyTemplate(getTemplates().paymentReceived,{name:_newStu.name,parentName:String(_newStu.parentName||_newStu.name||"Parent"),receiptNo:_rcptNo,amount:fmt(amt),date:dt,validTill:vt,plan:pl})
+    var _waMsg=safeApply("paymentReceived",{name:_newStu.name,parentName:String(_newStu.parentName||_newStu.name||"Parent"),receiptNo:_rcptNo,amount:fmt(amt),date:dt,validTill:vt,plan:pl})||(CHECK+" Payment Received! "+PARTY+"\n"+LINE+"\n\nDear "+String(_newStu.parentName||_newStu.name||"Parent")+","+"\n\n"+CLAP+" Thank you for your payment!\n\n"+NOTE+" Receipt:\n"+LINE+"\n"+CHECK+"  Student    : "+_newStu.name+"\n"+MONEY+"  Amount     : "+fmt(amt)+"\n"+CAL+"  Paid On    : "+dt+"\n"+SPARK+"  Valid Till : "+vt+"\n"+BELT+"  Plan       : "+pl+LINE+"\n\n"+MUSCLE+" Keep training!"+"\n\n"+LINE+"\n"+BELT+" "+(getProfile().coachName||"Coach & Team"))
     var _m=document.createElement("div");
     _m.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:999;display:flex;align-items:center;justify-content:center;padding:16px";
     var _encMsg=_waMsg.split("\n").join("\\n");
