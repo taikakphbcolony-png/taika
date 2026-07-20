@@ -1985,7 +1985,7 @@ function sendAllAbsentAlerts(){
     }).length;
     var ph=String(s.phone||"").replace(/\D/g,"");
     if(ph.length===10)ph="91"+ph;
-    var msg=safeApply("absentAlert",{name:s.name,parentName:String(s.parentName||s.name),absentDays:String(ab)})||WARN+" Attendance Alert — "+s.name+"\n"+LINE+"\n\nDear "+String(s.parentName||s.name)+","+"\n\nWe are concerned as "+s.name+" has been absent "+ab+" days this month at Taika "+BELT+" Martial Arts Academy."+"\n\n"+PRAY+" Please get in touch at your earliest. "+MUSCLE+"\n\n"+LINE+"\n"+BELT+" "+(getProfile().coachName||"Coach & Team")
+    var msg=WARN+" Attendance Alert — "+s.name+"\n"+LINE+"\n\nDear "+String(s.parentName||s.name)+","+"\n\nWe are concerned as "+s.name+" has been absent "+ab+" days this month at Taika "+BELT+" Martial Arts Academy."+"\n\n"+PRAY+" Please get in touch at your earliest. "+MUSCLE+"\n\n"+LINE+"\n"+BELT+" "+(getProfile().coachName||"Coach & Team")
     var go=function(){
       showToast(i+"/"+list.length+": "+s.name,"ok");
       window.open("https://wa.me/"+ph,"_blank");
@@ -2060,7 +2060,7 @@ function saveS(){
   students.push(s);sv();closeM("ms");updBadges();render();
   apiCall("addStudent",s).then(function(r){if(r&&r.ok)showToast(name+" added to Google Sheets!","ok");});
   var pname=parent||name;
-  var msg=safeApply("welcome",{name:name,parentName:pname,amount:fmt(Number(s.fee||0)),plan:s.plan||"",date:tod()})||PARTY+" "+CONFETTI+" Welcome to Taika Martial Arts Academy! "+CONFETTI+" "+PARTY+"\n"+LINE+"\n\nDear "+pname+","+"\n\n"+CLAP+" "+CLAP+" We are thrilled to welcome "+name+" into our Taika "+BELT+" Martial Arts Academy family! "+HEART+"\n\n"+MUSCLE+" Let the journey begin!"+"\n\n"+LINE+"\n"+BELT+" "+(getProfile().coachName||"Coach & Team")
+  var msg=PARTY+" "+CONFETTI+" Welcome to Taika Martial Arts Academy! "+CONFETTI+" "+PARTY+"\n"+LINE+"\n\nDear "+pname+","+"\n\n"+CLAP+" "+CLAP+" We are thrilled to welcome "+name+" into our Taika "+BELT+" Martial Arts Academy family! "+HEART+"\n\n"+MUSCLE+" Let the journey begin!"+"\n\n"+LINE+"\n"+BELT+" "+(getProfile().coachName||"Coach & Team")
   if(confirm("Student added! Send WhatsApp welcome message to "+phone+"?")){
     // Open WhatsApp immediately (user gesture context)
     window.open("https://wa.me/91"+String(phone).replace(/\D/g,""),"_blank");
@@ -2516,7 +2516,7 @@ function saveF(){
     var _prof=getProfile();
     var _ph=String(_newStu.phone||"").replace(/\D/g,"");
     if(_ph.length===10)_ph="91"+_ph;
-    var _waMsg=safeApply("paymentReceived",{name:_newStu.name,parentName:String(_newStu.parentName||_newStu.name||"Parent"),receiptNo:_rcptNo,amount:fmt(amt),date:dt,validTill:vt,plan:pl})||(CHECK+" Payment Received! "+PARTY+"\n"+LINE+"\n\nDear "+String(_newStu.parentName||_newStu.name||"Parent")+","+"\n\n"+CLAP+" Thank you for your payment!\n\n"+NOTE+" Receipt:\n"+LINE+"\n"+CHECK+"  Student    : "+_newStu.name+"\n"+MONEY+"  Amount     : "+fmt(amt)+"\n"+CAL+"  Paid On    : "+dt+"\n"+SPARK+"  Valid Till : "+vt+"\n"+BELT+"  Plan       : "+pl+LINE+"\n\n"+MUSCLE+" Keep training!"+"\n\n"+LINE+"\n"+BELT+" "+(getProfile().coachName||"Coach & Team"))
+    var _waMsg=(CHECK+" Payment Received! "+PARTY+"\n"+LINE+"\n\nDear "+String(_newStu.parentName||_newStu.name||"Parent")+","+"\n\n"+CLAP+" Thank you for your payment!\n\n"+NOTE+" Receipt:\n"+LINE+"\n"+CHECK+"  Student    : "+_newStu.name+"\n"+MONEY+"  Amount     : "+fmt(amt)+"\n"+CAL+"  Paid On    : "+dt+"\n"+SPARK+"  Valid Till : "+vt+"\n"+BELT+"  Plan       : "+pl+LINE+"\n\n"+MUSCLE+" Keep training!"+"\n\n"+LINE+"\n"+BELT+" "+(getProfile().coachName||"Coach & Team"))
     var _m=document.createElement("div");
     _m.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:999;display:flex;align-items:center;justify-content:center;padding:16px";
     var _encMsg=_waMsg.split("\n").join("\\n");
