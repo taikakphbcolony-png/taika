@@ -2062,17 +2062,13 @@ function saveS(){
   var pname=parent||name;
   var msg=safeApply("welcome",{name:name,parentName:pname,amount:fmt(Number(s.fee||0)),plan:s.plan||"",date:tod()})||PARTY+" "+CONFETTI+" Welcome to Taika Martial Arts Academy! "+CONFETTI+" "+PARTY+"\n"+LINE+"\n\nDear "+pname+","+"\n\n"+CLAP+" "+CLAP+" We are thrilled to welcome "+name+" into our Taika "+BELT+" Martial Arts Academy family! "+HEART+"\n\n"+MUSCLE+" Let the journey begin!"+"\n\n"+LINE+"\n"+BELT+" "+(getProfile().coachName||"Coach & Team")
   if(confirm("Student added! Send WhatsApp welcome message to "+phone+"?")){
-    if(navigator.clipboard&&navigator.clipboard.writeText){
-      navigator.clipboard.writeText(msg).then(function(){
-        showToast("Welcome message copied! Opening WhatsApp...","ok");
-        setTimeout(function(){window.open("https://wa.me/91"+phone.replace(/\D/g,""),"_blank");},600);
-      });
-    } else {
-      var ta=document.createElement("textarea");ta.value=msg;ta.style.position="fixed";ta.style.opacity="0";
-      document.body.appendChild(ta);ta.select();try{document.execCommand("copy");}catch(e){}document.body.removeChild(ta);
-      showToast("Welcome message copied! Opening WhatsApp...","ok");
-      setTimeout(function(){window.open("https://wa.me/91"+phone.replace(/\D/g,""),"_blank");},600);
-    }
+    // Open WhatsApp immediately (user gesture context)
+    window.open("https://wa.me/91"+String(phone).replace(/\D/g,""),"_blank");
+    // Copy message
+    var ta=document.createElement("textarea");ta.value=msg;ta.style.position="fixed";ta.style.opacity="0";
+    document.body.appendChild(ta);ta.select();try{document.execCommand("copy");}catch(e){}document.body.removeChild(ta);
+    if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(msg).catch(function(){});
+    showToast("WhatsApp opened! Message copied.","ok");
   }
 }
 function openFee(sid){var s=sid?students.find(function(x){return x.id===sid;}):null;curFS=s;document.getElementById("fpn").value=s?s.name:"";document.getElementById("fpa").value=s?s.fee:"";document.getElementById("fpp").value=s?s.plan:"1 Month";document.getElementById("fpd").value=s&&s.validTill?String(s.validTill).slice(0,10):tod();calcVT();document.getElementById("mf").classList.add("open");}
@@ -2535,15 +2531,18 @@ function saveF(){
       +"</div></div>";
     document.body.appendChild(_m);
     function _sendWA(){
+      // Open WhatsApp FIRST (in user gesture context) then copy message
+      var waWin=window.open("https://wa.me/"+_ph,"_blank");
+      // Copy message to clipboard
+      var ta=document.createElement("textarea");
+      ta.value=_waMsg;ta.style.position="fixed";ta.style.opacity="0";
+      document.body.appendChild(ta);ta.select();
+      try{document.execCommand("copy");}catch(e){}
+      document.body.removeChild(ta);
+      showToast("WhatsApp opened! Message copied to clipboard.","ok");
+      // Also try modern clipboard API
       if(navigator.clipboard&&navigator.clipboard.writeText){
-        navigator.clipboard.writeText(_waMsg).then(function(){
-          showToast("Message copied! Opening WhatsApp...","ok");
-          setTimeout(function(){window.open("https://wa.me/"+_ph,"_blank");},600);
-        });
-      } else {
-        var ta=document.createElement("textarea");ta.value=_waMsg;ta.style.position="fixed";ta.style.opacity="0";
-        document.body.appendChild(ta);ta.select();try{document.execCommand("copy");}catch(e){}document.body.removeChild(ta);
-        window.open("https://wa.me/"+_ph,"_blank");
+        navigator.clipboard.writeText(_waMsg).catch(function(){});
       }
     }
     document.getElementById("_wa-btn").onclick=function(){_sendWA();_m.remove();};
