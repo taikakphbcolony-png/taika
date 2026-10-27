@@ -231,11 +231,12 @@ nav{flex:1;padding:14px 0;overflow-y:auto}
 
 
 
-.att-tw{display:block;overflow-x:scroll;overflow-y:visible;-webkit-overflow-scrolling:touch;border-radius:0 0 var(--r) var(--r);max-width:100%;width:100%}
+.att-tw{display:block;overflow:auto;max-height:calc(100vh - 200px);max-height:calc(100dvh - 200px);-webkit-overflow-scrolling:touch;border-radius:0 0 var(--r) var(--r);max-width:100%;width:100%}
 .att-tbl{border-collapse:separate;border-spacing:0;table-layout:fixed;font-family:var(--fb)}
 .att-tbl td,.att-tbl th{border-bottom:1px solid #f0f0f0;border-right:1px solid #f0f0f0}
 .att-nt{position:-webkit-sticky!important;position:sticky!important;left:0!important;z-index:20;background:#fff;min-width:120px;max-width:120px;width:120px;padding:5px 8px;font-size:12px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-right:2px solid #e2e8f0!important;box-shadow:4px 0 8px -2px rgba(0,0,0,.12)}
-.att-tbl thead th.att-nt{background:#f9fafb!important;font-weight:700;color:var(--gray);z-index:30;font-size:11px}
+.att-tbl thead th{position:-webkit-sticky;position:sticky;top:0;z-index:25}
+.att-tbl thead th.att-nt{top:0!important;background:#f9fafb!important;font-weight:700;color:var(--gray);z-index:30;font-size:11px}
 .att-tbl tfoot td.att-nt{background:#f9fafb;z-index:20}
 @media(max-width:768px){.att-nt{min-width:100px;max-width:100px;width:100px;font-size:11px;padding:4px 6px}}
 
@@ -1949,7 +1950,8 @@ function rAtt(){
       +"<select onchange='attMo=this.value;render();fetchMonthAtt(this.value)' style='padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px'>"+sel+"</select>"
       +"<button class='btn btr' onclick='markAllPresent(attMo)'>Mark All Present</button>"
       +"<button class='btn bto' onclick='markHoliday(attMo)'>Mark Holiday</button>"
-      +"<button class='btn bto' onclick='printAtt()' style='border-color:#7c3aed;color:#7c3aed'>Print Sheet</button>"
+      +"<button class='btn bto' onclick='printAtt(false)' style='border-color:#7c3aed;color:#7c3aed'>Print Blank Sheet</button>"
+      +"<button class='btn bto' onclick='printAtt(true)' style='border-color:#7c3aed;color:#7c3aed'>Print Marked</button>"
       +"<span style='font-size:12px;color:var(--gray)'>"+attS.length+" students</span>"
     +"</div>"
     +"<div class='att-card-wrap'><div class='ch'><h3>Attendance &mdash; "+ym+"</h3><span class='bdg bb'>Tap to toggle P / A</span></div>"
@@ -1969,14 +1971,14 @@ function tAtt(sid,day,ym){
   att[ym][sid][day]=c==="P"?"A":"P";
   sv();
   // Save scroll position before re-render
-  var _attScroll=0;
+  var _attScroll=0,_attTop=0;
   var _attEl=document.querySelector(".att-tw");
-  if(_attEl)_attScroll=_attEl.scrollLeft;
+  if(_attEl){_attScroll=_attEl.scrollLeft;var _attTop=_attEl.scrollTop;}
   render();
   // Restore scroll position after re-render
   setTimeout(function(){
     var el=document.querySelector(".att-tw");
-    if(el)el.scrollLeft=_attScroll;
+    if(el){el.scrollLeft=_attScroll;el.scrollTop=_attTop||0;}
     setTimeout(initAttSwipe,50);
   },0);
   updBadges();
@@ -2662,87 +2664,62 @@ function toggleInactive(sid, makeInactive){
   apiCall("updateStudent", {id:sid, inactive:makeInactive});
 }
 
-function printAtt(){
-  var ym = attMo;
+function printAtt(filled){
+  var ym=attMo;
   var parts=ym.split("-"), yr=parseInt(parts[0]), mo=parseInt(parts[1]);
   var dim=new Date(yr,mo,0).getDate();
   var rec=att[ym]||{};
   var hols=getHolidays(ym);
   var attS=students.filter(function(x){return !x.inactive&&!x.left;});
-  var dayNames=["Su","Mo","Tu","We","Th","Fr","Sa"];
-
-  var rows="";
-  attS.forEach(function(s){
-    var sr=rec[s.id]||{};
-    var cells="";
-    var abs=0;
-    for(var d=1;d<=dim;d++){
-      var v=sr[d]||"";
-      var isH=hols.has(d);
-      var bg=isH?"#fff7ed":v==="P"?"#d1fae5":v==="A"?"#fee2e2":"#fff";
-      var txt=isH?"H":v||"";
-      var col=isH?"#c2410c":v==="P"?"#065f46":v==="A"?"#991b1b":"#9ca3af";
-      if(v==="A")abs++;
-      cells+="<td style='background:"+bg+";color:"+col+";text-align:center;font-weight:700;font-size:9px;width:20px;min-width:20px;max-width:20px;padding:2px 0'>"+txt+"</td>";
+  var MN=["January","February","March","April","May","June","July","August","September","October","November","December"];
+  var logo="";try{var li=document.querySelector("#sb img");if(li)logo=li.src;}catch(e){}
+  var perPage=20, dw=(232/dim).toFixed(2);
+  function esc(t){return String(t==null?"":t).replace(/&/g,"&amp;").replace(/</g,"&lt;");}
+  function head(){
+    var t="<thead><tr><th rowspan='2' style='width:9mm'>Sno</th><th rowspan='2' style='width:40mm;text-align:left;padding-left:2mm'>Name</th>";
+    for(var d=1;d<=dim;d++)t+="<th class='dn"+(hols.has(d)?" hol2":"")+"' style='width:"+dw+"mm'>"+d+"</th>";
+    t+="</tr><tr>";
+    for(var d2=1;d2<=dim;d2++)t+="<th class='pa"+(hols.has(d2)?" hol2":"")+"'>"+(hols.has(d2)?"H":"P/A")+"</th>";
+    return t+"</tr></thead>";
+  }
+  var pages="";
+  for(var i=0;i<attS.length;i+=perPage){
+    var rows="";
+    for(var k=0;k<perPage;k++){
+      var s=attS[i+k];
+      if(!s){rows+="<tr><td></td><td></td>"+new Array(dim+1).join("<td></td>")+"</tr>";continue;}
+      var sr=rec[s.id]||{};
+      var cells="";
+      for(var d=1;d<=dim;d++){
+        if(hols.has(d)){cells+="<td class='hol'></td>";continue;}
+        cells+="<td>"+(filled?esc(sr[d]||""):"")+"</td>";
+      }
+      rows+="<tr><td>"+(i+k+1)+"</td><td class='nm'>"+esc(s.name)+"</td>"+cells+"</tr>";
     }
-    var absBg=abs>5?"#fee2e2":abs>2?"#fef3c7":"#f9fafb";
-    rows+="<tr><td style='font-size:10px;padding:3px 6px;white-space:nowrap;max-width:130px;overflow:hidden;text-overflow:ellipsis;border-right:2px solid #e5e7eb'>"+s.name+"</td>"
-      +cells
-      +"<td style='text-align:center;font-weight:700;font-size:10px;background:"+absBg+";padding:2px 4px'>"+abs+"</td></tr>";
-  });
-
-  // Day header
-  var dayHdr="<tr><th style='padding:4px 6px;font-size:9px;text-align:left;border-right:2px solid #e5e7eb;min-width:130px'>Student</th>";
-  for(var d=1;d<=dim;d++){
-    var dn=new Date(yr,mo-1,d).getDay();
-    var isH=hols.has(d);
-    var bg=isH?"#fde8e8":"#f9fafb";
-    dayHdr+="<th style='width:20px;min-width:20px;max-width:20px;text-align:center;background:"+bg+";font-size:8px;padding:2px 0;line-height:1.2'>"
-      +"<span style='display:block;color:"+(isH?"#b91c1c":"#6b7280")+"'>"+dayNames[dn]+"</span>"
-      +"<span style='display:block;font-weight:700;color:"+(isH?"#b91c1c":"#374151")+"'>"+d+"</span>"
-      +"</th>";
+    pages+="<div class='pg'>"
+      +"<div class='hd'>"+(logo?"<img src='"+logo+"'>":"<span></span>")
+      +"<div class='ttl'>Taika Martial Arts Academy &ndash; Attendance Sheet</div>"
+      +"<div class='my'>Month-Year : "+MN[mo-1]+" "+yr+"</div></div>"
+      +"<table>"+head()+"<tbody>"+rows+"</tbody></table></div>";
   }
-  dayHdr+="<th style='width:28px;text-align:center;font-size:9px;padding:2px 4px'>Abs</th></tr>";
-
-  // Present count row
-  var cntRow="<tr style='background:#f9fafb'><td style='font-size:9px;font-weight:700;color:#6b7280;padding:3px 6px;border-right:2px solid #e5e7eb'>Present</td>";
-  for(var d=1;d<=dim;d++){
-    if(hols.has(d)){ cntRow+="<td></td>"; continue; }
-    var cnt=0;
-    attS.forEach(function(s){if((rec[s.id]||{})[d]==="P")cnt++;});
-    cntRow+="<td style='text-align:center;font-size:9px;font-weight:600;padding:2px 0'>"+cnt+"</td>";
-  }
-  cntRow+="<td></td></tr>";
-
-  var html="<!DOCTYPE html><html><head><meta charset='UTF-8'>"
-    +"<title>Attendance - "+ym+"</title>"
-    +"<style>"
-    +"@page{size:A4 landscape;margin:8mm}"
-    +"*{box-sizing:border-box}"
-    +"body{font-family:Arial,sans-serif;font-size:10px;margin:0;padding:0}"
-    +".header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;padding-bottom:6px;border-bottom:2px solid #C0392B}"
-    +".title{font-size:16px;font-weight:700;color:#C0392B}"
-    +".subtitle{font-size:11px;color:#6b7280}"
-    +"table{width:100%;border-collapse:collapse;table-layout:fixed}"
-    +"td,th{border:1px solid #e5e7eb;padding:0}"
-    +"th{background:#f3f4f6;font-weight:700}"
-    +"tr:nth-child(even){background:#fafafa}"
-    +"@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}"
-    
-    +"<div class='header'>"
-      +"<div><div class='title'>Taika Martial Arts Academy &mdash; Gokul Plots</div>"
-      +"<div class='subtitle'>Attendance Sheet &middot; "+ym+" &middot; "+attS.length+" students &middot; Printed: "+new Date().toLocaleDateString("en-IN")+"</div></div>"
-      +"<div style='font-size:10px;color:#6b7280'><span style='background:#d1fae5;padding:2px 6px;border-radius:3px;margin-right:6px'>P = Present</span>"
-      +"<span style='background:#fee2e2;padding:2px 6px;border-radius:3px;margin-right:6px'>A = Absent</span>"
-      +"<span style='background:#fde8e8;padding:2px 6px;border-radius:3px'>H = Holiday</span></div>"
-    +"</div>"
-    +"<table><thead>"+dayHdr+"</thead><tbody>"+rows+cntRow+"</tbody></table>"
-    +"</body></html>";
-
-  var w=window.open("","_blank","width=1200,height=800");
+  var html="<!DOCTYPE html><html><head><meta charset='UTF-8'><title>Attendance - "+ym+"</title><style>"
+    +"@page{size:A4 landscape;margin:8mm}*{box-sizing:border-box}"
+    +"body{font-family:Arial,sans-serif;margin:0;-webkit-print-color-adjust:exact;print-color-adjust:exact}"
+    +".pg{page-break-after:always}.pg:last-child{page-break-after:auto}"
+    +".hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:3mm;height:14mm}"
+    +".hd img{height:14mm;width:14mm;object-fit:contain}.ttl{font-size:20px;font-weight:700;flex:1;text-align:center}.my{font-size:12px;font-weight:600}"
+    +"table{border-collapse:collapse;table-layout:fixed;width:281mm}"
+    +"th,td{border:1px solid #333;padding:0;text-align:center}"
+    +"th{background:#6b6b6b;color:#fff;font-weight:700}.dn{font-size:9px;height:5mm}.pa{font-size:6.5px;height:4mm}"
+    +"th.hol2{background:#9a3412}"
+    +"td{height:7.4mm;font-size:10px;font-weight:700}.nm{text-align:left;padding-left:2mm;font-size:11px;white-space:nowrap;overflow:hidden}"
+    +".hol{background:#e5e7eb}"
+    +"</style></head><body>"+pages+"</body></html>";
+  var w=window.open("","_blank");
+  if(!w){showToast("Please allow pop-ups to print","warn");return;}
   w.document.write(html);
   w.document.close();
-  w.onload=function(){w.print();};
+  setTimeout(function(){try{w.focus();w.print();}catch(e){}},600);
 }
 
 function setFilter(type,val){
