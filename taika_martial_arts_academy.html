@@ -1402,7 +1402,7 @@ function rStud(){
     for(var i=0;i<fil.length;i++){
       var s=fil[i];
       rows += "<tr style='cursor:pointer' onclick=\""+(srch?"toggleStudentDetail('"+s.id+"')":"openSP('"+s.id+"')")+"\"  data-sid='"+s.id+"'>"
-        +"<td style='cursor:pointer'><b>"+s.name+"</b><br><span style='color:var(--gray);font-size:11px'>"+s.phone+"</span></td>"
+        +"<td style='cursor:pointer'><b>"+s.name+"</b><br><span style='color:var(--gray);font-size:11px'>"+maskPh(s.phone)+"</span></td>"
         +"<td>"+beltB(s.belt)+"</td><td>"+s.plan+"</td><td>"+fmt(s.fee)+"</td>"
         +"<td>"+String(s.validTill||"-").slice(0,10)+"</td>"
         +"<td>"+statB(s)+"</td>"
@@ -1427,7 +1427,7 @@ function rStud(){
     for(var k=0;k<fil3.length;k++){
       var s=fil3[k];
       rows3 += "<tr style='cursor:pointer' onclick=\"openSP('"+s.id+"')\">"
-        +"<td><b>"+s.name+"</b><br><span style='color:var(--gray);font-size:11px'>"+s.phone+"</span></td>"
+        +"<td><b>"+s.name+"</b><br><span style='color:var(--gray);font-size:11px'>"+maskPh(s.phone)+"</span></td>"
         +"<td>"+beltB(s.belt)+"</td><td>"+s.plan+"</td><td>"+fmt(s.fee)+"</td>"
         +"<td>"+String(s.validTill||"-").slice(0,10)+"</td>"
         +"<td><button onclick='event.stopPropagation();restoreStudent(this.dataset.id)' data-id='"+s.id+"' class='btn bto' style='font-size:11px;padding:3px 8px;color:#16a34a;border-color:#16a34a'>Restore</button></td>"
@@ -1444,7 +1444,7 @@ function rStud(){
     for(var j=0;j<fil2.length;j++){
       var s=fil2[j];
       rows2 += "<tr style='opacity:0.6'>"
-        +"<td><b>"+s.name+"</b><br><span style='color:var(--gray);font-size:11px'>"+s.phone+"</span></td>"
+        +"<td><b>"+s.name+"</b><br><span style='color:var(--gray);font-size:11px'>"+maskPh(s.phone)+"</span></td>"
         +"<td>"+beltB(s.belt)+"</td>"
         +"<td>"+s.plan+"</td>"
         +"<td>"+fmt(s.fee)+"</td>"
@@ -1480,7 +1480,7 @@ function feeCollectionReport(mo){
     return "<tr style='background:"+(i%2?"#f9fafb":"#fff")+"'>"
       +"<td>"+(i+1)+"</td><td>"+String(p.date||"").slice(0,10)+"</td>"
       +"<td><b>"+(s?s.name:"Unknown")+"</b></td>"
-      +"<td>"+(s?s.phone:"—")+"</td>"
+      +"<td>"+(s?maskPh(s.phone):"—")+"</td>"
       +"<td>"+(p.plan||"—")+"</td>"
       +"<td style='text-align:right;color:#16a34a;font-weight:700'>"+fmt(amt)+"</td>"
     +"</tr>";
@@ -1611,7 +1611,7 @@ function rFees(){
   if(feeFilter==="90plus")ov=ov.filter(function(s){return Math.abs(dud(s))>=90;});
   var ovR="";
   ov=applyFeeOvSort(ov,feeOvSortCol,feeOvSortDir);
-  for(var i=0;i<ov.length;i++){var s=ov[i];var d=Math.abs(dud(s));var msg=MONEY+" Fee Payment Reminder "+BELL+"\n"+LINE+"\n\nDear "+String(s.parentName||s.name)+","+"\n\nHope you and "+s.name+" are doing well! "+SMILE+"\n\nThis is a gentle reminder that the membership fee for "+s.name+" at Taika "+BELT+" Martial Arts Academy is currently due."+"\n\n"+NOTE+" Payment Details:\n"+LINE+"\n"+BELT+"  Student  : "+s.name+"\n"+MONEY+"  Amount   : "+fmt(s.fee)+"\n"+CAL+"  Due Date : "+String(s.validTill||"").slice(0,10)+"\n"+SPARK+"  Plan     : "+s.plan+"\n"+LINE+"\n\nKindly clear the dues at your earliest so that "+s.name+" can continue training without any interruption. "+MUSCLE+payBlock(s.name,s.fee)+"\n\n"+PRAY+" If you have already made the payment or discussed with us, please ignore this message."+"\n\nWe truly value your trust and support. "+HEART+"\n\n"+LINE+"\n"+BELT+" Warm regards,\nCoach & Team\nTaika Martial Arts Academy, Gokul Plots";ovR+="<tr><td><b>"+s.name+"</b><br><span style='color:var(--gray);font-size:11px'>"+s.phone+"</span></td><td>"+fmt(s.fee)+"</td><td>"+String(s.validTill||"N/A").slice(0,10)+"</td><td><span class='bdg' style='background:"+(d>=90?'#7c3aed':d>=60?'#dc2626':d>=30?'#d97706':'#ef4444')+";color:#fff'>"+d+"d overdue</span></td><td><button class='btn btr' style='padding:4px 9px;font-size:12px' onclick='openFee(this.dataset.id)' data-id='"+s.id+"'>Record Pay</button> "+waLink(s.phone,msg,"Remind")+"</td></tr>";}
+  for(var i=0;i<ov.length;i++){var s=ov[i];var d=Math.abs(dud(s));var msg=MONEY+" Fee Payment Reminder "+BELL+"\n"+LINE+"\n\nDear "+String(s.parentName||s.name)+","+"\n\nHope you and "+s.name+" are doing well! "+SMILE+"\n\nThis is a gentle reminder that the membership fee for "+s.name+" at Taika "+BELT+" Martial Arts Academy is currently due."+"\n\n"+NOTE+" Payment Details:\n"+LINE+"\n"+BELT+"  Student  : "+s.name+"\n"+MONEY+"  Amount   : "+fmt(s.fee)+"\n"+CAL+"  Due Date : "+String(s.validTill||"").slice(0,10)+"\n"+SPARK+"  Plan     : "+s.plan+"\n"+LINE+"\n\nKindly clear the dues at your earliest so that "+s.name+" can continue training without any interruption. "+MUSCLE+payBlock(s.name,s.fee)+"\n\n"+PRAY+" If you have already made the payment or discussed with us, please ignore this message."+"\n\nWe truly value your trust and support. "+HEART+"\n\n"+LINE+"\n"+BELT+" Warm regards,\nCoach & Team\nTaika Martial Arts Academy, Gokul Plots";ovR+="<tr><td><b>"+s.name+"</b><br><span style='color:var(--gray);font-size:11px'>"+maskPh(s.phone)+"</span></td><td>"+fmt(s.fee)+"</td><td>"+String(s.validTill||"N/A").slice(0,10)+"</td><td><span class='bdg' style='background:"+(d>=90?'#7c3aed':d>=60?'#dc2626':d>=30?'#d97706':'#ef4444')+";color:#fff'>"+d+"d overdue</span></td><td><button class='btn btr' style='padding:4px 9px;font-size:12px' onclick='openFee(this.dataset.id)' data-id='"+s.id+"'>Record Pay</button> "+waLink(s.phone,msg,"Remind")+"</td></tr>";}
 
   var fcFee="<div class='fc'>"
     +"<button class='chip"+(feeFilter==="all"?" on":"")+"' onclick='setFilter(\"fee\",\"all\")'><span>All Overdue</span></button>"
@@ -1728,7 +1728,7 @@ function attendanceReport(sid){
     +"</div>"
     +"<div style='display:flex;gap:14px;align-items:center;background:#f8fafc;border-radius:10px;padding:14px;margin-bottom:16px'>"
       +"<div style='width:48px;height:48px;border-radius:50%;background:#dc2626;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;color:#fff;flex-shrink:0'>"+s.name.charAt(0).toUpperCase()+"</div>"
-      +"<div style='flex:1'><div style='font-size:17px;font-weight:700'>"+s.name+"</div><div style='font-size:12px;color:#6b7280'>"+s.phone+"</div></div>"
+      +"<div style='flex:1'><div style='font-size:17px;font-weight:700'>"+s.name+"</div><div style='font-size:12px;color:#6b7280'>"+maskPh(s.phone)+"</div></div>"
       +"<span style='padding:4px 12px;border-radius:20px;background:"+(bCols[s.belt||""]||"#e2e8f0")+";font-size:12px;font-weight:700'>"+(s.belt||"White")+" Belt</span>"
     +"</div>"
     +"<div style='display:flex;gap:12px;margin-bottom:16px'>"
@@ -2027,7 +2027,7 @@ function rExp(){
 function rEnq(){
   var sc={"New":"bb","Contacted":"ba","Joined":"bg","Lost":"br2"};
   var rows="";
-  var esl=srch.toLowerCase();var fEnqs=enqs.filter(function(e){return !srch||e.name.toLowerCase().includes(esl)||String(e.phone||'').includes(srch);});  for(var i=0;i<fEnqs.length;i++){var e=fEnqs[i];var opts=["New","Contacted","Joined","Lost"].map(function(s){return "<option"+(s===e.status?" selected":"")+">"+s+"</option>";}).join("");rows+="<tr><td><b>"+e.name+"</b></td><td>"+e.phone+"</td><td>"+e.date+"</td><td>"+(e.source||"-")+"</td><td><span class='bdg "+(sc[e.status]||"")+"'>"+e.status+"</span></td><td>"+waLink(e.phone,BELT+" "+BELT+" Taika Martial Arts Academy "+BELT+" "+BELT+"\n"+LINE+"\nDear "+e.name+",\n\n"+WAVE+" Warm greetings from Taika Martial Arts Academy, Gokul Plots!\n\nThank you so much for your interest in joining us. "+HEART+"\nWe would be absolutely delighted to have you as part of the Taika family! "+STAR+"\n\n"+FIRE+" Why Families Choose Taika:\n"+LINE+"\n"+MEDAL+"  World-class martial arts training\n"+BELT+"  Expert & passionate coaches\n"+SMILE+"  Fun, safe & disciplined environment\n"+MUSCLE+"  Build confidence, focus & strength\n"+ROCKET+"  Holistic growth for every child\n"+LINE+"\n\n"+GIFT+" We warmly invite you for a "+SPARK+" FREE DEMO CLASS "+SPARK+"\n    No registration fee. No commitment. Just come and experience!\n\n"+PRAY+" Reply to this message or call us to book your free trial.\n\n"+CLAP+" We look forward to welcoming you to the Taika family!\n\n"+LINE+"\n"+BELT+" Warm regards,\nCoach & Team\nTaika Martial Arts Academy, Gokul Plots","Invite")+" <select onchange='updEnq("+i+",this.value)' style='padding:3px 6px;border:1px solid var(--border);border-radius:5px;font-size:11px'>"+opts+"</select></td></tr>";}
+  var esl=srch.toLowerCase();var fEnqs=enqs.filter(function(e){return !srch||e.name.toLowerCase().includes(esl)||String(e.phone||'').includes(srch);});  for(var i=0;i<fEnqs.length;i++){var e=fEnqs[i];var opts=["New","Contacted","Joined","Lost"].map(function(s){return "<option"+(s===e.status?" selected":"")+">"+s+"</option>";}).join("");rows+="<tr><td><b>"+e.name+"</b></td><td>"+maskPh(e.phone)+"</td><td>"+e.date+"</td><td>"+(e.source||"-")+"</td><td><span class='bdg "+(sc[e.status]||"")+"'>"+e.status+"</span></td><td>"+waLink(e.phone,BELT+" "+BELT+" Taika Martial Arts Academy "+BELT+" "+BELT+"\n"+LINE+"\nDear "+e.name+",\n\n"+WAVE+" Warm greetings from Taika Martial Arts Academy, Gokul Plots!\n\nThank you so much for your interest in joining us. "+HEART+"\nWe would be absolutely delighted to have you as part of the Taika family! "+STAR+"\n\n"+FIRE+" Why Families Choose Taika:\n"+LINE+"\n"+MEDAL+"  World-class martial arts training\n"+BELT+"  Expert & passionate coaches\n"+SMILE+"  Fun, safe & disciplined environment\n"+MUSCLE+"  Build confidence, focus & strength\n"+ROCKET+"  Holistic growth for every child\n"+LINE+"\n\n"+GIFT+" We warmly invite you for a "+SPARK+" FREE DEMO CLASS "+SPARK+"\n    No registration fee. No commitment. Just come and experience!\n\n"+PRAY+" Reply to this message or call us to book your free trial.\n\n"+CLAP+" We look forward to welcoming you to the Taika family!\n\n"+LINE+"\n"+BELT+" Warm regards,\nCoach & Team\nTaika Martial Arts Academy, Gokul Plots","Invite")+" <select onchange='updEnq("+i+",this.value)' style='padding:3px 6px;border:1px solid var(--border);border-radius:5px;font-size:11px'>"+opts+"</select></td></tr>";}
   if(!rows)rows="<tr><td colspan='6' style='text-align:center;color:var(--gray);padding:20px'>No enquiries yet</td></tr>";
   var stat=["New","Contacted","Joined","Lost"];var cards=stat.map(function(s){return "<div class='sc'><div class='lb'>"+s+"</div><div class='vl'>"+enqs.filter(function(e){return e.status===s;}).length+"</div></div>";}).join("");
   return "<div style='display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:18px'>"+cards+"</div><div class='card'><div class='ch'><h3>Enquiry Pipeline</h3></div><div style='overflow-x:auto'><table class='tbl'><thead><tr><th>Name</th><th>Phone</th><th>Date</th><th>Source</th><th>Status</th><th>Actions</th></tr></thead><tbody>"+rows+"</tbody></table></div>";
@@ -2414,6 +2414,7 @@ function getPlanFee(planName){
   return pl?pl.fee:0;
 }
 
+function maskPh(p){var n=0;return String(p==null?"":p).replace(/\d/g,function(d){n++;return n<=6?"*":d;});}
 function payBlock(name,amt,label){
   var a=Math.round(Number(String(amt).replace(/[^0-9.]/g,""))||0);
   var lk="https://taikakphbcolony-png.github.io/taika/pay.html?"+(a>0?"am="+a+"&":"")+"n="+encodeURIComponent(name||"");
@@ -2961,7 +2962,7 @@ function exportStudentFees(sid){
       +"<div>"
         +"<div style='font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px'>Student</div>"
         +"<div style='font-size:18px;font-weight:700'>"+s.name+"</div>"
-        +"<div style='font-size:13px;color:#6b7280'>"+s.phone+"</div>"
+        +"<div style='font-size:13px;color:#6b7280'>"+maskPh(s.phone)+"</div>"
       +"</div>"
       +"<div>"
         +"<div style='font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px'>Details</div>"
@@ -3041,7 +3042,7 @@ function generateIDCard(sid){
         +"<div class='avatar'>"+s.name.charAt(0).toUpperCase()+"</div>"
         +"<div style='text-align:center;margin-bottom:16px'>"
           +"<div class='name'>"+s.name+"</div>"
-          +"<div class='sub'>"+s.phone+"</div>"
+          +"<div class='sub'>"+maskPh(s.phone)+"</div>"
         +"</div>"
         +"<div class='field'><span class='field-label'>Belt</span><span class='belt-badge' style='background:"+beltCol+";color:"+beltTxt+"'>"+belt+" Belt</span></div>"
         +"<div class='field'><span class='field-label'>Plan</span><span style='font-weight:600'>"+s.plan+"</span></div>"
@@ -3113,7 +3114,7 @@ function openSP(sid){
 
   document.getElementById("sp-body").innerHTML =
     "<div class='sp-sec'><h4>Student Details</h4>"
-    +"<div class='sp-row'><span class='lbl'>Phone</span><span class='val'>"+s.phone+"</span></div>"
+    +"<div class='sp-row'><span class='lbl'>Phone</span><span class='val'>"+maskPh(s.phone)+"</span></div>"
     +"<div class='sp-row'><span class='lbl'>Parent</span><span class='val'>"+(s.parentName||"-")+"</span></div>"
     +"<div class='sp-row'><span class='lbl'>Belt</span><span class='val'>"+beltB(s.belt)+"</span></div>"
     +"<div class='sp-row'><span class='lbl'>Joined</span><span class='val'>"+String(s.joinedDate||"-").slice(0,10)+"</span></div>"
