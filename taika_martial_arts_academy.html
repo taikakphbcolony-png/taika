@@ -738,7 +738,7 @@ function doLogin(){
 function applyRoleRestrictions(){
   var role=currentRole();
   var hiddenPages={
-    coach:["expenses","enquiries","birthdays"],
+    coach:["dashboard","students","fees","expenses","enquiries","birthdays"],
     staff:["dashboard","students","fees","expenses","enquiries","birthdays"]
   };
   var hidden=hiddenPages[role]||[];
@@ -753,6 +753,11 @@ function applyRoleRestrictions(){
     if(hidden.indexOf(pg)>-1)el.style.display="none";
     else el.style.removeProperty("display");
   });
+  if(role&&role!=="admin"){
+    ["ta"].forEach(function(id){var el=document.getElementById(id);if(el)el.style.display="none";});
+    document.querySelectorAll(".ni").forEach(function(el){if((el.getAttribute("onclick")||"").indexOf("toggleNP")>-1)el.style.display="none";});
+    document.querySelectorAll(".sbtn").forEach(function(el){var oc=el.getAttribute("onclick")||"";if(oc.indexOf("fixSheetHeaders")>-1)el.style.display="none";});
+  }
   if(role!=="admin"){
     ["btn-sync"].forEach(function(id){var el=document.getElementById(id);if(el)el.style.display="none";});
     document.querySelectorAll(".sbtn").forEach(function(el){
@@ -760,15 +765,13 @@ function applyRoleRestrictions(){
       if(oc.indexOf("openSettings")>-1||oc.indexOf("exportData")>-1||oc.indexOf("cleanupAtt")>-1)el.style.display="none";
     });
   }
-  if(role==="staff"&&curPage!=="attendance")curPage="attendance";
-  if(role==="coach"&&["expenses","enquiries","birthdays"].indexOf(curPage)>-1)curPage="students";
+  if(role&&role!=="admin"&&curPage!=="attendance")curPage="attendance";
 }
 
 function render(){
   if(!getSession()){buildLoginPage();return;}
   var role=currentRole();
-  if(role==="staff"&&curPage!=="attendance")curPage="attendance";
-  if(role==="coach"&&["expenses","enquiries","birthdays"].indexOf(curPage)>-1)curPage="students";
+  if(role&&role!=="admin"&&curPage!=="attendance")curPage="attendance";
   var fns={dashboard:rDash,students:rStud,fees:rFees,attendance:rAtt,expenses:rExp,enquiries:rEnq,birthdays:rBdays};
   // Save focused element info before re-render
   var _focused=document.activeElement;
@@ -1949,9 +1952,9 @@ function rAtt(){
     +"<div style='display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap'>"
       +"<select onchange='attMo=this.value;render();fetchMonthAtt(this.value)' style='padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px'>"+sel+"</select>"
       +"<button class='btn btr' onclick='openScanner()' style='background:#16a34a;border-color:#16a34a;color:#fff'>Scan Attendance</button>"
-      +"<button class='btn bto' onclick='openBadgePicker()'>Print QR Badges</button>"
-      +"<button class='btn btr' onclick='markAllPresent(attMo)'>Mark All Present</button>"
-      +"<button class='btn bto' onclick='markHoliday(attMo)'>Mark Holiday</button>"
+      +(isAdmin()?"<button class='btn bto' onclick='openBadgePicker()'>Print QR Badges</button>":"")
+      +(isAdmin()?"<button class='btn btr' onclick='markAllPresent(attMo)'>Mark All Present</button>":"")
+      +(isAdmin()?"<button class='btn bto' onclick='markHoliday(attMo)'>Mark Holiday</button>":"")
       +"<button class='btn bto' onclick='printAtt(false)' style='border-color:#7c3aed;color:#7c3aed'>Print Blank Sheet</button>"
       +"<button class='btn bto' onclick='printAtt(true)' style='border-color:#7c3aed;color:#7c3aed'>Print Marked</button>"
       +"<span style='font-size:12px;color:var(--gray)'>"+attS.length+" students</span>"
@@ -2741,7 +2744,10 @@ function scanHandle(text){
   var m=/^TAIKA:(.+)$/.exec(String(text).trim());
   if(!m){scanShow("bad","Not a Taika badge","");return;}
   var s=students.find(function(x){return x.id===m[1];});
-  if(!s){scanShow("bad","Unknown badge","Student not found. Try Sync.");return;}
+  if(!s){
+    if(!_scan.refreshed){_scan.refreshed=true;scanShow("info","Checking student list...","");scanRefreshStudents().then(function(ok){_scan.last="";_scan.lastT=0;if(ok){var s2=students.find(function(x){return x.id===m[1];});if(s2){scanHandle(text);return;}}scanShow("bad","Unknown badge","Student not found. Ask admin to check.");});return;}
+    scanShow("bad","Unknown badge","Student not found. Ask admin to check.");return;
+  }
   if(s.left){scanShow("bad",s.name,"This student is marked as Left");return;}
   var t=scanToday();
   if(getHolidays(t.ym).has(t.day)){scanShow("bad","Today is a holiday","Attendance can't be saved on a holiday");return;}
@@ -2776,6 +2782,16 @@ function scanTick(){
     }catch(e){}
   }
   _scan.timer=setTimeout(scanTick,150);
+}
+async function scanRefreshStudents(){
+  try{
+    var ss=await apiGet("getStudents");
+    if(ss&&Array.isArray(ss)&&ss.length>0){
+      students=ss.map(function(s){s.fee=Number(s.fee)||0;s.due=Number(s.due)||0;s.phone=String(s.phone||"");s.inactive=(String(s.inactive).toLowerCase()==="true"||s.inactive===true);s.left=(String(s.left||s.Left||"").toLowerCase()==="true"||s.left===true||s.Left===true);return s;});
+      sv();scanUpdateCount();return true;
+    }
+  }catch(e){}
+  return false;
 }
 async function scanSyncToday(){
   try{
@@ -2837,8 +2853,8 @@ function openScanner(){
   document.getElementById("scan-x").addEventListener("click",closeScanner);
   document.getElementById("scan-fin").addEventListener("click",scanFinishDay);
   try{var C=window.AudioContext||window.webkitAudioContext;if(C){_scan.ac=_scan.ac||new C();if(_scan.ac.state==="suspended")_scan.ac.resume();}}catch(e){}
-  _scan.log=[];_scan.last="";_scan.on=true;
-  scanUpdateCount();scanSyncToday();
+  _scan.log=[];_scan.last="";_scan.refreshed=false;_scan.on=true;
+  scanUpdateCount();scanRefreshStudents().then(function(){scanSyncToday();});
   if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){scanShow("bad","Camera not available","Open the portal in Chrome or Safari over https");return;}
   navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:"environment"},width:{ideal:1280},height:{ideal:720}},audio:false}).then(function(st){
     if(!_scan.on){st.getTracks().forEach(function(tr){tr.stop();});return;}
@@ -3307,6 +3323,7 @@ function generateIDCard(sid){
 }
 
 function openSP(sid){
+  if(!isAdmin())return;
   var s = students.find(function(x){return x.id===sid;});
   if(!s) return;
   // Header
