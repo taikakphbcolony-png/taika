@@ -2421,7 +2421,7 @@ function getPlanFee(planName){
   return pl?pl.fee:0;
 }
 
-function maskPh(p){var n=0;return String(p==null?"":p).replace(/\d/g,function(d){n++;return n<=6?"*":d;});}
+function maskPh(p){return String(p==null?"":p);}
 function payBlock(name,amt,label){
   var a=Math.round(Number(String(amt).replace(/[^0-9.]/g,""))||0);
   var lk="https://taikakphbcolony-png.github.io/taika/pay.html?"+(a>0?"am="+a+"&":"")+"n="+encodeURIComponent(name||"");
