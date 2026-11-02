@@ -465,8 +465,8 @@ var curPage="dashboard",curFS=null,srch="",studSortCol="name",studSortDir=1,feeO
 function sv(){try{localStorage.setItem("ts",JSON.stringify(students));localStorage.setItem("tf",JSON.stringify(fees));localStorage.setItem("ta",JSON.stringify(att));localStorage.setItem("te",JSON.stringify(exps));localStorage.setItem("tq",JSON.stringify(enqs));}catch(e){console.warn("save failed:",e);}}
 function showToast(msg,type){var t=document.getElementById("toast");t.innerHTML=msg;t.style.background=type==="error"?"#C0392B":type==="warn"?"#d97706":"#16a34a";t.style.color="#fff";t.style.opacity="1";clearTimeout(t._timer);t._timer=setTimeout(function(){t.style.opacity="0";},3500);}
 function setBtnLoading(id,loading,txt){var b=document.getElementById(id);if(!b)return;b.disabled=loading;b.innerHTML=loading?"<span class='spin'></span>"+txt:txt;}
-async function apiCall(action,data){try{var ctrl=new AbortController();var timer=setTimeout(function(){ctrl.abort();},15000);var r=await fetch(API,{method:"POST",headers:{"Content-Type":"text/plain"},body:JSON.stringify({action:action,data:data}),signal:ctrl.signal});clearTimeout(timer);return await r.json();}catch(e){console.warn("POST failed:",e);return null;}}
-async function apiGet(action,params){try{var ctrl=new AbortController();var timer=setTimeout(function(){ctrl.abort();},15000);var u=new URL(API);u.searchParams.set("action",action);if(params)Object.keys(params).forEach(function(k){u.searchParams.set(k,params[k]);});var r=await fetch(u.toString(),{signal:ctrl.signal});clearTimeout(timer);return await r.json();}catch(e){console.warn("GET failed:",e);return null;}}
+async function apiCall(action,data){try{var ctrl=new AbortController();var timer=setTimeout(function(){ctrl.abort();},15000);var r=await fetch(API,{method:"POST",headers:{"Content-Type":"text/plain"},body:JSON.stringify({action:action,data:data,token:authToken()}),signal:ctrl.signal});clearTimeout(timer);return authCheck(action,await r.json());}catch(e){console.warn("POST failed:",e);return null;}}
+async function apiGet(action,params){try{var ctrl=new AbortController();var timer=setTimeout(function(){ctrl.abort();},15000);var u=new URL(API);u.searchParams.set("action",action);var _tk=authToken();if(_tk)u.searchParams.set("token",_tk);if(params)Object.keys(params).forEach(function(k){u.searchParams.set(k,params[k]);});var r=await fetch(u.toString(),{signal:ctrl.signal});clearTimeout(timer);return authCheck(action,await r.json());}catch(e){console.warn("GET failed:",e);return null;}}
 async function fixSheetHeaders(){
   showToast("Fixing sheet headers...", "ok");
   var r = await apiGet("fixHeaders");
@@ -654,17 +654,58 @@ function showPage(p){curPage=p;try{history.replaceState(null,'','#'+p);}catch(e)
   // Update bottom nav
   document.querySelectorAll(".bni").forEach(function(el){el.classList.remove("active");});
   var bn=document.getElementById("bn-"+p);if(bn)bn.classList.add("active");document.querySelectorAll(".ni").forEach(function(el,i){el.classList.toggle("active",pages[i]===p);});var titles={dashboard:"Dashboard",students:"Students",fees:"Fee Management",attendance:"Attendance",expenses:"Expenses & P&L",enquiries:"Enquiries"};document.getElementById("pt").textContent=titles[p]||"";var acts={dashboard:"+ Add Student",students:"+ Add Student",fees:"+ Record Payment",attendance:"Mark Today",expenses:"+ Add Expense",enquiries:"+ Add Enquiry"};document.getElementById("ta").innerHTML=acts[p]||"";var fns={dashboard:openAS,students:openAS,fees:function(){openFee(null);},attendance:function(){markAll(attMo);},expenses:openAE,enquiries:openAQ};document.getElementById("ta").onclick=fns[p]||openAS;updBadges();render();closeSB();}
-var DEFAULT_USERS=[
-  {username:"Taika",password:"Taika@567",role:"admin"},
-  {username:"coach",password:"Coach@123",role:"coach"},
-  {username:"staff",password:"Staff@123",role:"staff"}
-];
-function getUsers(){return JSON.parse(localStorage.getItem("taika_users")||"null")||DEFAULT_USERS;}
-function saveUsers(u){localStorage.setItem("taika_users",JSON.stringify(u));}
-function getSession(){return JSON.parse(localStorage.getItem("taika_session")||"null");}
+function getSession(){try{var s=JSON.parse(localStorage.getItem("taika_session")||"null");if(!s||!s.token)return null;if(s.exp&&s.exp<Date.now())return null;return s;}catch(e){return null;}}
 function currentRole(){var s=getSession();return s?s.role:null;}
 function isAdmin(){return currentRole()==="admin";}
 function isCoach(){return currentRole()==="admin"||currentRole()==="coach";}
+var _unauthShown=false;
+function authToken(){try{var s=getSession();return s&&s.token?s.token:"";}catch(e){return "";}}
+function authCheck(action,j){if(j&&j.error==="unauthorized"&&action!=="ping"&&action!=="login")onUnauthorized();return j;}
+function onUnauthorized(){
+  if(_unauthShown)return;_unauthShown=true;
+  try{localStorage.removeItem("taika_session");}catch(e){}
+  try{if(document.getElementById("scan-ov"))closeScanner();}catch(e){}
+  showLogin();
+  setTimeout(function(){var e=document.getElementById("li-err");if(e){e.style.display="block";e.textContent="Please log in again.";}},50);
+}
+async function lightSync(){try{await scanRefreshStudents();await fetchMonthAtt(attMo);render();}catch(e){}}
+
+/* ===== ACCOUNTS (Settings, admin only) ===== */
+async function accLoad(){
+  var el=document.getElementById("acc-list");if(!el)return;
+  var r=await apiCall("listUsers",{});
+  if(!Array.isArray(r)){el.textContent=(r&&r.error)||"Could not load accounts. Check internet.";return;}
+  var me=(getSession()||{}).username||"";
+  el.innerHTML=r.map(function(u){
+    var self=u.username.toLowerCase()===String(me).toLowerCase();
+    return "<div style='display:flex;align-items:center;gap:6px;padding:8px 10px;border-bottom:1px solid #f1f1f3;flex-wrap:wrap'>"
+      +"<span style='font-weight:600;font-size:13px'>"+String(u.username).replace(/&/g,"&amp;").replace(/</g,"&lt;")+"</span>"
+      +"<span style='font-size:11px;padding:2px 8px;border-radius:10px;background:"+(u.role==="admin"?"#fee2e2":"#e0e7ff")+"'>"+u.role+"</span>"
+      +(u.active?"":"<span style='font-size:11px;color:#dc2626'>Disabled</span>")
+      +(self?"<span style='font-size:11px;color:#9ca3af'>(you)</span>":"")
+      +"<span style='flex:1'></span>"
+      +"<button data-a='pw' data-u='"+u.username.replace(/'/g,"&#39;")+"' style='font-size:11px;padding:3px 8px;border:1px solid #d1d5db;border-radius:6px;background:#fff;cursor:pointer'>Reset password</button>"
+      +(self?"":"<button data-a='tg' data-on='"+(u.active?"0":"1")+"' data-u='"+u.username.replace(/'/g,"&#39;")+"' style='font-size:11px;padding:3px 8px;border:1px solid #d1d5db;border-radius:6px;background:#fff;cursor:pointer'>"+(u.active?"Disable":"Enable")+"</button>"
+      +"<button data-a='rm' data-u='"+u.username.replace(/'/g,"&#39;")+"' style='font-size:11px;padding:3px 8px;border:1px solid #fecaca;color:#dc2626;border-radius:6px;background:#fff;cursor:pointer'>Delete</button>")
+      +"</div>";
+  }).join("")||"No accounts";
+  el.onclick=function(ev){var b=ev.target.closest("button[data-a]");if(!b)return;accAct(b.getAttribute("data-a"),b.getAttribute("data-u"),b.getAttribute("data-on"));};
+}
+async function accAct(a,u,on){
+  var r;
+  if(a==="pw"){var pw=prompt("New password for "+u+" (minimum 6 characters):");if(!pw)return;r=await apiCall("setPassword",{username:u,password:pw});}
+  else if(a==="tg"){r=await apiCall("setUserActive",{username:u,active:on==="1"});}
+  else if(a==="rm"){if(!confirm("Delete account "+u+"?"))return;r=await apiCall("deleteUser",{username:u});}
+  if(r&&r.ok){showToast("Done","ok");accLoad();}
+  else if(r&&r.error&&r.error!=="unauthorized")showToast(r.error,"error");
+}
+async function accAdd(){
+  var u=(document.getElementById("acc-u").value||"").trim(),p=document.getElementById("acc-p").value||"",ro=document.getElementById("acc-r").value;
+  if(!u||!p){showToast("Enter username and password","warn");return;}
+  var r=await apiCall("addUser",{username:u,password:p,role:ro});
+  if(r&&r.ok){document.getElementById("acc-u").value="";document.getElementById("acc-p").value="";showToast("Account added","ok");accLoad();}
+  else showToast((r&&r.error)||"Could not add account","error");
+}
 function doLogout(){
   if(!confirm("Log out of Taika portal?"))return;
   localStorage.removeItem("taika_session");showLogin();
@@ -718,22 +759,22 @@ function buildLoginPage(){
   document.getElementById("li-btn").addEventListener("click",doLogin);
   setTimeout(function(){var el=document.getElementById("li-user");if(el)el.focus();},100);
 }
-function doLogin(){
+async function doLogin(){
   var u=(document.getElementById("li-user").value||"").trim();
   var p=(document.getElementById("li-pass").value||"").trim();
   var err=document.getElementById("li-err");
   if(!u||!p){err.style.display="block";err.textContent="Please enter username and password.";return;}
-  var users=getUsers();
-  var match=users.find(function(x){return x.username===u&&x.password===p;});
-  if(!match){
-    err.style.display="block";err.textContent="Invalid username or password.";
-    document.getElementById("li-pass").value="";document.getElementById("li-pass").focus();return;
-  }
-  localStorage.setItem("taika_session",JSON.stringify({username:match.username,role:match.role,loginTime:Date.now()}));
+  err.style.display="block";err.textContent="Signing in...";
+  var r=await apiCall("login",{username:u,password:p});
+  if(!r){err.textContent="Cannot reach the server. Check your internet and try again.";return;}
+  if(!r.ok){err.textContent=r.error||"Login failed.";document.getElementById("li-pass").value="";document.getElementById("li-pass").focus();return;}
+  localStorage.setItem("taika_session",JSON.stringify({username:r.username,role:r.role,token:r.token,exp:r.exp,loginTime:Date.now()}));
+  _unauthShown=false;
   var lp=document.getElementById("login-page");if(lp)lp.remove();
   var blocker=document.getElementById("login-blocker");if(blocker)blocker.remove();
   applyRoleRestrictions();render();updBadges();
-  showToast(String.fromCodePoint(0x1F44B)+" Welcome "+match.username+"! ("+match.role+")","ok");
+  showToast(String.fromCodePoint(0x1F44B)+" Welcome "+r.username+"! ("+r.role+")","ok");
+  if(!localStorage.getItem("ts")){if(r.role==="admin")doSyncSheets();else lightSync();}
 }
 function applyRoleRestrictions(){
   var role=currentRole();
@@ -2241,17 +2282,17 @@ function openSettings(){
     +"<textarea id='sp-hols' rows='3' style='width:100%;box-sizing:border-box;padding:8px;border:1px solid #e2e8f0;border-radius:8px;font-size:13px;font-family:var(--fb)' placeholder='e.g. Jan 26, Aug 15, Oct 2 (one per line or comma-separated)'>"+(p.holidays||"")+"</textarea>"
     +"<div style='font-size:11px;color:#9ca3af;margin-bottom:20px;margin-top:4px'>Use format: Jan 26, Aug 15, Dec 25 — or leave blank</div>"
 
-    // ── Change Passwords (admin only) ──
+    // ── Accounts (admin only) ──
     +(isAdmin()?
-      "<div style='font-size:11px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px'>Change Passwords</div>"
-      +"<div style='display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:18px'>"
-        +"<div><label style='font-size:11px;font-weight:600;color:#374151;display:block;margin-bottom:4px'>Coach Password</label>"
-        +"<input id='sp-pw-coach' type='text' placeholder='Leave blank to keep' style='width:100%;box-sizing:border-box;padding:8px;border:1px solid #e2e8f0;border-radius:8px;font-size:13px'></div>"
-        +"<div><label style='font-size:11px;font-weight:600;color:#374151;display:block;margin-bottom:4px'>Staff Password</label>"
-        +"<input id='sp-pw-staff' type='text' placeholder='Leave blank to keep' style='width:100%;box-sizing:border-box;padding:8px;border:1px solid #e2e8f0;border-radius:8px;font-size:13px'></div>"
-        +"<div><label style='font-size:11px;font-weight:600;color:#374151;display:block;margin-bottom:4px'>Admin Password</label>"
-        +"<input id='sp-pw-admin' type='text' placeholder='Leave blank to keep' style='width:100%;box-sizing:border-box;padding:8px;border:1px solid #e2e8f0;border-radius:8px;font-size:13px'></div>"
+      "<div style='font-size:11px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px'>Accounts</div>"
+      +"<div id='acc-list' style='border:1px solid #e2e8f0;border-radius:8px;margin-bottom:10px;font-size:13px;color:#6b7280;max-height:220px;overflow:auto'>Loading...</div>"
+      +"<div style='display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px'>"
+        +"<input id='acc-u' placeholder='New username' autocomplete='off' style='padding:8px;border:1px solid #e2e8f0;border-radius:8px;font-size:13px'>"
+        +"<input id='acc-p' placeholder='Password (min 6)' autocomplete='off' style='padding:8px;border:1px solid #e2e8f0;border-radius:8px;font-size:13px'>"
+        +"<select id='acc-r' style='padding:8px;border:1px solid #e2e8f0;border-radius:8px;font-size:13px'><option value='coach'>coach (attendance only)</option><option value='admin'>admin (full access)</option></select>"
+        +"<button onclick='accAdd()' style='padding:8px;border:none;border-radius:8px;background:#16a34a;color:#fff;font-size:13px;cursor:pointer'>+ Add account</button>"
       +"</div>"
+      +"<div style='font-size:11px;color:#9ca3af;margin-bottom:18px'>Resetting a password or disabling an account logs that person out everywhere.</div>"
     :"")
     // ── Actions ──
     +"<div style='display:flex;gap:8px;justify-content:flex-end'>"
@@ -2259,7 +2300,7 @@ function openSettings(){
       +"<button onclick='saveSettings()' style='padding:8px 18px;background:#dc2626;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600'>"+CHECK+" Save Settings</button>"
     +"</div>"
   +"</div>";
-  document.body.appendChild(m);
+  document.body.appendChild(m); if(isAdmin())accLoad();
 }
 
 function updatePlan(el){
@@ -2309,15 +2350,6 @@ function saveSettings(){
   });
   localStorage.setItem("taika_profile",JSON.stringify(p));
   applyRecurringHolidays(p.holidays);
-    // Save passwords if changed (admin only)
-  if(isAdmin()){
-    var _users=getUsers();
-    var _pwc=document.getElementById("sp-pw-coach"),_pws=document.getElementById("sp-pw-staff"),_pwa=document.getElementById("sp-pw-admin");
-    if(_pwc&&_pwc.value.trim()){var _cu=_users.find(function(u){return u.role==="coach";});if(_cu)_cu.password=_pwc.value.trim();}
-    if(_pws&&_pws.value.trim()){var _su=_users.find(function(u){return u.role==="staff";});if(_su)_su.password=_pws.value.trim();}
-    if(_pwa&&_pwa.value.trim()){var _au=_users.find(function(u){return u.role==="admin";});if(_au)_au.password=_pwa.value.trim();}
-    saveUsers(_users);
-  }
   closeModal("settings-modal");
   showToast(CHECK+" Settings saved!","ok");
   render();
@@ -3839,7 +3871,7 @@ function sendBdayWA(){
   } else {
     applyRoleRestrictions();
     updBadges();render();checkScheduledReminders();
-  }try{var r=await apiGet("ping");if(r&&r.ok){document.getElementById("conn-status").innerHTML="&#9679; Connected &#10003;";document.getElementById("conn-status").style.color="#4ade80";showToast("Connected to Google Sheets!","ok");if(!localStorage.getItem("ts"))await doSyncSheets();}}catch(e){console.log("Auto-connect:",e.message);}})();
+  }try{var r=await apiGet("ping");if(r&&r.ok){document.getElementById("conn-status").innerHTML="&#9679; Connected &#10003;";document.getElementById("conn-status").style.color="#4ade80";showToast("Connected to Google Sheets!","ok");if(getSession()&&!localStorage.getItem("ts")){if(isAdmin())await doSyncSheets();else await lightSync();}}}catch(e){console.log("Auto-connect:",e.message);}})();
 
 </script>
 <div id="toast" style="position:fixed;bottom:24px;left:50%;transform:translateX(-50%);padding:10px 20px;border-radius:8px;font-size:13px;font-weight:500;z-index:9999;transition:opacity .4s;opacity:0;pointer-events:none;max-width:90vw;text-align:center;box-shadow:0 4px 12px rgba(0,0,0,.2)"></div>
