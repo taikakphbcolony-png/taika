@@ -1179,9 +1179,11 @@ function rDash(){
   +"</div>";
 
   // ── P&L bar chart (existing) ─────────────────────────────────────────────
-  var maxVal=Math.max.apply(null,months.map(function(m){return Math.max(m.collected,m.expenses);}));
+  var pnlN=parseInt(localStorage.getItem("taika_pnl_n")||"6",10);if([3,6,12].indexOf(pnlN)<0)pnlN=6;
+  var pnlMonths=months.slice(0,pnlN);
+  var maxVal=Math.max.apply(null,pnlMonths.map(function(m){return Math.max(m.collected,m.expenses);}));
   if(maxVal===0)maxVal=1;
-  var barRows=months.map(function(m){
+  var barRows=pnlMonths.map(function(m){
     var cPct=Math.round((m.collected/maxVal)*100);
     var ePct=Math.round((m.expenses/maxVal)*100);
     var profit=m.collected-m.expenses;
@@ -1273,7 +1275,8 @@ function rDash(){
     // Row 2: P&L + This Month Pie (existing)
     +"<div class='dash-row2' style='display:grid;grid-template-columns:1fr 280px;gap:18px;margin-bottom:18px'>"
       // P&L table
-      +"<div class='card'><div class='ch'><h3>Monthly P&amp;L</h3>"
+      +"<div class='card'><div class='ch'><div style='display:flex;align-items:center;gap:10px;flex-wrap:wrap'><h3>Monthly P&amp;L</h3>"
+        +[3,6,12].map(function(n){var on=n===pnlN;return "<button onclick='setPnlRange("+n+")' style='font-size:11px;padding:2px 10px;border-radius:12px;cursor:pointer;border:1px solid "+(on?"#C0392B":"#d1d5db")+";background:"+(on?"#C0392B":"#fff")+";color:"+(on?"#fff":"#374151")+"'>"+n+"M</button>";}).join("")+"</div>"
         +"<div style='display:flex;gap:16px;font-size:11px'>"
           +"<span style='display:flex;align-items:center;gap:4px'><span style='width:8px;height:8px;background:#16a34a;border-radius:50%;display:inline-block'></span>Collected</span>"
           +"<span style='display:flex;align-items:center;gap:4px'><span style='width:8px;height:8px;background:#dc2626;border-radius:50%;display:inline-block'></span>Expenses</span>"
@@ -3032,6 +3035,7 @@ function printAtt(filled){
   setTimeout(function(){try{w.focus();w.print();}catch(e){}},600);
 }
 
+function setPnlRange(n){try{localStorage.setItem("taika_pnl_n",String(n));}catch(e){}render();}
 function setFilter(type,val){
   if(type==="stud")studFilter=val;
   else if(type==="fee")feeFilter=val;
