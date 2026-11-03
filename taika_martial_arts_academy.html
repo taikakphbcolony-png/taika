@@ -1997,6 +1997,7 @@ function rAtt(){
       +"<select onchange='attMo=this.value;render();fetchMonthAtt(this.value)' style='padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px'>"+sel+"</select>"
       +"<button class='btn btr' onclick='openScanner()' style='background:#16a34a;border-color:#16a34a;color:#fff'>Scan Attendance</button>"
       +(isAdmin()?"<button class='btn bto' onclick='openBadgePicker()'>Print QR Badges</button>":"")
+      +"<button class='btn bto' onclick='refreshAtt(true).then(function(r){showToast(r?(r.changed?\"Updated \"+r.changed+\" records\":\"Already up to date\"):\"Refresh failed\",\"ok\");})'>&#8635; Refresh</button>"
       +(isAdmin()?"<button class='btn btr' onclick='markAllPresent(attMo)'>Mark All Present</button>":"")
       +(isAdmin()?"<button class='btn bto' onclick='markHoliday(attMo)'>Mark Holiday</button>":"")
       +"<button class='btn bto' onclick='printAtt(false)' style='border-color:#7c3aed;color:#7c3aed'>Print Blank Sheet</button>"
@@ -2713,8 +2714,18 @@ async function qFlush(){
   try{
     while(true){
       var q=qGet();if(!q.length)break;
-      var r=await apiCall(q[0].a,q[0].d);
-      if(r&&!r.error){qSet(qGet().slice(1));}else{break;}
+      var n=1,a=q[0].a,d=q[0].d;
+      if(a==="markAttendance"){
+        var recs=[];
+        while(n<=q.length&&n<=150&&q[n-1].a==="markAttendance"){
+          var w=q[n-1].d.recordedBy||"";
+          (q[n-1].d.records||[]).forEach(function(x){var c=Object.assign({},x);c.recordedBy=w;recs.push(c);});
+          n++;
+        }
+        n--;d={records:recs,recordedBy:(q[0].d.recordedBy||"")};
+      }
+      var r=await apiCall(a,d);
+      if(r&&!r.error){qSet(qGet().slice(n));try{if(typeof scanUpdateCount==="function")scanUpdateCount();}catch(e){}}else{break;}
     }
   }catch(e){}
   _qBusy=false;
@@ -3868,6 +3879,53 @@ function sendBdayWA(){
     window.open("https://wa.me/"+ph,"_blank");
   },800);
 }
+
+/* ===== LIVE ATTENDANCE REFRESH (so every device shows the same numbers) ===== */
+var _attRefT=0,_attRefBusy=false;
+async function refreshAtt(force){
+  if(_attRefBusy)return null;
+  if(!force&&Date.now()-_attRefT<20000)return null;
+  if(!getSession())return null;
+  _attRefBusy=true;
+  var res={changed:0,total:0};
+  try{
+    await qFlush();
+    var yms=[attMo],cur=tod().slice(0,7);
+    if(yms.indexOf(cur)<0)yms.push(cur);
+    for(var i=0;i<yms.length;i++){
+      var rows=await apiGet("getAttendance",{month:yms[i]});
+      if(!Array.isArray(rows))continue;
+      rows.forEach(function(r){
+        var sid=String(r.studentId||"").trim(),dt=String(r.date||"").slice(0,10),st=String(r.status||"").trim();
+        if(!sid||!dt||!st)return;
+        var ym=dt.slice(0,7),day=parseInt(dt.slice(8),10);
+        if(!att[ym])att[ym]={};
+        if(!att[ym][sid])att[ym][sid]={};
+        res.total++;
+        if(att[ym][sid][day]!==st){att[ym][sid][day]=st;res.changed++;}
+      });
+    }
+    _attRefT=Date.now();
+    if(res.changed){
+      sv();
+      var ae=document.activeElement,typing=ae&&(ae.tagName==="INPUT"||ae.tagName==="TEXTAREA"||ae.tagName==="SELECT");
+      if(!typing&&!document.getElementById("scan-ov")&&(curPage==="attendance"||curPage==="dashboard")){
+        var el=document.querySelector(".att-tw"),sl=el?el.scrollLeft:0,stp=el?el.scrollTop:0;
+        render();
+        setTimeout(function(){var e2=document.querySelector(".att-tw");if(e2){e2.scrollLeft=sl;e2.scrollTop=stp;}try{initAttSwipe();}catch(e){}},0);
+      }
+      try{updBadges();}catch(e){}
+    }
+  }catch(e){}
+  _attRefBusy=false;
+  return res;
+}
+(function(){
+  var _r0=render;
+  render=function(){_r0.apply(this,arguments);try{if(curPage==="attendance"||curPage==="dashboard")refreshAtt(false);}catch(e){}};
+  document.addEventListener("visibilitychange",function(){if(document.visibilityState==="visible")refreshAtt(true);});
+  setInterval(function(){if(document.visibilityState==="visible"&&(curPage==="attendance"||curPage==="dashboard"))refreshAtt(true);},45000);
+})();
 
 (async function(){var _hp=(location.hash||'').replace('#','');var _vp=['dashboard','students','fees','attendance','expenses','enquiries','birthdays'];if(_hp&&_vp.indexOf(_hp)!==-1)curPage=_hp;
   if(!getSession()){
