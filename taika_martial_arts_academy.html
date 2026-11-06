@@ -3973,6 +3973,45 @@ async function refreshAtt(force){
     updBadges();render();checkScheduledReminders();
   }try{var r=await apiGet("ping");if(r&&r.ok){document.getElementById("conn-status").innerHTML="&#9679; Connected &#10003;";document.getElementById("conn-status").style.color="#4ade80";showToast("Connected to Google Sheets!","ok");if(getSession()&&!localStorage.getItem("ts")){if(isAdmin())await doSyncSheets();else await lightSync();}}}catch(e){console.log("Auto-connect:",e.message);}})();
 
+
+/* ===== Dashboard privacy: numbers hidden until the eye is tapped ===== */
+var dashShow=false,_dashT=null;
+function maskDashHtml(html){
+  return html.replace(/ title=(["'])[^"']*\1/g,"").replace(/>([^<>]+)</g,function(m,t){
+    return ">"+t.replace(/\d[\d,]*(?:\.\d+)?/g,function(tok,off,str){
+      if(str.slice(Math.max(0,off-2),off)==="&#")return tok;
+      if(/^(19|20)\d\d$/.test(tok)&&/[A-Za-z]{3}\s$/.test(str.slice(Math.max(0,off-4),off)))return tok;
+      var after=str.slice(off+tok.length);
+      if(/^(M\b|\s*months?\b|\s*days?\b)/.test(after))return tok;
+      return "\u2022\u2022\u2022";
+    })+"<";
+  });
+}
+function toggleDashEye(){
+  dashShow=!dashShow;
+  clearTimeout(_dashT);
+  if(dashShow)_dashT=setTimeout(function(){dashShow=false;if(curPage==="dashboard")render();},60000);
+  render();
+}
+(function(){
+  var _d0=rDash;
+  rDash=function(){
+    var html=_d0.apply(this,arguments);
+    if(!dashShow)html=maskDashHtml(html);
+    var btn="<div style='display:flex;justify-content:flex-end;align-items:center;gap:10px;margin-bottom:14px'>"
+      +"<span style='font-size:12px;color:var(--gray)'>"+(dashShow?"Numbers are visible (auto-hides in 1 minute)":"Numbers are hidden")+"</span>"
+      +"<button onclick='toggleDashEye()' title='"+(dashShow?"Hide":"Show")+"' style='border:1px solid var(--border,#e5e7eb);background:#fff;border-radius:999px;padding:7px 14px;font-size:14px;cursor:pointer'>"+(dashShow?"\uD83D\uDE48 Hide":"\uD83D\uDC41\uFE0F Show")+"</button></div>";
+    return btn+html;
+  };
+  var _r0=render;
+  render=function(){
+    if(curPage!=="dashboard"&&dashShow){dashShow=false;clearTimeout(_dashT);}
+    return _r0.apply(this,arguments);
+  };
+  document.addEventListener("visibilitychange",function(){
+    if(document.hidden&&dashShow){dashShow=false;clearTimeout(_dashT);if(curPage==="dashboard")render();}
+  });
+})();
 </script>
 <div id="toast" style="position:fixed;bottom:24px;left:50%;transform:translateX(-50%);padding:10px 20px;border-radius:8px;font-size:13px;font-weight:500;z-index:9999;transition:opacity .4s;opacity:0;pointer-events:none;max-width:90vw;text-align:center;box-shadow:0 4px 12px rgba(0,0,0,.2)"></div>
 </body>
