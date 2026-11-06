@@ -327,6 +327,7 @@ nav{flex:1;padding:14px 0;overflow-y:auto}
       <div class="fgi"><label>Payment Date *</label><input id="fpd" type="date"></div>
       <div class="fgi"><label>Fee Plan</label><select id="fpp"><option>1 Month</option><option>3 Months</option><option>6 Months</option><option>12 Months</option></select></div>
       <div class="fgi"><label>Valid Till (auto)</label><input id="fpv" readonly style="background:#f9fafb;color:var(--gray)"></div>
+      <div class="fgi ff"><label>Extension given (days) - optional</label><input id="fpx" type="number" min="1" max="365" placeholder="Leave empty if no extension. Example: 10" oninput="calcExt()"><div id="fpxi" style="display:none;margin-top:6px;padding:8px 10px;background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;font-size:12px;color:#9a3412"></div></div>
       <div class="fgi ff"><label>Remarks</label><input id="fpnotes" placeholder="Optional notes"></div>
     </div>
     <div class="ma"><button class="btn bto" onclick="closeM('mf')">Cancel</button><button class="btn btr" onclick="saveF()">Confirm &amp; Send Receipt</button></div>
@@ -1005,7 +1006,11 @@ function rDash(){
 
   // ── FEATURE 2: Revenue forecast ─────────────────────────────────────────
   // Based on active paid students × their fee = expected next month revenue
-  var expectedRevenue=active.reduce(function(a,s){return a+(Number(s.fee)||0);},0);
+  var _fcToday=tod(),_fcY=+_fcToday.slice(0,4),_fcM=+_fcToday.slice(5,7),_fcEnd=_fcToday.slice(0,8)+String(new Date(Date.UTC(_fcY,_fcM,0)).getUTCDate()).padStart(2,"0");var _fcMon=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][_fcM-1];
+  var _fcSoon=active.filter(function(s){var v=String(s.validTill||"").slice(0,10);return v&&v>=_fcToday&&v<=_fcEnd;});
+  var dueSoonN=_fcSoon.length,dueSoonAmt=_fcSoon.reduce(function(a,s){return a+(Number(s.fee)||0);},0);
+  var overdueN=active.filter(function(s){return isUp(s);}).length;
+  var expectedRevenue=dueSoonAmt+tDue;
   // Compare to last 3 months average
   var last3=months.slice(0,3).filter(function(m){return m.collected>0;});
   var avg3=last3.length?Math.round(last3.reduce(function(a,m){return a+m.collected;},0)/last3.length):0;
@@ -1299,7 +1304,7 @@ function rDash(){
       // NEW: Revenue Forecast card
       +"<div class='card'><div class='ch'><h3>"+String.fromCodePoint(0x1F4C8)+" Revenue Forecast</h3></div>"
         +"<div style='padding:16px'>"
-          +"<div style='font-size:11px;color:var(--gray2);margin-bottom:4px'>Next month expected</div>"
+          +"<div style='font-size:11px;color:var(--gray2);margin-bottom:4px'>Total expected to collect</div>"
           +"<div style='font-size:28px;font-weight:700;color:"+forecastColor+"'>"+fmt(expectedRevenue)+"</div>"
           +(forecastTrend?"<div style='font-size:12px;color:"+forecastColor+";margin-bottom:12px'>"+forecastTrend+"</div>":"")
           +"<div style='background:#f8fafc;border-radius:8px;padding:10px;font-size:12px'>"
@@ -1308,15 +1313,15 @@ function rDash(){
               +"<span style='font-weight:600'>"+fmt(avg3)+"</span>"
             +"</div>"
             +"<div style='display:flex;justify-content:space-between;margin-bottom:4px'>"
-              +"<span style='color:var(--gray)'>Active students</span>"
-              +"<span style='font-weight:600'>"+active.length+"</span>"
+              +"<span style='color:var(--gray)'>Renewals due this month ("+dueSoonN+")</span>"
+              +"<span style='font-weight:600;color:#16a34a'>"+fmt(dueSoonAmt)+"</span>"
             +"</div>"
             +"<div style='display:flex;justify-content:space-between'>"
-              +"<span style='color:var(--gray)'>Overdue fees</span>"
+              +"<span style='color:var(--gray)'>Overdue to collect ("+overdueN+")</span>"
               +"<span style='font-weight:600;color:#dc2626'>"+fmt(tDue)+"</span>"
             +"</div>"
           +"</div>"
-          +"<div style='font-size:10px;color:var(--gray2);margin-top:8px'>Based on all active students at current fees</div>"
+          +"<div style='font-size:10px;color:var(--gray2);margin-top:8px'>"+_fcMon+" renewals still to come (today to month end) + all overdue fees. Active students, at their plan fee.</div>"
         +"</div>"
       +"</div>"
 
@@ -1673,7 +1678,7 @@ function rFees(){
   var hist=applyFeeHistSort(fees.slice(),feeHistSortCol,feeHistSortDir).slice(0,25);
   var hR="";
   for(var j=0;j<hist.length;j++){var p=hist[j];var st=students.find(function(x){return x.id===p.sid||x.id===p.studentId;})||{name:"Unknown",phone:""};var amt=Number(p.amt||p.amount||0);var vt=String(p.valid||p.validTill||"").slice(0,10);var rcptNo2=String(p.id||"").replace("P","RCP-");
-  var msg2=CHECK+" Payment Received! "+PARTY+" "+CONFETTI+"\n"+LINE+"\n\nDear "+String(st.parentName||st.name||"Parent")+","+"\n\n"+CLAP+" "+CLAP+" Thank you so much for your payment!"+"\nWe are pleased to confirm receipt for "+st.name+"'s membership at Taika "+BELT+" Martial Arts Academy. "+HEART+"\n\n"+NOTE+" Payment Receipt:"+"\n"+LINE+"\n"+CHECK+"  Student      : "+st.name+"\n"+MONEY+"  Amount Paid  : "+fmt(amt)+"\n"+CAL+"  Payment Date : "+String(p.date||"").slice(0,10)+"\n"+SPARK+"  Valid Till   : "+vt+"\n"+BELT+"  Plan         : "+p.plan+"\n"+LINE+"\n\n"+STAR+" "+st.name+" is all set for another great month of training! "+MUSCLE+"\n\n"+ROCKET+" Keep training, keep growing, keep shining!"+payBlock(st.name,st.fee,"Next renewal")+"\n\n"+LINE+"\n"+BELT+" Warm regards,\nTaika Martial Arts Academy, Gokul Plots";hR+="<tr><td><b>"+st.name+"</b></td><td style='color:#16a34a;font-weight:600'>"+fmt(amt)+"</td><td>"+String(p.date||"").slice(0,10)+"</td><td>"+vt+"</td><td>"+p.plan+"</td><td style='color:var(--gray);font-size:12px'>"+(String(p.recordedOn||"").slice(0,10)||String(p.date||"").slice(0,10))+"</td><td>"+waLink(st.phone,msg2,"Send Receipt")+"<button onclick='generateReceipt(\""+p.id+"\",\""+st.id+"\")' style='margin-left:4px;font-size:11px;padding:2px 6px;background:#f3f4f6;border:1px solid #e2e8f0;border-radius:4px;cursor:pointer' title='Print Receipt'>&#129534;</button></td></tr>";}
+  var msg2=CHECK+" Payment Received! "+PARTY+" "+CONFETTI+"\n"+LINE+"\n\nDear "+String(st.parentName||st.name||"Parent")+","+"\n\n"+CLAP+" "+CLAP+" Thank you so much for your payment!"+"\nWe are pleased to confirm receipt for "+st.name+"'s membership at Taika "+BELT+" Martial Arts Academy. "+HEART+"\n\n"+NOTE+" Payment Receipt:"+"\n"+LINE+"\n"+CHECK+"  Student      : "+st.name+"\n"+MONEY+"  Amount Paid  : "+fmt(amt)+"\n"+CAL+"  Payment Date : "+String(p.date||"").slice(0,10)+"\n"+SPARK+"  Valid Till   : "+vt+"\n"+BELT+"  Plan         : "+p.plan+"\n"+LINE+extNote(p,st.name)+"\n\n"+STAR+" "+st.name+" is all set for another great month of training! "+MUSCLE+"\n\n"+ROCKET+" Keep training, keep growing, keep shining!"+payBlock(st.name,st.fee,"Next renewal")+"\n\n"+LINE+"\n"+BELT+" Warm regards,\nTaika Martial Arts Academy, Gokul Plots";hR+="<tr><td><b>"+st.name+"</b></td><td style='color:#16a34a;font-weight:600'>"+fmt(amt)+"</td><td>"+String(p.date||"").slice(0,10)+"</td><td>"+vt+"</td><td>"+p.plan+"</td><td style='color:var(--gray);font-size:12px'>"+(String(p.recordedOn||"").slice(0,10)||String(p.date||"").slice(0,10))+"</td><td>"+waLink(st.phone,msg2,"Send Receipt")+"<button onclick='generateReceipt(\""+p.id+"\",\""+st.id+"\")' style='margin-left:4px;font-size:11px;padding:2px 6px;background:#f3f4f6;border:1px solid #e2e8f0;border-radius:4px;cursor:pointer' title='Print Receipt'>&#129534;</button></td></tr>";}
   if(!hR)hR="<tr><td colspan='6' style='text-align:center;color:var(--gray);padding:20px'>No payments recorded yet</td></tr>";
   // Reminder dashboard
   var ovS=students.filter(function(s){return !s.inactive&&!s.left&&isUp(s);});
@@ -2191,11 +2196,16 @@ function saveS(){
     showToast("WhatsApp opened! Message copied.","ok");
   }
 }
-function openFee(sid){var s=sid?students.find(function(x){return x.id===sid;}):null;curFS=s;document.getElementById("fpn").value=s?s.name:"";document.getElementById("fpa").value=s?s.fee:"";document.getElementById("fpp").value=s?s.plan:"1 Month";document.getElementById("fpd").value=s&&s.validTill?String(s.validTill).slice(0,10):tod();calcVT();document.getElementById("mf").classList.add("open");}
+function openFee(sid){var s=sid?students.find(function(x){return x.id===sid;}):null;curFS=s;document.getElementById("fpn").value=s?s.name:"";document.getElementById("fpa").value=s?s.fee:"";document.getElementById("fpp").value=s?s.plan:"1 Month";document.getElementById("fpd").value=s&&s.validTill?String(s.validTill).slice(0,10):tod();var _xc=document.getElementById("fpx");if(_xc){_xc.value="";_xc.disabled=!s;}calcVT();calcExt();document.getElementById("mf").classList.add("open");}
 function calcVT(){var pl=document.getElementById("fpp").value,dt=document.getElementById("fpd").value;if(!dt)return;var mo={"1 Month":1,"3 Months":3,"6 Months":6,"12 Months":12}[pl]||1;document.getElementById("fpv").value=addMonthsISO(dt,mo);}
 function addMonthsISO(iso,mo){var p=String(iso).slice(0,10).split("-"),y=+p[0],m=+p[1]-1,d=+p[2];var t=m+mo;y+=Math.floor(t/12);t=((t%12)+12)%12;var last=new Date(Date.UTC(y,t+1,0)).getUTCDate();if(d>last)d=last;return y+"-"+String(t+1).padStart(2,"0")+"-"+String(d).padStart(2,"0");}
 document.getElementById("fpp").addEventListener("change",calcVT);
-document.getElementById("fpd").addEventListener("change",calcVT);
+document.getElementById("fpd").addEventListener("change",function(){calcVT();calcExt();});
+function stuExtCount(sid){return fees.filter(function(p){return (p.sid||p.studentId)===sid&&Number(p.extDays)>0;}).length;}
+function dayDiff(a,b){var x=String(a).slice(0,10).split("-"),y=String(b).slice(0,10).split("-");return Math.round((Date.UTC(+y[0],+y[1]-1,+y[2])-Date.UTC(+x[0],+x[1]-1,+x[2]))/864e5);}
+function extCalc(){var el=document.getElementById("fpx");if(!el||!curFS)return null;var v=String(el.value||"").trim();if(!v)return null;var n=parseInt(v,10);if(!(n>0)||n>365)return {err:"Enter the extension days as a number, for example 10."};return {days:n,from:String(curFS.validTill||"").slice(0,10),no:stuExtCount(curFS.id)+1};}
+function calcExt(){var box=document.getElementById("fpxi");if(!box)return;var x=extCalc();if(!x){box.style.display="none";box.innerHTML="";return;}box.style.display="block";box.innerHTML=x.err?x.err:"<b>Extension: "+x.days+" day"+(x.days===1?"":"s")+"</b> - this will be extension no. <b>"+x.no+"</b> for "+curFS.name+". It will be added to the message and receipt.";}
+function extNote(p,name){var d=Number(p&&p.extDays);if(!(d>0))return "";return "\n\n"+NOTE+" Extension Note:\nAs a courtesy, we extended "+d+" day"+(d===1?"":"s")+" on the fee due date, and the new plan started on "+String(p.date||"").slice(0,10)+".\nThis is extension no. "+p.extNo+" for "+name+".";}
 
 
 function getProfile(){
@@ -2480,6 +2490,8 @@ function generateReceipt(paymentId, sid){
   var payDate=String(p.date||"").slice(0,10);
   var validTill=String(p.valid||p.validTill||"").slice(0,10);
   var plan=p.plan||s.plan||"";
+  var extD=Number(p.extDays||0),extFrom=String(p.extFrom||"").slice(0,10),extNo=p.extNo||"";
+  var extHtml=extD>0?'<div class="field" style="grid-column:1/-1"><div class="fl">Extension Given</div><div class="fv">'+extD+' day'+(extD===1?'':'s')+' \u00b7 Extension no. '+extNo+'</div></div>':'';
 
   var html=`<!DOCTYPE html><html><head><meta charset="UTF-8">
 <title>Receipt - ${s.name}</title>
@@ -2573,6 +2585,7 @@ body{font-family:'DM Sans',Arial,sans-serif;background:#e5e7eb;display:flex;just
       <div class="field"><div class="fl">Payment Date</div><div class="fv">${payDate}</div></div>
       <div class="field"><div class="fl">Plan</div><div class="fv">${plan}</div></div>
       <div class="field"><div class="fl">Valid Till</div><div class="fv">${validTill}</div></div>
+      ${extHtml}
       <div class="field"><div class="fl">Contact</div><div class="fv">${s.phone||'-'}</div></div>
       <div class="field"><div class="fl">Receipt No.</div><div class="fv">${rcptNo}</div></div>
     </div>
@@ -2631,7 +2644,9 @@ function saveF(){
   var dt=document.getElementById("fpd").value;
   if(!amt||!dt){alert("Payment amount and date are required.");return;}
   var pl=document.getElementById("fpp").value,vt=document.getElementById("fpv").value;
+  var ex=extCalc();if(ex&&ex.err){alert(ex.err);return;}
   var rec={id:"P"+Date.now(),sid:curFS?curFS.id:"",amt:amt,amount:amt,date:dt,plan:pl,valid:vt,validTill:vt,recordedOn:tod()};
+  if(ex){rec.extDays=ex.days;rec.extNo=ex.no;rec.extFrom=ex.from;}
   fees.push(rec);
   if(curFS){var idx=students.findIndex(function(s){return s.id===curFS.id;});if(idx>=0){students[idx].paidOn=dt;students[idx].validTill=vt;students[idx].status="Paid";students[idx].plan=pl;students[idx].due=0;}}
   var _newRec=rec;var _newStu=curFS;sv();closeM("mf");updBadges();render();
@@ -2640,7 +2655,7 @@ function saveF(){
     var _prof=getProfile();
     var _ph=String(_newStu.phone||"").replace(/\D/g,"");
     if(_ph.length===10)_ph="91"+_ph;
-    var _waMsg=(CHECK+" Payment Received! "+PARTY+"\n"+LINE+"\n\nDear "+String(_newStu.parentName||_newStu.name||"Parent")+","+"\n\n"+CLAP+" Thank you for your payment!\n\n"+NOTE+" Receipt:\n"+LINE+"\n"+CHECK+"  Student    : "+_newStu.name+"\n"+MONEY+"  Amount     : "+fmt(amt)+"\n"+CAL+"  Paid On    : "+dt+"\n"+SPARK+"  Valid Till : "+vt+"\n"+BELT+"  Plan       : "+pl+LINE+"\n\n"+MUSCLE+" Keep training!"+payBlock(_newStu.name,_newStu.fee,"Next renewal")+"\n\n"+LINE+"\n"+BELT+" "+"Taika Martial Arts Academy, Gokul Plots")
+    var _waMsg=(CHECK+" Payment Received! "+PARTY+"\n"+LINE+"\n\nDear "+String(_newStu.parentName||_newStu.name||"Parent")+","+"\n\n"+CLAP+" Thank you for your payment!\n\n"+NOTE+" Receipt:\n"+LINE+"\n"+CHECK+"  Student    : "+_newStu.name+"\n"+MONEY+"  Amount     : "+fmt(amt)+"\n"+CAL+"  Paid On    : "+dt+"\n"+SPARK+"  Valid Till : "+vt+"\n"+BELT+"  Plan       : "+pl+"\n"+LINE+extNote(_newRec,_newStu.name)+"\n\n"+MUSCLE+" Keep training!"+payBlock(_newStu.name,_newStu.fee,"Next renewal")+"\n\n"+LINE+"\n"+BELT+" "+"Taika Martial Arts Academy, Gokul Plots")
     var _m=document.createElement("div");
     _m.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:999;display:flex;align-items:center;justify-content:center;padding:16px";
     var _encMsg=_waMsg.split("\n").join("\\n");
@@ -2675,9 +2690,9 @@ function saveF(){
     document.getElementById("_skip-btn").onclick=function(){_m.remove();};
   }
   if(curFS){
-    apiCall("addFeePayment",{studentId:curFS.id,studentName:curFS.name,amount:amt,date:dt,plan:pl,validTill:vt,recordedOn:tod()}).then(function(r){if(r&&r.ok)showToast("Payment saved to Google Sheets!","ok");});
+    apiCall("addFeePayment",{studentId:curFS.id,studentName:curFS.name,amount:amt,date:dt,plan:pl,validTill:vt,recordedOn:tod(),extDays:rec.extDays||"",extNo:rec.extNo||"",extFrom:rec.extFrom||""}).then(function(r){if(r&&r.ok)showToast("Payment saved to Google Sheets!","ok");});
     var pname=String(curFS.parentName||curFS.name);
-    var msg=CHECK+" Payment Received! "+PARTY+" "+CONFETTI+"\n"+LINE+"\n\nDear "+pname+","+"\n\n"+CLAP+" "+CLAP+" Thank you so much for your payment!"+"\nWe are pleased to confirm receipt of payment for "+curFS.name+"'s membership at Taika "+BELT+" Martial Arts Academy. "+HEART+"\n\n"+NOTE+" Official Receipt:"+"\n"+LINE+"\n"+CHECK+"  Student      : "+curFS.name+"\n"+MONEY+"  Amount Paid  : "+fmt(amt)+"\n"+CAL+"  Payment Date : "+dt+"\n"+SPARK+"  Valid Till   : "+vt+"\n"+BELT+"  Plan         : "+pl+"\n"+LINE+"\n\n"+STAR+" "+curFS.name+" is all set for another wonderful month of training! "+MUSCLE+"\n\n"+ROCKET+" Keep training, keep growing, keep shining!"+"\n\n"+PRAY+" Your trust and continued support mean the world to us. "+HEART+payBlock(curFS.name,curFS.fee,"Next renewal")+"\n\n"+LINE+"\n"+BELT+" Warm regards,\nTaika Martial Arts Academy, Gokul Plots";
+    var msg=CHECK+" Payment Received! "+PARTY+" "+CONFETTI+"\n"+LINE+"\n\nDear "+pname+","+"\n\n"+CLAP+" "+CLAP+" Thank you so much for your payment!"+"\nWe are pleased to confirm receipt of payment for "+curFS.name+"'s membership at Taika "+BELT+" Martial Arts Academy. "+HEART+"\n\n"+NOTE+" Official Receipt:"+"\n"+LINE+"\n"+CHECK+"  Student      : "+curFS.name+"\n"+MONEY+"  Amount Paid  : "+fmt(amt)+"\n"+CAL+"  Payment Date : "+dt+"\n"+SPARK+"  Valid Till   : "+vt+"\n"+BELT+"  Plan         : "+pl+"\n"+LINE+extNote(rec,curFS.name)+"\n\n"+STAR+" "+curFS.name+" is all set for another wonderful month of training! "+MUSCLE+"\n\n"+ROCKET+" Keep training, keep growing, keep shining!"+"\n\n"+PRAY+" Your trust and continued support mean the world to us. "+HEART+payBlock(curFS.name,curFS.fee,"Next renewal")+"\n\n"+LINE+"\n"+BELT+" Warm regards,\nTaika Martial Arts Academy, Gokul Plots";
     if(confirm("Payment saved! Send WhatsApp receipt to "+curFS.phone+"?")){
     if(navigator.clipboard&&navigator.clipboard.writeText){
       navigator.clipboard.writeText(msg).then(function(){
@@ -3405,10 +3420,11 @@ function openSP(sid){
     var amt=Number(p.amount||p.amt||0);
     return "<div style='display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #f3f4f6'>"
       +"<div><div style='font-size:13px;font-weight:500'>"+fmt(amt)+"</div>"
-      +"<div style='font-size:11px;color:var(--gray2)'>"+String(p.date||"").slice(0,10)+" \u00b7 "+p.plan+"</div></div>"
+      +"<div style='font-size:11px;color:var(--gray2)'>"+String(p.date||"").slice(0,10)+" \u00b7 "+p.plan+(Number(p.extDays)>0?" \u00b7 <span style='color:#c2410c;font-weight:600'>Extended "+p.extDays+"d (no. "+p.extNo+")</span>":"")+"</div></div>"
       +"<span style='font-size:11px;color:#16a34a;font-weight:600'>"+String(p.validTill||p.valid||"").slice(0,10)+"</span>"
       +"</div>";
   }).join("") : "<div style='color:var(--gray);font-size:13px;padding:8px 0'>No payments recorded</div>";
+  var _xk=stuExtCount(s.id);if(_xk)payRows="<div style='font-size:12px;color:#c2410c;font-weight:600;padding:4px 0'>Extensions given so far: "+_xk+"</div>"+payRows;
 
   // Status badge
   var statusBadge = isUp(s)
