@@ -2016,7 +2016,7 @@ function rAtt(){
       +(isAdmin()?"<button class='btn bto' onclick='openBadgePicker()'>Print QR Badges</button>":"")
       +"<button class='btn bto' onclick='refreshAtt(true).then(function(r){showToast(r?(r.changed?\"Updated \"+r.changed+\" records\":\"Already up to date\"):\"Refresh failed\",\"ok\");})'>&#8635; Refresh</button>"
       +(isAdmin()?"<button class='btn btr' onclick='markAllPresent(attMo)'>Mark All Present</button>":"")
-      +(isAdmin()?"<button class='btn bto' onclick='markHoliday(attMo)'>Mark Holiday</button>":"")
+      +(isAdmin()?"<button class='btn bto' onclick='markHoliday()'>Mark Holiday</button>":"")
       +"<button class='btn bto' onclick='printAtt(false)' style='border-color:#7c3aed;color:#7c3aed'>Print Blank Sheet</button>"
       +"<button class='btn bto' onclick='printAtt(true)' style='border-color:#7c3aed;color:#7c3aed'>Print Marked</button>"
       +"<span style='font-size:12px;color:var(--gray)'>"+attS.length+" students</span>"
@@ -2056,16 +2056,37 @@ function markAllPresent(ym){ return markAll(ym); }
 function markAll(ym){if(!att[ym])att[ym]={};var d=parseInt(tod().slice(8)),recs=[];
   var hols=getHolidays(ym);
   if(hols.has(d)){showToast('Today is a holiday - cannot mark attendance','warn');return;}students.forEach(function(s){if(!att[ym][s.id])att[ym][s.id]={};att[ym][s.id][d]="P";var ds=ym+"-"+(d<10?"0":"")+d;recs.push({studentId:s.id,studentName:s.name,date:ds,month:ym,status:"P"});});sv();render();apiCall("markAttendance",{records:recs}).then(function(r){if(r&&r.ok)showToast("Attendance marked for "+recs.length+" students!","ok");});}
-function markHoliday(ym){
-  var reason=prompt("Holiday reason (optional):","Holiday");
-  if(reason===null)return;
+function markHoliday(){
+  var old=document.getElementById("hol-ov");if(old)old.remove();
+  var ov=document.createElement("div");ov.id="hol-ov";
+  ov.style.cssText="position:fixed;left:0;top:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px";
+  ov.innerHTML="<div style='background:#fff;border-radius:14px;padding:20px;width:100%;max-width:340px;box-shadow:0 10px 30px rgba(0,0,0,.3)'>"
+    +"<div style='font-size:17px;font-weight:700;margin-bottom:4px'>"+String.fromCodePoint(0x1F4C5)+" Mark Holiday</div>"
+    +"<div style='font-size:12px;color:#6b7280;margin-bottom:14px'>Pick the date. Attendance cannot be taken on a holiday.</div>"
+    +"<label style='font-size:12px;font-weight:600;color:#374151'>Holiday date</label>"
+    +"<input type='date' id='hol-d' value='"+tod()+"' style='width:100%;box-sizing:border-box;padding:10px;border:1px solid #d1d5db;border-radius:8px;font-size:15px;margin:4px 0 12px'>"
+    +"<label style='font-size:12px;font-weight:600;color:#374151'>Reason (optional)</label>"
+    +"<input id='hol-r' value='Holiday' style='width:100%;box-sizing:border-box;padding:10px;border:1px solid #d1d5db;border-radius:8px;font-size:15px;margin:4px 0 16px'>"
+    +"<div style='display:flex;gap:10px;justify-content:flex-end'>"
+    +"<button class='btn bto' onclick='markHolidayClose()'>Cancel</button>"
+    +"<button class='btn btr' onclick='markHolidayGo()'>Mark Holiday</button></div></div>";
+  ov.addEventListener("click",function(e){if(e.target===ov)markHolidayClose();});
+  document.body.appendChild(ov);
+}
+function markHolidayClose(){var o=document.getElementById("hol-ov");if(o)o.remove();}
+function markHolidayGo(){
+  var ds=(document.getElementById("hol-d")||{}).value||"";
+  var reason=((document.getElementById("hol-r")||{}).value||"").trim()||"Holiday";
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(ds)){showToast("Please pick a date","warn");return;}
+  var ym=ds.slice(0,7),d=parseInt(ds.slice(8),10);
   if(!att[ym])att[ym]={};
   if(!att[ym].__holidays)att[ym].__holidays=[];
-  var d=parseInt(tod().slice(8));
-  if(att[ym].__holidays.indexOf(d)===-1) att[ym].__holidays.push(d);
-  sv(); render();
-  showToast("Holiday marked for today!","ok");
-  apiCall("markHoliday",{date:tod(),reason:reason||"Holiday"});
+  if(att[ym].__holidays.indexOf(d)>-1){showToast("That date is already marked as a holiday","warn");return;}
+  att[ym].__holidays.push(d);
+  markHolidayClose();
+  sv();render();
+  showToast("Holiday marked for "+ds,"ok");
+  apiCall("markHoliday",{date:ds,reason:reason});
 }
 function rExp(){
   var catKeys=["Rent","Salary","Electricity","Equipment","Marketing","Housekeeping","Transport","Others"];
