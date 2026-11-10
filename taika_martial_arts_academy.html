@@ -2530,7 +2530,7 @@ function getPlanFee(planName){
 function maskPh(p){return String(p==null?"":p);}
 function payBlock(name,amt,label){
   var a=Math.round(Number(String(amt).replace(/[^0-9.]/g,""))||0);
-  var lk="https://taikakphbcolony-png.github.io/taika/pay.html?"+(a>0?"am="+a+"&":"")+"n="+encodeURIComponent(name||"");
+  var lk="https://taikakphbcolony-png.github.io/taika/p.html?"+(a>0?"a="+a+"&":"")+"n="+encodeURIComponent(name||"").replace(/%20/g,"+");
   return "\n\n"+MONEY+" "+(label||"Pay Online")+" (UPI):\n"+lk+"\nUPI ID : ******4747@ibl\n(Open the link and scan the QR with any UPI app)";
 }
 function generateReceipt(paymentId, sid){
