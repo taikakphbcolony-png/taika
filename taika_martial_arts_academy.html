@@ -2214,7 +2214,7 @@ function saveS(){
   if(!name||!phone){alert("Student name and phone number are required.");return;}
   var fee=parseInt(document.getElementById("ff2").value)||0;
   var parent=document.getElementById("fp2").value.trim();
-  var s={id:"S"+String(students.length+1).padStart(3,"0"),name:name,phone:phone,plan:document.getElementById("fpl").value,fee:fee,belt:document.getElementById("fb").value,parentName:parent,joinedDate:document.getElementById("fj").value,paidOn:"",validTill:"",status:"Unpaid",due:fee};
+  var s={id:"S"+String(students.length+1).padStart(3,"0"),name:name,phone:phone,plan:document.getElementById("fpl").value,fee:fee,belt:document.getElementById("fb").value,parentName:parent,joinedDate:document.getElementById("fj").value,dob:document.getElementById("fd").value||"",school:(document.getElementById("fsc").value||"").trim(),address:(document.getElementById("fa").value||"").trim(),paidOn:"",validTill:"",status:"Unpaid",due:fee};
   students.push(s);sv();closeM("ms");updBadges();render();
   apiCall("addStudent",s).then(function(r){if(r&&r.ok)showToast(name+" added to Google Sheets!","ok");});
   var pname=parent||name;
