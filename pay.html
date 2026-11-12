@@ -15,7 +15,7 @@ input{font-size:22px;text-align:center;width:160px;padding:6px;border:1px solid 
 <div class="sm">After paying, please share the screenshot on WhatsApp. Thank you!</div></div></div>
 <script>
 var UPI=atob("ODEwNjYwNDc0N0BpYmw="),PN="Taika Martial Arts Academy";
-var q=new URLSearchParams(location.search);var am=parseInt(q.get("a")||q.get("am"))||0,n=q.get("n")||"";
+var q=new URLSearchParams(location.search);var am=parseInt(q.get("am"))||0,n=q.get("n")||"";
 if(n)document.getElementById("stu").textContent="Student: "+n;
 function link(a){var u="upi://pay?pa="+encodeURIComponent(UPI)+"&pn="+encodeURIComponent(PN)+"&cu=INR";if(a>0)u+="&am="+a;u+="&tn="+encodeURIComponent("Fee"+(n?" - "+n:""));return u;}
 if(am>0){document.getElementById("amt").textContent="\u20B9"+am.toLocaleString("en-IN");}else{document.getElementById("amt").style.display="none";document.getElementById("amtIn").style.display="block";}
